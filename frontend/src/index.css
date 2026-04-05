@@ -606,6 +606,19 @@ select option { background: var(--surface2); }
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
 }
+.dev-section-header-collapsible {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dev-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .dev-section-header h2 {
   font-size: 14px;
   margin-bottom: 6px;
@@ -614,6 +627,52 @@ select option { background: var(--surface2); }
   font-size: 12px;
   color: var(--muted);
   line-height: 1.5;
+}
+.dev-summary-strip {
+  margin: 0 16px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dev-summary-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dev-summary-main strong {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  word-break: break-word;
+}
+.dev-summary-main span {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.dev-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dev-action-btn,
+.dev-chip-btn {
+  width: auto;
+  margin: 0;
+}
+.dev-chip-btn {
+  padding: 7px 12px;
+  font-size: 12px;
+  border-radius: 999px;
 }
 .dev-controls-grid {
   display: grid;
@@ -655,15 +714,22 @@ select option { background: var(--surface2); }
   padding: 0 16px 16px;
   flex: 1;
   min-height: 0;
+  display: flex;
 }
 .dev-console-box {
   margin: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  min-height: 280px;
-  max-height: 70vh;
-  resize: both;
+  border-radius: 10px;
+  min-height: 420px;
+  height: 100%;
+  width: 100%;
+  max-height: none;
+  resize: vertical;
   overflow: auto;
+  padding: 18px 20px;
+  font-size: 12.5px;
+  line-height: 1.8;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
 }
 .dev-console-scrollable {
   white-space: pre;
@@ -851,6 +917,17 @@ select option { background: var(--surface2); }
   .dev-grid {
     grid-template-columns: 1fr;
     overflow-y: auto;
+  }
+
+  .dev-section-header-collapsible,
+  .dev-summary-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dev-header-actions,
+  .dev-summary-actions {
+    justify-content: flex-start;
   }
 
   .dev-controls-grid {

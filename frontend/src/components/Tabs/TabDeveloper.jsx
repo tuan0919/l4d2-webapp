@@ -26,6 +26,7 @@ const TabDeveloper = ({ addToast }) => {
   const [autoScroll, setAutoScroll] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [smartFormat, setSmartFormat] = useState(true);
+  const [controlsCollapsed, setControlsCollapsed] = useState(true);
 
   const logBoxRef = useRef(null);
 
@@ -146,6 +147,26 @@ const TabDeveloper = ({ addToast }) => {
     await fetchLogContent(selectedTarget);
   };
 
+  const viewerSummary = useMemo(() => {
+    if (!selectedLog) {
+      return 'Pick a log file to inspect server output';
+    }
+
+    const segments = [selectedLog.relativePath];
+
+    if (logMeta?.totalMatches) {
+      segments.push(`${logMeta.totalMatches} match${logMeta.totalMatches !== 1 ? 'es' : ''}`);
+    }
+
+    segments.push(`Last ${Number(limit) || 0} lines`);
+
+    if (search.trim()) {
+      segments.push(`Filter: "${search.trim()}"`);
+    }
+
+    return segments.join(' • ');
+  }, [selectedLog, logMeta, limit, search]);
+
   const renderSmartLogs = () => {
     if (logLines.length === 0) return null;
 
@@ -233,83 +254,112 @@ const TabDeveloper = ({ addToast }) => {
 
       <div className="dev-grid">
         <section className="dev-section">
-          <div className="dev-section-header">
+          <div className="dev-section-header dev-section-header-collapsible">
             <div>
               <h2>Log Inspector</h2>
               <p>Read server logs with live polling, horizontal scrolling, and smart SourceMod error parsing.</p>
             </div>
-          </div>
-
-          <div className="dev-controls-grid">
-            <div>
-              <label htmlFor="dev-log-target">Log file</label>
-              <select id="dev-log-target" value={selectedTarget} onChange={(e) => setSelectedTarget(e.target.value)}>
-                {logs.length === 0 ? (
-                  <option value="">No logs found</option>
-                ) : (
-                  logs.map((entry) => (
-                    <option key={entry.target} value={entry.target}>
-                      {entry.label}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="dev-log-search">Search text</label>
-              <input
-                id="dev-log-search"
-                type="text"
-                placeholder="error, warning, plugin name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="dev-log-limit">Max lines</label>
-              <input
-                id="dev-log-limit"
-                type="number"
-                min="20"
-                max="2000"
-                value={limit}
-                onChange={(e) => setLimit(e.target.value)}
-              />
+            <div className="dev-header-actions">
+              <button className="btn btn-primary dev-action-btn" onClick={refreshCurrentLog} disabled={!selectedTarget || loadingContent}>
+                {loadingContent ? 'Loading...' : '📄 Read Log'}
+              </button>
+              <button
+                className="btn btn-ghost dev-action-btn"
+                onClick={() => setControlsCollapsed((prev) => !prev)}
+                aria-expanded={!controlsCollapsed}
+              >
+                {controlsCollapsed ? '▾ Show controls' : '▴ Hide controls'}
+              </button>
             </div>
           </div>
 
-          <div className="dev-inline-actions">
-            <button className="btn btn-primary" style={{ width: 'auto', margin: 0 }} onClick={refreshCurrentLog} disabled={!selectedTarget || loadingContent}>
-              {loadingContent ? 'Loading...' : '📄 Read Log'}
-            </button>
-            <button className="btn btn-ghost" style={{ width: 'auto', margin: 0 }} onClick={() => setLiveMode((prev) => !prev)}>
-              {liveMode ? '⏸ Live refresh: ON' : '▶ Live refresh: OFF'}
-            </button>
-            <button className="btn btn-ghost" style={{ width: 'auto', margin: 0 }} onClick={() => setAutoScroll((prev) => !prev)}>
-              {autoScroll ? '⬇ Auto-scroll: ON' : '⬇ Auto-scroll: OFF'}
-            </button>
-            <button className="btn btn-ghost" style={{ width: 'auto', margin: 0 }} onClick={() => setSmartFormat((prev) => !prev)}>
-              {smartFormat ? '✨ Smart Parsing: ON' : '✨ Smart Parsing: OFF'}
-            </button>
+          <div className="dev-summary-strip">
+            <div className="dev-summary-main">
+              <strong>{viewerSummary}</strong>
+              <span>
+                {loadingContent
+                  ? 'Refreshing log output...'
+                  : `Live ${liveMode ? 'ON' : 'OFF'} • Auto-scroll ${autoScroll ? 'ON' : 'OFF'} • Smart parsing ${smartFormat ? 'ON' : 'OFF'}`}
+              </span>
+            </div>
+            <div className="dev-summary-actions">
+              <button className="btn btn-ghost dev-chip-btn" onClick={() => setLiveMode((prev) => !prev)}>
+                {liveMode ? '⏸ Live ON' : '▶ Live OFF'}
+              </button>
+              <button className="btn btn-ghost dev-chip-btn" onClick={() => setAutoScroll((prev) => !prev)}>
+                {autoScroll ? '⬇ Auto ON' : '⬇ Auto OFF'}
+              </button>
+              <button className="btn btn-ghost dev-chip-btn" onClick={() => setSmartFormat((prev) => !prev)}>
+                {smartFormat ? '✨ Smart ON' : '✨ Smart OFF'}
+              </button>
+            </div>
           </div>
 
-          {selectedLog && (
-            <div className="dev-meta-box">
-              <div><strong>Selected:</strong> {selectedLog.relativePath}</div>
-              <div><strong>Size:</strong> {formatBytes(selectedLog.size)}</div>
-              <div><strong>Live refresh:</strong> every {LOG_REFRESH_INTERVAL_MS / 1000}s</div>
-            </div>
-          )}
+          {!controlsCollapsed && (
+            <>
+              <div className="dev-controls-grid">
+                <div>
+                  <label htmlFor="dev-log-target">Log file</label>
+                  <select id="dev-log-target" value={selectedTarget} onChange={(e) => setSelectedTarget(e.target.value)}>
+                    {logs.length === 0 ? (
+                      <option value="">No logs found</option>
+                    ) : (
+                      logs.map((entry) => (
+                        <option key={entry.target} value={entry.target}>
+                          {entry.label}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
 
-          {logMeta && (
-            <div className="dev-meta-box secondary dev-meta-grid">
-              <div><strong>Matches:</strong> {logMeta.totalMatches}</div>
-              <div><strong>Updated:</strong> {logMeta.modified ? new Date(logMeta.modified).toLocaleString() : '—'}</div>
-              <div><strong>Last fetch:</strong> {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '—'}</div>
-              <div><strong>Viewer mode:</strong> Resize bottom-right corner to expand</div>
-            </div>
+                <div>
+                  <label htmlFor="dev-log-search">Search text</label>
+                  <input
+                    id="dev-log-search"
+                    type="text"
+                    placeholder="error, warning, plugin name..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="dev-log-limit">Max lines</label>
+                  <input
+                    id="dev-log-limit"
+                    type="number"
+                    min="20"
+                    max="2000"
+                    value={limit}
+                    onChange={(e) => setLimit(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="dev-inline-actions">
+                <button className="btn btn-ghost dev-action-btn" onClick={fetchLogs} disabled={loadingLogs}>
+                  ↻ Reload Logs
+                </button>
+              </div>
+
+              {selectedLog && (
+                <div className="dev-meta-box">
+                  <div><strong>Selected:</strong> {selectedLog.relativePath}</div>
+                  <div><strong>Size:</strong> {formatBytes(selectedLog.size)}</div>
+                  <div><strong>Live refresh:</strong> every {LOG_REFRESH_INTERVAL_MS / 1000}s</div>
+                </div>
+              )}
+
+              {logMeta && (
+                <div className="dev-meta-box secondary dev-meta-grid">
+                  <div><strong>Matches:</strong> {logMeta.totalMatches}</div>
+                  <div><strong>Updated:</strong> {logMeta.modified ? new Date(logMeta.modified).toLocaleString() : '—'}</div>
+                  <div><strong>Last fetch:</strong> {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '—'}</div>
+                  <div><strong>Viewer mode:</strong> Collapsed controls leave more room for the log reader</div>
+                </div>
+              )}
+            </>
           )}
 
           <div className="dev-log-shell">
