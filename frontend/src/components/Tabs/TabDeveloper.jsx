@@ -1,28 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-const DEFAULT_UPLOAD_TARGETS = [
-  {
-    label: 'Server plugin binary (.smx)',
-    value: 'game:left4dead2/addons/sourcemod/plugins/'
-  },
-  {
-    label: 'Server plugin source (.sp)',
-    value: 'game:left4dead2/addons/sourcemod/scripting/'
-  },
-  {
-    label: 'Server cfg (.cfg)',
-    value: 'game:left4dead2/cfg/sourcemod/'
-  },
-  {
-    label: 'Webapp frontend source',
-    value: 'webapp:frontend/src/'
-  },
-  {
-    label: 'Webapp backend source',
-    value: 'webapp:'
-  }
-];
-
 const LOG_REFRESH_INTERVAL_MS = 2000;
 
 const classifyLogLine = (line) => {
@@ -48,49 +25,14 @@ const TabDeveloper = ({ addToast }) => {
   const [liveMode, setLiveMode] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
-
-  const [roots, setRoots] = useState([]);
-  const [selectedBrowseTarget, setSelectedBrowseTarget] = useState('');
-  const [browseData, setBrowseData] = useState(null);
-  const [loadingBrowse, setLoadingBrowse] = useState(false);
-
-  const [uploading, setUploading] = useState(false);
-  const [uploadTarget, setUploadTarget] = useState(DEFAULT_UPLOAD_TARGETS[0].value);
-  const [customTarget, setCustomTarget] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [smartFormat, setSmartFormat] = useState(true);
 
   const logBoxRef = useRef(null);
-
-  const effectiveUploadTarget = (customTarget.trim() || uploadTarget).trim();
 
   const selectedLog = useMemo(
     () => logs.find((entry) => entry.target === selectedTarget) || null,
     [logs, selectedTarget]
   );
-
-  const selectedRoot = useMemo(() => {
-    if (!browseData?.rootKey) return null;
-    return roots.find((entry) => entry.key === browseData.rootKey) || null;
-  }, [browseData, roots]);
-
-  const fetchRoots = async () => {
-    try {
-      const response = await fetch('/api/dev/roots');
-      const data = await response.json();
-      const nextRoots = Array.isArray(data.roots) ? data.roots : [];
-      setRoots(nextRoots);
-
-      if (nextRoots.length > 0) {
-        setSelectedBrowseTarget((prev) => {
-          if (prev) return prev;
-          return nextRoots[0].browseTarget || '';
-        });
-      }
-    } catch {
-      setRoots([]);
-      addToast('Failed to load server folder roots', 'error');
-    }
-  };
 
   const fetchLogs = async () => {
     setLoadingLogs(true);
@@ -173,34 +115,8 @@ const TabDeveloper = ({ addToast }) => {
     }
   };
 
-  const fetchDirectory = async (targetOverride) => {
-    const target = targetOverride || selectedBrowseTarget;
-    if (!target) return;
-
-    setLoadingBrowse(true);
-
-    try {
-      const params = new URLSearchParams({ target });
-      const response = await fetch(`/api/dev/browse?${params.toString()}`);
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        throw new Error(data.error || 'Failed to browse directory');
-      }
-
-      setBrowseData(data);
-      setSelectedBrowseTarget(data.target || target);
-    } catch (error) {
-      setBrowseData(null);
-      addToast(error.message || 'Failed to browse directory', 'error');
-    } finally {
-      setLoadingBrowse(false);
-    }
-  };
-
   useEffect(() => {
     fetchLogs();
-    fetchRoots();
   }, []);
 
   useEffect(() => {
@@ -208,11 +124,6 @@ const TabDeveloper = ({ addToast }) => {
       fetchLogContent(selectedTarget);
     }
   }, [selectedTarget]);
-
-  useEffect(() => {
-    if (!selectedBrowseTarget) return;
-    fetchDirectory(selectedBrowseTarget);
-  }, [selectedBrowseTarget]);
 
   useEffect(() => {
     if (!selectedTarget || !liveMode) return undefined;
@@ -235,68 +146,73 @@ const TabDeveloper = ({ addToast }) => {
     await fetchLogContent(selectedTarget);
   };
 
-  const browseToRoot = (target) => {
-    setSelectedBrowseTarget(target);
-  };
+  const renderSmartLogs = () => {
+    if (logLines.length === 0) return null;
 
-  const applyBrowserTarget = (target) => {
-    setCustomTarget(target);
-    addToast(`Target selected: ${target}`, 'info');
-  };
+    const elements = [];
+    let currentErrorBlock = null;
 
-  const uploadFile = async () => {
-    if (!selectedFile) {
-      addToast('Choose a file to upload first', 'error');
-      return;
+    for (let i = 0; i < logLines.length; i++) {
+        const line = logLines[i];
+        const text = line.text;
+        
+        // Detect start of an SM error
+        if (text.includes('[SM] Exception reported:') || text.includes('[SM] Plugin encountered error')) {
+            if (currentErrorBlock) elements.push(currentErrorBlock);
+            
+            let blaming = '';
+            // Look ahead for "Blaming:"
+            for (let j = i + 1; j < Math.min(i + 14, logLines.length); j++) {
+                if (logLines[j].text.includes('[SM] Blaming:')) {
+                    blaming = logLines[j].text.split('Blaming:')[1].trim();
+                    break;
+                }
+            }
+            
+            currentErrorBlock = {
+                type: 'error-block',
+                blame: blaming,
+                lines: [line]
+            };
+        } 
+        else if (currentErrorBlock && text.includes('[SM]') && (text.includes('Call stack trace') || text.includes('['))) {
+            currentErrorBlock.lines.push(line);
+        }
+        else if (currentErrorBlock && text.match(/^L \d+\/\d+\/\d+ - \d+:\d+:\d+:/) && !text.includes('[SM]')) {
+             elements.push(currentErrorBlock);
+             currentErrorBlock = null;
+             elements.push({ type: 'normal', line });
+        }
+        else if (currentErrorBlock) {
+             currentErrorBlock.lines.push(line);
+             if (currentErrorBlock.lines.length > 25) {
+                 elements.push(currentErrorBlock);
+                 currentErrorBlock = null;
+             }
+        }
+        else {
+            elements.push({ type: 'normal', line });
+        }
     }
+    if (currentErrorBlock) elements.push(currentErrorBlock);
 
-    if (!effectiveUploadTarget) {
-      addToast('Target path is required', 'error');
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      const buffer = await selectedFile.arrayBuffer();
-      let binary = '';
-      const bytes = new Uint8Array(buffer);
-      const chunkSize = 0x8000;
-
-      for (let index = 0; index < bytes.length; index += chunkSize) {
-        binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
-      }
-
-      let target = effectiveUploadTarget;
-      if (target.endsWith('/')) {
-        target += selectedFile.name;
-      }
-
-      const response = await fetch('/api/dev/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          target,
-          fileName: selectedFile.name,
-          contentBase64: btoa(binary)
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok || data.error) {
-        throw new Error(data.error || 'Upload failed');
-      }
-
-      addToast(`Uploaded ${selectedFile.name} → ${data.relativePath}`, 'success');
-      setSelectedFile(null);
-      if (selectedBrowseTarget) {
-        fetchDirectory(selectedBrowseTarget);
-      }
-    } catch (error) {
-      addToast(error.message || 'Upload failed', 'error');
-    } finally {
-      setUploading(false);
-    }
+    return elements.map((item, idx) => {
+        if (item.type === 'normal') {
+            return <span key={item.line.id} className={`console-line ${item.line.kind}`}>{item.line.text}</span>;
+        } else {
+            return (
+                <div key={`err-${idx}`} className="sm-error-block">
+                    <div className="sm-error-header">
+                       <span style={{fontSize: '16px'}}>🚨</span>
+                       <strong>{item.blame ? `Plugin Error: ${item.blame}` : 'SourceMod Exception'}</strong>
+                    </div>
+                    <div className="sm-error-body">
+                       {item.lines.map(l => <span key={l.id} className={`console-line ${l.kind}`}>{l.text}</span>)}
+                    </div>
+                </div>
+            );
+        }
+    });
   };
 
   return (
@@ -320,7 +236,7 @@ const TabDeveloper = ({ addToast }) => {
           <div className="dev-section-header">
             <div>
               <h2>Log Inspector</h2>
-              <p>Read server logs with live polling, horizontal scrolling, and a resizable viewer for long lines.</p>
+              <p>Read server logs with live polling, horizontal scrolling, and smart SourceMod error parsing.</p>
             </div>
           </div>
 
@@ -374,6 +290,9 @@ const TabDeveloper = ({ addToast }) => {
             <button className="btn btn-ghost" style={{ width: 'auto', margin: 0 }} onClick={() => setAutoScroll((prev) => !prev)}>
               {autoScroll ? '⬇ Auto-scroll: ON' : '⬇ Auto-scroll: OFF'}
             </button>
+            <button className="btn btn-ghost" style={{ width: 'auto', margin: 0 }} onClick={() => setSmartFormat((prev) => !prev)}>
+              {smartFormat ? '✨ Smart Parsing: ON' : '✨ Smart Parsing: OFF'}
+            </button>
           </div>
 
           {selectedLog && (
@@ -400,6 +319,8 @@ const TabDeveloper = ({ addToast }) => {
                   <div className="big">🧪</div>
                   <p>{loadingContent ? 'Reading log file...' : 'Select a log and click Read Log'}</p>
                 </div>
+              ) : smartFormat ? (
+                renderSmartLogs()
               ) : (
                 logLines.map((line) => (
                   <span key={line.id} className={`console-line ${line.kind}`}>
@@ -408,177 +329,6 @@ const TabDeveloper = ({ addToast }) => {
                 ))
               )}
             </div>
-          </div>
-        </section>
-
-        <section className="dev-section">
-          <div className="dev-section-header">
-            <div>
-              <h2>Replace File on Server</h2>
-              <p>Browse real server folders first, then choose an exact destination path before uploading. Existing files are backed up to <code>.bak</code>.</p>
-            </div>
-          </div>
-
-          <div className="dev-controls-grid single-column">
-            <div>
-              <label htmlFor="dev-upload-target-select">Common target folder</label>
-              <select
-                id="dev-upload-target-select"
-                value={uploadTarget}
-                onChange={(e) => setUploadTarget(e.target.value)}
-              >
-                {DEFAULT_UPLOAD_TARGETS.map((entry) => (
-                  <option key={entry.value} value={entry.value}>
-                    {entry.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="dev-upload-custom-target">Custom target path</label>
-              <input
-                id="dev-upload-custom-target"
-                type="text"
-                placeholder="game:left4dead2/addons/sourcemod/plugins/my_plugin.smx"
-                value={customTarget}
-                onChange={(e) => setCustomTarget(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="dev-upload-file">Local file</label>
-              <input
-                id="dev-upload-file"
-                type="file"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-              />
-            </div>
-          </div>
-
-          <div className="dev-meta-box dev-meta-grid">
-            <div><strong>Effective target:</strong> {effectiveUploadTarget || '—'}</div>
-            <div><strong>Selected file:</strong> {selectedFile ? `${selectedFile.name} (${formatBytes(selectedFile.size)})` : '—'}</div>
-          </div>
-
-          <div className="dev-browser-header">
-            <div>
-              <strong>Folder browser</strong>
-              <span>{selectedRoot ? `${selectedRoot.label} • ${selectedRoot.absoluteRoot}` : 'Loading roots...'}</span>
-            </div>
-            <div className="dev-browser-actions">
-              {roots.map((root) => (
-                <button
-                  key={root.key}
-                  className="btn btn-ghost"
-                  style={{ width: 'auto', margin: 0, padding: '6px 11px', fontSize: 12 }}
-                  onClick={() => browseToRoot(root.browseTarget)}
-                >
-                  {root.key}
-                </button>
-              ))}
-              <button
-                className="btn btn-ghost"
-                style={{ width: 'auto', margin: 0, padding: '6px 11px', fontSize: 12 }}
-                onClick={() => fetchDirectory(selectedBrowseTarget)}
-                disabled={!selectedBrowseTarget || loadingBrowse}
-              >
-                ↻ Refresh Tree
-              </button>
-            </div>
-          </div>
-
-          {browseData && (
-            <div className="dev-meta-box secondary dev-meta-grid">
-              <div><strong>Current folder:</strong> {browseData.target}</div>
-              <div><strong>Server path:</strong> {browseData.absolutePath}</div>
-              <div><strong>Entries shown:</strong> {Array.isArray(browseData.entries) ? browseData.entries.length : 0}</div>
-              <div><strong>Use this folder:</strong> click “Use folder” to prefill upload target</div>
-            </div>
-          )}
-
-          <div className="dev-file-browser">
-            <div className="dev-browser-toolbar">
-              <button
-                className="btn btn-ghost"
-                style={{ width: 'auto', margin: 0, padding: '6px 11px', fontSize: 12 }}
-                onClick={() => browseData?.parentTarget && setSelectedBrowseTarget(browseData.parentTarget)}
-                disabled={!browseData?.parentTarget || loadingBrowse}
-              >
-                ↑ Up
-              </button>
-              <button
-                className="btn btn-ghost"
-                style={{ width: 'auto', margin: 0, padding: '6px 11px', fontSize: 12 }}
-                onClick={() => browseData?.target && applyBrowserTarget(browseData.target)}
-                disabled={!browseData?.target}
-              >
-                Use folder
-              </button>
-            </div>
-
-            <div className="dev-browser-list">
-              {!browseData ? (
-                <div className="empty-state" style={{ padding: '28px 20px' }}>
-                  <div className="big">🗂️</div>
-                  <p>{loadingBrowse ? 'Loading folder structure...' : 'Choose a root to inspect the server file structure'}</p>
-                </div>
-              ) : browseData.entries?.length ? (
-                browseData.entries.map((entry) => (
-                  <div key={entry.target} className="dev-browser-item">
-                    <div className="dev-browser-item-main">
-                      <div className="dev-browser-item-name">
-                        <span className={`dev-entry-badge ${entry.type}`}>{entry.type === 'dir' ? 'DIR' : 'FILE'}</span>
-                        <span>{entry.name}</span>
-                      </div>
-                      <div className="dev-browser-item-meta">
-                        <span>{entry.relativePath}</span>
-                        <span>{entry.type === 'file' ? formatBytes(entry.size) : 'Folder'}</span>
-                      </div>
-                    </div>
-                    <div className="dev-browser-item-actions">
-                      {entry.type === 'dir' ? (
-                        <button
-                          className="btn btn-ghost"
-                          style={{ width: 'auto', margin: 0, padding: '6px 11px', fontSize: 12 }}
-                          onClick={() => setSelectedBrowseTarget(entry.target)}
-                        >
-                          Open
-                        </button>
-                      ) : null}
-                      <button
-                        className="btn btn-ghost"
-                        style={{ width: 'auto', margin: 0, padding: '6px 11px', fontSize: 12 }}
-                        onClick={() => applyBrowserTarget(entry.target)}
-                      >
-                        Use {entry.type === 'dir' ? 'folder' : 'file'}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state" style={{ padding: '28px 20px' }}>
-                  <div className="big">📁</div>
-                  <p>This folder is empty</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="dev-inline-actions">
-            <button className="btn btn-primary" style={{ width: 'auto', margin: 0 }} onClick={uploadFile} disabled={uploading || !selectedFile}>
-              {uploading ? 'Uploading...' : '⬆ Upload & Replace'}
-            </button>
-          </div>
-
-          <div className="dev-help-box">
-            <div>Allowed roots:</div>
-            <ul>
-              <li><code>game:</code> → server runtime root defined by <code>L4D2_DIR</code></li>
-              <li><code>webapp:</code> → dashboard runtime folder on the server</li>
-            </ul>
-            <p>If the target ends with <code>/</code>, the selected filename is appended automatically.</p>
-            <p>Recommended flow: browse a folder → click <code>Use folder</code> or <code>Use file</code> → upload local file.</p>
           </div>
         </section>
       </div>
