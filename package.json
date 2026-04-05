@@ -1,0 +1,15 @@
+{
+  "name": "l4d2-admin-dashboard",
+  "version": "1.0.0",
+  "description": "L4D2 Dedicated Server Admin Web Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "npm install && cd frontend && npm install && npm run build"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1",
+    "ws": "^8.16.0"
+  }
+}
