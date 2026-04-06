@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 // Custom CSS for premium looks embedded in the component
 const styles = `
-  .tut-wrapper { display: flex; flex-direction: column; height: 100%; min-height: 0; background: transparent; }
-  .tut-container { display: flex; flex-direction: column; flex: 1; gap: 24px; padding: 24px; color: var(--text); overflow-y: auto; overflow-x: hidden; padding-bottom: 40px; }
+  .tut-wrapper { display: flex; flex-direction: column; height: 100%; min-height: 0; background: transparent; padding-bottom: 20px; }
+  .tut-container { display: flex; flex-direction: column; flex: 1; gap: 24px; padding: 24px; padding-bottom: 120px; color: var(--text); overflow-y: auto; overflow-x: hidden; }
   .tut-header { margin-bottom: 12px; }
   .tut-header h2 { font-size: 26px; font-weight: 700; background: linear-gradient(90deg, #fff, #a8b4c8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .tut-header p { color: var(--muted); font-size: 14px; margin-top: 6px; }
@@ -36,7 +36,7 @@ const styles = `
   .tut-checkbox-group { display: flex; flex-direction: column; gap: 6px; }
   .tut-checkbox { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
   
-  .tut-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .tut-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 40px; }
   .tut-btn { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
   .tut-btn-save { background: linear-gradient(135deg, var(--green), #2db969); color: #000; }
   .tut-btn-save:hover { box-shadow: 0 0 12px rgba(61,220,132,0.4); transform: translateY(-1px); }
