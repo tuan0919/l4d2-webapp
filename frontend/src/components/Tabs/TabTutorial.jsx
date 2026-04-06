@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 // Custom CSS for premium looks embedded in the component
 const styles = `
-  .tut-wrapper { display: flex; flex-direction: column; height: 100%; overflow: hidden; background: transparent; }
-  .tut-container { display: flex; flex-direction: column; gap: 24px; padding: 24px; color: var(--text); overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 80px); }
+  .tut-wrapper { display: flex; flex-direction: column; height: 100%; min-height: 0; background: transparent; }
+  .tut-container { display: flex; flex-direction: column; flex: 1; gap: 24px; padding: 24px; color: var(--text); overflow-y: auto; overflow-x: hidden; padding-bottom: 40px; }
   .tut-header { margin-bottom: 12px; }
   .tut-header h2 { font-size: 26px; font-weight: 700; background: linear-gradient(90deg, #fff, #a8b4c8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .tut-header p { color: var(--muted); font-size: 14px; margin-top: 6px; }
