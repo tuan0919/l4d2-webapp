@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Custom CSS for premium looks embedded in the component
-const styles = \`
+const styles = `
   .tut-wrapper { display: flex; flex-direction: column; height: 100%; overflow: hidden; background: transparent; }
   .tut-container { display: flex; flex-direction: column; gap: 24px; padding: 24px; color: var(--text); overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 80px); }
   .tut-header { margin-bottom: 12px; }
@@ -50,7 +50,7 @@ const styles = \`
 
   .tut-toolbar { display: flex; gap: 12px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 16px; align-items: center; }
   .tut-toolbar-label { font-size: 13px; font-weight: 600; color: #a8b4c8; margin-right: 8px; }
-\`;
+`;
 
 const MultiSlotsConfig = [
   { cvar: 'l4d_multislots_max_survivors', type: 'number', label: 'Max Survivors', desc: 'Số lượng Survivors tối đa cho phép trên server.' },
@@ -91,29 +91,29 @@ const InfectedBotsDataConfig = [
 
 const parseBlockData = (content, blockName) => {
   if (!content) return {};
-  const blockRegex = new RegExp(\`"([^"]*\\b\${blockName}\\b[^"]*)"\\s*\\{[^}]+\\}\`, 'i');
+  const blockRegex = new RegExp(`"([^"]*\\b${blockName}\\b[^"]*)"\\s*\\{[^}]+\\}`, 'i');
   const match = content.match(blockRegex);
   if (!match) return {};
-  const lines = match[0].split('\\n');
+  const lines = match[0].split('\n');
   const values = {};
   for (const line of lines) {
-    const m = line.match(/"([^"]+)"\\s+"([^"]*)"/);
+    const m = line.match(/"([^"]+)"\s+"([^"]*)"/);
     if (m) values[m[1]] = m[2];
   }
   return values;
 };
 
 const updateBlockData = (content, blockName, newValues) => {
-  const blockRegex = new RegExp(\`("([^"]*\\b\${blockName}\\b[^"]*)"\\s*\\{)([^}]+)(\\})\`, 'i');
+  const blockRegex = new RegExp(`("([^"]*\\b${blockName}\\b[^"]*)"\\s*\\{)([^}]+)(\\})`, 'i');
   return content.replace(blockRegex, (match, open, blockRealName, body, close) => {
     let newBody = body;
     for (const key of Object.keys(newValues)) {
        const valStr = newValues[key];
-       const keyRegex = new RegExp(\`("\\\${key}"\\s+)"([^"]*)"\`, 'i');
+       const keyRegex = new RegExp(`("${key}"\\s+)"([^"]*)"`, 'i');
        if (keyRegex.test(newBody)) {
-         newBody = newBody.replace(keyRegex, \`$1"\${valStr}"\`);
+         newBody = newBody.replace(keyRegex, `$1"${valStr}"`);
        } else {
-         newBody += \`\\n            "\${key}"      "\${valStr}"\`;
+         newBody += `\n            "${key}"      "${valStr}"`;
        }
     }
     return open + newBody + close;
@@ -186,7 +186,7 @@ const TabTutorial = ({ addToast }) => {
   const fetchDataContent = async (file) => {
     setLoading(true);
     try {
-      const res = await fetch(\`/api/data/read?plugin=l4dinfectedbots&file=\${file}\`);
+      const res = await fetch(`/api/data/read?plugin=l4dinfectedbots&file=${file}`);
       const data = await res.json();
       if (data.content) setDataContent(data.content);
     } catch {} finally { setLoading(false); }
@@ -204,7 +204,7 @@ const TabTutorial = ({ addToast }) => {
   const isMultiCheckboxChecked = (cvar, val) => ((parseInt(values[cvar] || 0, 10) & val) !== 0);
 
   const saveCvarConfig = async (configList) => {
-    const cmds = configList.map(item => \`sm_cvar \${item.cvar} "\${values[item.cvar] !== undefined ? values[item.cvar] : ''}"\`).join('; ');
+    const cmds = configList.map(item => `sm_cvar ${item.cvar} "${values[item.cvar] !== undefined ? values[item.cvar] : ''}"`).join('; ');
     try {
       setLoading(true);
       await fetch('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: cmds }) });
@@ -224,7 +224,7 @@ const TabTutorial = ({ addToast }) => {
         body: JSON.stringify({ plugin: 'l4dinfectedbots', file: selectedFile, content: newContent })
       });
       if (res.ok) {
-        addToast(\`Lưu Data Config (\${selectedBlock}) thành công!\`, 'success');
+        addToast(`Lưu Data Config (${selectedBlock}) thành công!`, 'success');
         fetchDataContent(selectedFile); // Refresh
       } else {
         addToast('Lỗi khi lưu Data config.', 'error');
@@ -283,8 +283,8 @@ const TabTutorial = ({ addToast }) => {
       <div className="tut-container">
         
         <div className="tut-tabs-nav">
-          <button className={\`tut-tab-btn \${activeTab === 'multislots' ? 'active' : ''}\`} onClick={() => setActiveTab('multislots')}>MultiSlots</button>
-          <button className={\`tut-tab-btn \${activeTab === 'infectedbots' ? 'active' : ''}\`} onClick={() => setActiveTab('infectedbots')}>InfectedBots</button>
+          <button className={`tut-tab-btn ${activeTab === 'multislots' ? 'active' : ''}`} onClick={() => setActiveTab('multislots')}>MultiSlots</button>
+          <button className={`tut-tab-btn ${activeTab === 'infectedbots' ? 'active' : ''}`} onClick={() => setActiveTab('infectedbots')}>InfectedBots</button>
         </div>
 
         {activeTab === 'multislots' && (
