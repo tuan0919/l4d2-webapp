@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 
 const TabAddons = ({ addToast, onAddonsUpdated }) => {
   const [addons, setAddons] = useState([]);
   const [note, setNote] = useState('Installed Addons (.vpk)');
   const [workshopUrl, setWorkshopUrl] = useState('');
+  const fileInputRef = useRef(null);
   const [installing, setInstalling] = useState(false);
   const [progressVisible, setProgressVisible] = useState(false);
   const [progressStatus, setProgressStatus] = useState('Connecting to SteamCMD...');
@@ -154,35 +155,121 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     }
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setInstalling(true);
+    setProgressVisible(true);
+    setProgressStatus(`Uploading ${file.name}...`);
+    setProgressPercent(0);
+    setProgressSuccess(false);
+    setProgressError(false);
+
+    const formData = new FormData();
+    formData.append('addonFile', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/addons/upload', true);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = (event.loaded / event.total) * 100;
+        setProgressPercent(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        addToast(`Uploaded ${file.name}`, 'success');
+        setProgressStatus(`Upload of ${file.name} complete!`);
+        setProgressPercent(100);
+        setProgressSuccess(true);
+        fetchAddons();
+      } else {
+        let errorMsg = 'Upload failed';
+        try { errorMsg = JSON.parse(xhr.responseText)?.error || errorMsg; } catch (e) {}
+        addToast(errorMsg, 'error');
+        setProgressStatus(`Error: ${errorMsg}`);
+        setProgressError(true);
+      }
+      setInstalling(false);
+      setTimeout(() => {
+        if (xhr.status === 200) {
+            setProgressVisible(false);
+            setProgressSuccess(false);
+        }
+      }, 5000);
+    };
+
+    xhr.onerror = () => {
+      addToast('Upload network error', 'error');
+      setProgressStatus('Error: Upload connection failed');
+      setProgressError(true);
+      setInstalling(false);
+    };
+
+    xhr.send(formData);
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <div className="plugins-panel">
-      <div className="addons-install-box">
-        <h2>Install from Workshop</h2>
-        <div className="input-row">
-          <input
-            type="text"
-            placeholder="Paste Steam Workshop URL here..."
-            value={workshopUrl}
-            onChange={(e) => setWorkshopUrl(e.target.value)}
-            disabled={installing}
-          />
-          <button className="btn btn-primary" style={{ width: 120, margin: 0 }} onClick={installWorkshop} disabled={installing}>
-            {installing ? 'Installing...' : '📥 Install'}
-          </button>
+      <div className="addons-install-box" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div>
+          <h2 style={{ marginBottom: '8px' }}>Option 1: Install from Workshop</h2>
+          <div className="input-row">
+            <input
+              type="text"
+              placeholder="Paste Steam Workshop URL here..."
+              value={workshopUrl}
+              onChange={(e) => setWorkshopUrl(e.target.value)}
+              disabled={installing}
+            />
+            <button className="btn btn-primary" style={{ width: 120, margin: 0 }} onClick={installWorkshop} disabled={installing}>
+              {installing ? 'Running...' : '📥 Install'}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h2 style={{ marginBottom: '8px' }}>Option 2: Direct .vpk Upload</h2>
+          <div className="input-row">
+            <input
+              type="file"
+              accept=".vpk"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              disabled={installing}
+              style={{
+                flex: 1, padding: '8px',
+                border: '1px dashed var(--border-color)',
+                borderRadius: '6px', background: 'rgba(0,0,0,0.15)',
+                color: 'var(--text-color)', cursor: 'pointer'
+              }}
+            />
+          </div>
         </div>
 
         {progressVisible && (
-          <div className="workshop-progress">
-            <div className="workshop-progress-header">
-              <span className="workshop-status">{progressStatus}</span>
+          <div className="workshop-progress" style={{
+            marginTop: '8px', padding: '14px',
+            background: 'rgba(0,0,0,0.25)', borderRadius: '8px',
+            border: progressError ? '1px solid var(--red)' : progressSuccess ? '1px solid var(--green)' : '1px solid var(--border-color)'
+          }}>
+            <div className="workshop-progress-header" style={{ marginBottom: '8px' }}>
+              <span className="workshop-status" style={{ fontWeight: 500 }}>{progressStatus}</span>
               <span className="workshop-pct">{Math.round(progressPercent)}%</span>
             </div>
-            <div className="hp-bar-bg" style={{ height: 8, borderRadius: 4 }}>
+            <div className="hp-bar-bg" style={{ height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.08)' }}>
               <div
                 className="hp-bar-fill"
                 style={{
                   width: `${progressPercent}%`,
-                  borderRadius: 4,
+                  height: '100%',
+                  borderRadius: 5,
                   background: progressError ? 'var(--red)' : progressSuccess ? 'var(--green)' : 'var(--blue)',
                   transition: 'width 0.2s ease, background 0.3s'
                 }}

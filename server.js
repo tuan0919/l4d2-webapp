@@ -6,6 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const dgram = require('dgram');
+const multer = require('multer');
+
 // Native VPK parser for L4D2 v1/v2 VPKs
 function getVpkMaps(filePath) {
     let maps = [];
@@ -87,6 +89,19 @@ app.use(express.json({ limit: '50mb' }));
 // Prefer built React app, fallback to legacy public folder
 app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// --- Upload Configuration ---
+const uploadStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dest = path.join(L4D2_DIR, 'left4dead2', 'addons');
+    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
+});
+const addonUpload = multer({ storage: uploadStorage });
 
 // --- Helper: send command to screen session ---
 function sendToGame(command, callback) {
@@ -554,6 +569,15 @@ app.delete('/api/addons/:filename', (req, res) => {
   res.status(404).json({ error: 'File not found' });
 });
 
+app.post('/api/addons/upload', addonUpload.single('addonFile'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  sendToGame('update_addon_paths', () => {
+    res.json({ success: true, message: `Successfully uploaded ${req.file.originalname}` });
+  });
+});
+
 app.post('/api/workshop', (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'No Workshop URL provided' });
@@ -608,43 +632,58 @@ app.post('/api/workshop', (req, res) => {
     }
     sendEvent('status', { message: 'Download complete. Locating workshop files...' });
     
-    // Find ANY file in the workshop content directory (SteamCMD downloads .bin, .vpk, or other formats)
+    // Find ALL files in the workshop content directory
     const searchPath = `/root/Steam/steamapps/workshop/content/550/${workshopId}`;
-    exec(`find ${searchPath} -type f 2>/dev/null | head -n 1`, (err, stdout) => {
-      const filePath = stdout ? stdout.trim() : "";
-      if (!filePath || err) {
+    exec(`find ${searchPath} -type f 2>/dev/null`, (err, stdout) => {
+      let files = stdout ? stdout.trim().split('\n').filter(Boolean) : [];
+      if (files.length === 0 || err) {
         // Fallback: broader search
-        exec(`find /root/Steam /root/.steam -path "*/550/${workshopId}/*" -type f 2>/dev/null | head -n 1`, (err2, stdout2) => {
-            const fallbackPath = stdout2 ? stdout2.trim() : "";
-            if (!fallbackPath) {
-                sendEvent('error', { message: "Could not locate the downloaded workshop file. SteamCMD may have failed silently." });
+        exec(`find /root/Steam /root/.steam -path "*/550/${workshopId}/*" -type f 2>/dev/null`, (err2, stdout2) => {
+            files = stdout2 ? stdout2.trim().split('\n').filter(Boolean) : [];
+            if (files.length === 0) {
+                sendEvent('error', { message: "Could not locate the downloaded workshop files. SteamCMD may have failed silently." });
                 res.end();
                 return;
             }
-            installWorkshopFile(fallbackPath);
+            installWorkshopFiles(files);
         });
       } else {
-        installWorkshopFile(filePath);
+        installWorkshopFiles(files);
       }
     });
 
-    function installWorkshopFile(sourcePath) {
-      const ext = path.extname(sourcePath).toLowerCase();
-      // Always install as .vpk — if the downloaded file is .bin or other format, rename it
-      const filename = ext === '.vpk' ? path.basename(sourcePath) : `workshop_${workshopId}.vpk`;
-      const destPath = path.join(L4D2_DIR, 'left4dead2', 'addons', filename);
-      sendEvent('status', { message: `Installing ${filename} to addons/ ...` });
+    function installWorkshopFiles(sourcePaths) {
+      sendEvent('status', { message: `Installing ${sourcePaths.length} file(s) to addons/ ...` });
       
-      exec(`cp "${sourcePath}" "${destPath}"`, (errCopy) => {
-        if (errCopy) {
-          sendEvent('error', { message: `Failed to install file: ${errCopy.message}` });
-        } else {
-          // Tell the server to refresh its addon paths so it sees the new VPK immediately
-          sendToGame('update_addon_paths', () => {
-            sendEvent('success', { message: `Successfully installed ${filename}!` });
-          });
+      let copied = 0;
+      let hasError = false;
+
+      sourcePaths.forEach((sourcePath, index) => {
+        const ext = path.extname(sourcePath).toLowerCase();
+        let filename = path.basename(sourcePath);
+        
+        // Always install as .vpk — if the downloaded file is .bin or other format, rename it
+        // Append part number if there are multiple parts and it's not natively named with .vpk
+        if (ext !== '.vpk') {
+          filename = sourcePaths.length > 1 ? `workshop_${workshopId}_part${index + 1}.vpk` : `workshop_${workshopId}.vpk`;
         }
-        res.end();
+
+        const destPath = path.join(L4D2_DIR, 'left4dead2', 'addons', filename);
+        
+        exec(`cp "${sourcePath}" "${destPath}"`, (errCopy) => {
+          copied++;
+          if (errCopy && !hasError) {
+            hasError = true;
+            sendEvent('error', { message: `Failed to install file: ${errCopy.message}` });
+            res.end();
+          } else if (copied === sourcePaths.length && !hasError) {
+            // Tell the server to refresh its addon paths so it sees the new VPK immediately
+            sendToGame('update_addon_paths', () => {
+              sendEvent('success', { message: `Successfully installed ${sourcePaths.length} file(s)!` });
+              res.end();
+            });
+          }
+        });
       });
     }
   });
