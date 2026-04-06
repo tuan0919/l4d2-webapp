@@ -53,6 +53,50 @@ const styles = `
   .tut-toolbar-label { font-size: 13px; font-weight: 600; color: #a8b4c8; margin-right: 8px; }
 `;
 
+const WEAPONS = [
+  { id: 'ak47', name: 'AK-47' },
+  { id: 'autoshotgun', name: 'Auto Shotgun' },
+  { id: 'awp', name: 'AWP Sniper' },
+  { id: 'chromeshotgun', name: 'Chrome Shotgun' },
+  { id: 'grenadelauncher', name: 'Grenade Launcher' },
+  { id: 'huntingrifle', name: 'Hunting Rifle' },
+  { id: 'm60', name: 'M60' },
+  { id: 'magnum', name: 'Magnum / Desert Eagle' },
+  { id: 'militarysniper', name: 'Military Sniper' },
+  { id: 'mp5', name: 'MP5' },
+  { id: 'pistol', name: 'Pistol' },
+  { id: 'pumpshotgun', name: 'Pump Shotgun' },
+  { id: 'rifle', name: 'M16 Rifle' },
+  { id: 'rifledesert', name: 'Desert Rifle (SCAR)' },
+  { id: 'scout', name: 'Scout Sniper' },
+  { id: 'sg552', name: 'SG552' },
+  { id: 'smg', name: 'SMG (Uzi)' },
+  { id: 'smgsilenced', name: 'Silenced SMG (Mac-10)' },
+  { id: 'spasshotgun', name: 'SPAS Shotgun' },
+];
+
+const TARGETS = [
+  { id: 'SI_multi', name: 'Special Infected' },
+  { id: 'common_multi', name: 'Common Infected' },
+  { id: 'tank_multi', name: 'Tank' },
+  { id: 'witch_multi', name: 'Witch' }
+];
+
+const GunDamageConfig = [
+  { cvar: 'l4d_gun_damage_modify_enable', type: 'toggle', label: 'Bật Plugin (Enable)', desc: 'Tính năng chỉnh sát thương.' }
+];
+
+WEAPONS.forEach(w => {
+  TARGETS.forEach(t => {
+     GunDamageConfig.push({
+        cvar: `l4d_${w.id}_damage_${t.id}`,
+        type: 'number',
+        label: `${t.name}`,
+        desc: `0: Xoá ST, -1: Mặc định`
+     });
+  });
+});
+
 const MultiSlotsConfig = [
   { cvar: 'l4d_multislots_max_survivors', type: 'number', label: 'Max Survivors', desc: 'Số lượng Survivors tối đa cho phép trên server.' },
   { cvar: 'l4d_multislots_min_survivors', type: 'number', label: 'Min Survivors', desc: 'Số lượng Survivors tối thiểu lúc nào cũng có mặt.' },
@@ -293,6 +337,7 @@ const TabTutorial = ({ addToast }) => {
         <div className="tut-tabs-nav">
           <button className={`tut-tab-btn ${activeTab === 'multislots' ? 'active' : ''}`} onClick={() => setActiveTab('multislots')}>MultiSlots</button>
           <button className={`tut-tab-btn ${activeTab === 'infectedbots' ? 'active' : ''}`} onClick={() => setActiveTab('infectedbots')}>InfectedBots</button>
+          <button className={`tut-tab-btn ${activeTab === 'gundamage' ? 'active' : ''}`} onClick={() => setActiveTab('gundamage')}>Gun Damage</button>
         </div>
 
         {activeTab === 'multislots' && (
@@ -366,6 +411,40 @@ const TabTutorial = ({ addToast }) => {
               )}
             </div>
           </>
+        )}
+
+        {activeTab === 'gundamage' && (
+          <div className="tut-card">
+            <div className="tut-header">
+               <h2>Gun Damage Modify</h2>
+               <p>Điều chỉnh hệ số sát thương cho từng loại súng lên từng mục tiêu cụ thể. Giá trị 1.0 (nhân 1) là giữ nguyên.</p>
+            </div>
+            
+            <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
+               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>🔄 Tải Dữ Liệu</button>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>💾 Áp Dụng Tất Cả</button>
+            </div>
+            
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {renderCvarField(GunDamageConfig[0])}
+            </div>
+
+            {WEAPONS.map(w => (
+              <div key={w.id} style={{ marginTop: 24 }}>
+                <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Súng: <span style={{ color: 'var(--accent)' }}>{w.name}</span></div>
+                <div className="tut-form-grid">
+                  {TARGETS.map(t => {
+                     const item = GunDamageConfig.find(c => c.cvar === `l4d_${w.id}_damage_${t.id}`);
+                     return renderCvarField(item);
+                  })}
+                </div>
+              </div>
+            ))}
+            
+            <div className="tut-actions" style={{ marginTop: 32 }}>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>💾 Áp Dụng (Viết vào CFG)</button>
+            </div>
+          </div>
         )}
 
       </div>
