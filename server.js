@@ -389,6 +389,56 @@ function listDeveloperDirectory(target) {
 }
 
 // --- API Routes ---
+
+// -- Data Config API Routes ---
+app.get('/api/data/files', (req, res) => {
+  const { plugin } = req.query;
+  if (!plugin || plugin.includes('..')) return res.status(400).json({ error: 'Invalid plugin name' });
+  const targetDir = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data', plugin);
+  
+  if (!fs.existsSync(targetDir)) return res.json({ files: [] });
+  try {
+    const files = fs.readdirSync(targetDir).filter(f => f.endsWith('.cfg'));
+    res.json({ files });
+  } catch (e) {
+    res.status(500).json({ error: e.message, files: [] });
+  }
+});
+
+app.get('/api/data/read', (req, res) => {
+  const { plugin, file } = req.query;
+  if (!plugin || plugin.includes('..') || !file || file.includes('..')) {
+    return res.status(400).json({ error: 'Invalid parameters' });
+  }
+  const targetPath = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data', plugin, file);
+  
+  if (!fs.existsSync(targetPath)) return res.status(404).json({ error: 'File not found' });
+  try {
+    const content = fs.readFileSync(targetPath, 'utf8');
+    res.json({ content });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/data/write', (req, res) => {
+  const { plugin, file, content } = req.body;
+  if (!plugin || plugin.includes('..') || !file || file.includes('..') || typeof content !== 'string') {
+    return res.status(400).json({ error: 'Invalid parameters' });
+  }
+  const targetPath = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data', plugin, file);
+  
+  if (!fs.existsSync(targetPath)) return res.status(404).json({ error: 'File not found' });
+  try {
+    // Create backup just in case
+    fs.copyFileSync(targetPath, targetPath + '.bak');
+    fs.writeFileSync(targetPath, content, 'utf8');
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/status', (req, res) => {
   exec("screen -ls | grep l4d2", (err, stdout) => {
     const running = !!(stdout && stdout.includes('l4d2'));
