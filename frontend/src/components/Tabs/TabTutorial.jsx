@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 // Custom CSS for premium looks embedded in the component
 const styles = `
-  .tut-wrapper { background: transparent; padding-bottom: 20px; width: 100%; box-sizing: border-box; }
-  .tut-container { display: flex; flex-direction: column; gap: 24px; padding: 24px; color: var(--text); width: 100%; box-sizing: border-box; }
+  .tut-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; background: transparent; }
+  .tut-container { flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 24px; padding: 24px 24px 60px 24px; color: var(--text); min-height: 0; }
+  .tut-container::after { content: ""; display: block; height: 40px; flex-shrink: 0; }
   .tut-header { margin-bottom: 12px; }
   .tut-header h2 { font-size: 26px; font-weight: 700; background: linear-gradient(90deg, #fff, #a8b4c8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .tut-header p { color: var(--muted); font-size: 14px; margin-top: 6px; }
