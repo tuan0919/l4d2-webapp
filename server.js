@@ -564,6 +564,67 @@ app.get('/api/cvars', (req, res) => {
   }
 });
 
+app.post('/api/cvars/write', (req, res) => {
+  const { cvars } = req.body;
+  if (!cvars || typeof cvars !== 'object') {
+    return res.status(400).json({ error: 'Invalid parameters' });
+  }
+
+  try {
+    const cfgDir = path.join(L4D2_DIR, 'left4dead2', 'cfg');
+    const sourcemodDir = path.join(cfgDir, 'sourcemod');
+    
+    let filesToCheck = [];
+    if (fs.existsSync(sourcemodDir)) {
+      filesToCheck = fs.readdirSync(sourcemodDir).filter(f => f.endsWith('.cfg')).map(f => path.join(sourcemodDir, f));
+    }
+    const serverCfg = path.join(cfgDir, 'server.cfg');
+    if (fs.existsSync(serverCfg)) {
+      filesToCheck.push(serverCfg);
+    }
+
+    let updatedCount = 0;
+    for (const p of filesToCheck) {
+      if (!fs.existsSync(p)) continue;
+      let content = fs.readFileSync(p, 'utf8');
+      const lines = content.split(/\r?\n/);
+      let changed = false;
+      
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        if (line.trim().startsWith('//')) continue;
+        
+        const match = line.trim().match(/^([^\s]+)\s+"(.*)"$/) || line.trim().match(/^([^\s]+)\s+(.+)$/);
+        if (match) {
+          const cvarName = match[1];
+          if (cvarName.toLowerCase() === 'exec') continue; 
+          
+          if (cvars[cvarName] !== undefined) {
+            const newVal = String(cvars[cvarName]);
+            const leadingSpace = line.match(/^\s*/)[0];
+            lines[i] = `${leadingSpace}${cvarName} "${newVal}"`;
+            changed = true;
+            updatedCount++;
+          }
+        }
+      }
+      if (changed) {
+        fs.copyFileSync(p, p + '.bak');
+        fs.writeFileSync(p, lines.join('\n'), 'utf8');
+      }
+    }
+    
+    // Also send immediately to the server
+    const cmds = Object.keys(cvars).map(k => `sm_cvar ${k} "${cvars[k]}"`).join('; ');
+    if (cmds) {
+      sendToGame(cmds, () => {});
+    }
+    res.json({ success: true, updatedCount });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/command', (req, res) => {
   const { command } = req.body;
   if (!command) return res.status(400).json({ error: 'No command' });

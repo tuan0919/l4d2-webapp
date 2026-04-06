@@ -205,13 +205,20 @@ const TabTutorial = ({ addToast }) => {
   const isMultiCheckboxChecked = (cvar, val) => ((parseInt(values[cvar] || 0, 10) & val) !== 0);
 
   const saveCvarConfig = async (configList) => {
-    const cmds = configList.map(item => `sm_cvar ${item.cvar} "${values[item.cvar] !== undefined ? values[item.cvar] : ''}"`).join('; ');
+    const payload = {};
+    configList.forEach(item => {
+       payload[item.cvar] = values[item.cvar] !== undefined ? String(values[item.cvar]) : '';
+    });
     try {
       setLoading(true);
-      await fetch('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: cmds }) });
-      addToast('CVARs saved!', 'success');
+      const res = await fetch('/api/cvars/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cvars: payload }) });
+      if (res.ok) {
+        addToast('Lưu CVARs vào file config thành công!', 'success');
+      } else {
+        addToast('Lỗi khi lưu CVARs.', 'error');
+      }
       fetchCvars();
-    } catch { addToast('Error saving CVARs.', 'error'); } finally { setLoading(false); }
+    } catch { addToast('Lỗi khi lưu CVARs.', 'error'); } finally { setLoading(false); }
   };
 
   const saveDataConfig = async () => {
