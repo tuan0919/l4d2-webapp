@@ -129,7 +129,7 @@ const TabTutorial = ({ addToast }) => {
   const saveConfig = async (configList) => {
     const cmds = configList.map(item => {
        const v = values[item.cvar] !== undefined ? values[item.cvar] : '';
-       return \`sm_cvar \${item.cvar} "\${v}"\`;
+       return `sm_cvar ${item.cvar} "${v}"`;
     }).join('; ');
     
     try {
@@ -208,8 +208,8 @@ const TabTutorial = ({ addToast }) => {
       <div className="tut-container">
         
         <div className="tut-tabs-nav">
-          <button className={\`tut-tab-btn \${activeTab === 'multislots' ? 'active' : ''}\`} onClick={() => setActiveTab('multislots')}>MultiSlots Settings</button>
-          <button className={\`tut-tab-btn \${activeTab === 'infectedbots' ? 'active' : ''}\`} onClick={() => setActiveTab('infectedbots')}>InfectedBots Settings</button>
+          <button className={`tut-tab-btn ${activeTab === 'multislots' ? 'active' : ''}`} onClick={() => setActiveTab('multislots')}>MultiSlots Settings</button>
+          <button className={`tut-tab-btn ${activeTab === 'infectedbots' ? 'active' : ''}`} onClick={() => setActiveTab('infectedbots')}>InfectedBots Settings</button>
         </div>
 
         {activeTab === 'multislots' && (
