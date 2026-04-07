@@ -656,15 +656,23 @@ app.get('/api/servercfg', (req, res) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('//')) continue;
       
-      let smCvarMatch = trimmed.match(/^sm_cvar\s+([^\s]+)\s+"?(.*?)"?$/);
+      // Strip comments but keep values
+      let content = trimmed.split('//')[0].trim();
+      if (!content) continue;
+      
+      let smCvarMatch = content.match(/^sm_cvar\s+([^\s]+)\s+(.*)$/);
       if (smCvarMatch) {
-         config[smCvarMatch[1]] = smCvarMatch[2];
+         let val = smCvarMatch[2].trim();
+         if (val.startsWith('"') && val.endsWith('"')) val = val.substring(1, val.length - 1);
+         config[smCvarMatch[1]] = val;
          continue;
       }
       
-      let match = trimmed.match(/^([^\s]+)\s+"(.*)"$/) || trimmed.match(/^([^\s]+)\s+(.+)$/);
+      let match = content.match(/^([^\s]+)\s+(.*)$/);
       if (match) {
-         config[match[1]] = match[2].replace(/"$/, '').trim(); 
+         let val = match[2].trim();
+         if (val.startsWith('"') && val.endsWith('"')) val = val.substring(1, val.length - 1);
+         config[match[1]] = val;
       }
     }
     
@@ -713,17 +721,27 @@ app.post('/api/servercfg', (req, res) => {
         let line = lines[i];
         if (line.trim().startsWith('//')) continue;
         
+        const commentIndex = line.indexOf('//');
+        let justCode = line;
+        let commentPart = '';
+        if (commentIndex !== -1) {
+            justCode = line.substring(0, commentIndex);
+            const trailingSpaces = justCode.match(/\s+$/);
+            const spacer = trailingSpaces ? trailingSpaces[0] : '\t\t';
+            commentPart = `${spacer}${line.substring(commentIndex)}`;
+            justCode = justCode.trimEnd();
+        }
+        
         let matchStr = isSmCvar ? /^sm_cvar\s+([^\s]+)/ : /^([^\s]+)\s+/;
-        let match = line.trim().match(matchStr);
-        // ensure exact key match
-        if (match && match[1] === key && (!isSmCvar || line.trim().startsWith('sm_cvar'))) {
+        let match = justCode.trim().match(matchStr);
+        if (match && match[1] === key && (!isSmCvar || justCode.trim().startsWith('sm_cvar'))) {
            const leadingSpace = line.match(/^\s*/)[0];
-           lines[i] = `${leadingSpace}${fullCmd}`;
+           lines[i] = `${leadingSpace}${fullCmd}${commentPart}`;
            found = true;
            liveCmds.push(fullCmd);
-        } else if (!isSmCvar && match && match[1] === key && !line.trim().startsWith('sm_cvar')) {
+        } else if (!isSmCvar && match && match[1] === key && !justCode.trim().startsWith('sm_cvar')) {
            const leadingSpace = line.match(/^\s*/)[0];
-           lines[i] = `${leadingSpace}${fullCmd}`;
+           lines[i] = `${leadingSpace}${fullCmd}${commentPart}`;
            found = true;
            liveCmds.push(fullCmd);
         }
@@ -749,20 +767,31 @@ app.post('/api/servercfg', (req, res) => {
          
          let found = false;
          for (let i = 0; i < lines.length; i++) {
-           let line = lines[i].trim();
-           if (line.startsWith('//')) continue;
+           let line = lines[i];
+           if (line.trim().startsWith('//')) continue;
            
-           let smMatch = line.match(/^sm_cvar\s+([^\s]+)/);
+           const commentIndex = line.indexOf('//');
+           let justCode = line;
+           let commentPart = '';
+           if (commentIndex !== -1) {
+               justCode = line.substring(0, commentIndex);
+               const trailingSpaces = justCode.match(/\s+$/);
+               const spacer = trailingSpaces ? trailingSpaces[0] : '\t\t';
+               commentPart = `${spacer}${line.substring(commentIndex)}`;
+               justCode = justCode.trimEnd();
+           }
+           
+           let smMatch = justCode.trim().match(/^sm_cvar\s+([^\s]+)/);
            if (smMatch && smMatch[1] === fKey) {
-             const leadingSpace = lines[i].match(/^\s*/)[0];
-             lines[i] = `${leadingSpace}${fullCmd}`;
+             const leadingSpace = line.match(/^\s*/)[0];
+             lines[i] = `${leadingSpace}${fullCmd}${commentPart}`;
              found = true;
              liveCmds.push(fullCmd);
            } else if (!smMatch) {
-             let rawMatch = line.match(/^([^\s]+)\s+/);
+             let rawMatch = justCode.trim().match(/^([^\s]+)\s+/);
              if (rawMatch && rawMatch[1] === fKey) {
-                 const leadingSpace = lines[i].match(/^\s*/)[0];
-                 lines[i] = `${leadingSpace}${fullCmd}`;
+                 const leadingSpace = line.match(/^\s*/)[0];
+                 lines[i] = `${leadingSpace}${fullCmd}${commentPart}`;
                  found = true;
                  liveCmds.push(fullCmd);
              }
