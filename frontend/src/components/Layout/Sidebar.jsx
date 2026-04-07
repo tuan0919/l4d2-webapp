@@ -1,22 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
-const QUICK_ACTIONS = [
-  { label: 'Enable Cheats', cmdText: 'sv_cheats 1', command: 'sv_cheats 1' },
-  { label: 'Disable Cheats', cmdText: 'sv_cheats 0', command: 'sv_cheats 0' },
-  { label: 'Spawn Witch', cmdText: 'z_spawn witch', command: 'z_spawn witch' },
-  { label: 'Spawn Tank', cmdText: 'z_spawn tank', command: 'z_spawn tank' },
-  { label: 'Give Medkit', cmdText: 'give first_aid_kit', command: 'give first_aid_kit' },
-  { label: 'Kick All', cmdText: 'sm_kickall', command: 'sm_kickall' },
-  { label: 'Warn Players', cmdText: 'say [Admin]...', command: 'say [Admin] Server restarting soon!' },
-  { label: 'List Plugins', cmdText: 'sm plugins list', command: 'sm plugins list' }
-];
-
 const Sidebar = ({ addToast }) => {
   const [selectedMap, setSelectedMap] = useState('c2m1_highway');
   const [maxPlayers, setMaxPlayers] = useState(32);
   const [addons, setAddons] = useState([]);
   const [loadingMap, setLoadingMap] = useState(false);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
+
+  const [serverInfo, setServerInfo] = useState({
+    sv_contact: '',
+    sv_tags: '',
+    sv_search_key: '',
+    sv_gametypes: '',
+    sv_region: 4,
+    l4d_current_mode: '',
+    z_difficulty: 'Normal',
+    friendly_fire: '1',
+    sv_consistency: '0'
+  });
+  const [loadingConfig, setLoadingConfig] = useState(false);
 
   const customMapOptions = useMemo(() => {
     const options = [];
@@ -35,6 +37,7 @@ const Sidebar = ({ addToast }) => {
 
   useEffect(() => {
     fetchAddons();
+    fetchServerCfg();
   }, []);
 
   const fetchAddons = async () => {
@@ -45,6 +48,16 @@ const Sidebar = ({ addToast }) => {
     } catch {
       setAddons([]);
     }
+  };
+
+  const fetchServerCfg = async () => {
+    try {
+      const res = await fetch('/api/servercfg');
+      const data = await res.json();
+      if (data.config) {
+        setServerInfo(prev => ({...prev, ...data.config}));
+      }
+    } catch {}
   };
 
   const apiPost = async (path, body, successMessage) => {
@@ -85,6 +98,16 @@ const Sidebar = ({ addToast }) => {
 
   const runQuickAction = async (command, label) => {
     await apiPost('/api/command', { command }, `Executed: ${label}`);
+  };
+
+  const handleServerInfoChange = (key, val) => {
+    setServerInfo(prev => ({ ...prev, [key]: val }));
+  };
+
+  const applyServerInfo = async () => {
+    setLoadingConfig(true);
+    await apiPost('/api/servercfg', { config: serverInfo }, 'Server info updated successfully!');
+    setLoadingConfig(false);
   };
 
   return (
@@ -188,21 +211,55 @@ const Sidebar = ({ addToast }) => {
 
       <div className="card">
         <div className="card-header">
-          <div className="card-icon green">⚡</div>
-          <h2>Quick Actions</h2>
+          <div className="card-icon green">⚙️</div>
+          <h2>Server Config</h2>
         </div>
         <div className="card-body">
-          <div className="quick-grid">
-            {QUICK_ACTIONS.map((action) => (
-              <button
-                key={action.label}
-                className="quick-btn"
-                onClick={() => runQuickAction(action.command, action.label)}
-              >
-                <span className="qb-label">{action.label}</span>
-                <span className="qb-cmd">{action.cmdText}</span>
-              </button>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+               <label>Contact Name / Admin</label>
+               <input type="text" value={serverInfo.sv_contact || ''} onChange={e => handleServerInfoChange('sv_contact', e.target.value)} />
+             </div>
+             <div>
+               <label>Tags</label>
+               <input type="text" value={serverInfo.sv_tags || ''} onChange={e => handleServerInfoChange('sv_tags', e.target.value)} />
+             </div>
+             <div>
+               <label>Search Key</label>
+               <input type="text" value={serverInfo.sv_search_key || ''} onChange={e => handleServerInfoChange('sv_search_key', e.target.value)} />
+             </div>
+             <div>
+               <label>Game Types (e.g., coop, realism)</label>
+               <input type="text" value={serverInfo.sv_gametypes || ''} onChange={e => handleServerInfoChange('sv_gametypes', e.target.value)} />
+             </div>
+             <div>
+               <label>Server Region (4 = Asia)</label>
+               <input type="number" min="0" max="255" value={serverInfo.sv_region || ''} onChange={e => handleServerInfoChange('sv_region', e.target.value)} />
+             </div>
+             <div>
+               <label>Server Name Override</label>
+               <input type="text" value={serverInfo.l4d_current_mode || ''} onChange={e => handleServerInfoChange('l4d_current_mode', e.target.value)} />
+             </div>
+             <div>
+               <label>Difficulty</label>
+               <select value={serverInfo.z_difficulty || 'Normal'} onChange={e => handleServerInfoChange('z_difficulty', e.target.value)}>
+                 <option value="Easy">Easy</option>
+                 <option value="Normal">Normal</option>
+                 <option value="Hard">Hard</option>
+                 <option value="Impossible">Impossible (Expert)</option>
+               </select>
+             </div>
+             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+               <input type="checkbox" id="ff_toggle" checked={serverInfo.friendly_fire === '1'} onChange={e => handleServerInfoChange('friendly_fire', e.target.checked ? '1' : '0')} style={{ width: 'auto', marginBottom: 0 }} />
+               <label htmlFor="ff_toggle" style={{ margin: 0, cursor: 'pointer' }}>Enable Friendly Fire</label>
+             </div>
+             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+               <input type="checkbox" id="cons_toggle" checked={serverInfo.sv_consistency === '1'} onChange={e => handleServerInfoChange('sv_consistency', e.target.checked ? '1' : '0')} style={{ width: 'auto', marginBottom: 0 }} />
+               <label htmlFor="cons_toggle" style={{ margin: 0, cursor: 'pointer' }}>Enforce File Consistency</label>
+             </div>
+             <button className="btn btn-primary" style={{ marginTop: '10px' }} onClick={applyServerInfo} disabled={loadingConfig}>
+               {loadingConfig ? 'Saving...' : '💾 Apply Config'}
+             </button>
           </div>
         </div>
       </div>

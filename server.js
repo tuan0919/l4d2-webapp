@@ -645,6 +645,152 @@ app.post('/api/maxplayers', (req, res) => {
   sendToGame(`sm_cvar sv_maxplayers ${n}`, (result) => res.json(result));
 });
 
+app.get('/api/servercfg', (req, res) => {
+  const cfgPath = path.join(L4D2_DIR, 'left4dead2', 'cfg', 'server.cfg');
+  if (!fs.existsSync(cfgPath)) return res.json({ config: {} });
+  
+  try {
+    const lines = fs.readFileSync(cfgPath, 'utf8').split(/\r?\n/);
+    const config = {};
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('//')) continue;
+      
+      let smCvarMatch = trimmed.match(/^sm_cvar\s+([^\s]+)\s+"?(.*?)"?$/);
+      if (smCvarMatch) {
+         config[smCvarMatch[1]] = smCvarMatch[2];
+         continue;
+      }
+      
+      let match = trimmed.match(/^([^\s]+)\s+"(.*)"$/) || trimmed.match(/^([^\s]+)\s+(.+)$/);
+      if (match) {
+         config[match[1]] = match[2].replace(/"$/, '').trim(); 
+      }
+    }
+    
+    const ffExpert = config['survivor_friendly_fire_factor_expert'];
+    const ffHard = config['survivor_friendly_fire_factor_hard'];
+    const ffNormal = config['survivor_friendly_fire_factor_normal'];
+    
+    let ffOff = false;
+    if (ffExpert === '0' || ffHard === '0' || ffNormal === '0') {
+      ffOff = true;
+    }
+    config['friendly_fire'] = ffOff ? '0' : '1';
+    
+    res.json({ config });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/servercfg', (req, res) => {
+  const { config } = req.body;
+  if (!config) return res.status(400).json({ error: 'No config provided' });
+  
+  try {
+    const cfgPath = path.join(L4D2_DIR, 'left4dead2', 'cfg', 'server.cfg');
+    if (!fs.existsSync(cfgPath)) return res.status(404).json({ error: 'server.cfg not found' });
+    
+    let content = fs.readFileSync(cfgPath, 'utf8');
+    let lines = content.split(/\r?\n/);
+    
+    const fieldsToMap = ['sv_contact', 'sv_tags', 'sv_search_key', 'sv_gametypes', 'sv_region', 'l4d_current_mode', 'z_difficulty', 'sv_consistency'];
+    const ffKeys = ['survivor_friendly_fire_factor_expert', 'survivor_friendly_fire_factor_hard', 'survivor_friendly_fire_factor_normal', 'survivor_friendly_fire_factor_easy'];
+    
+    const liveCmds = [];
+    
+    for (const key of fieldsToMap) {
+      if (config[key] === undefined) continue;
+      const val = config[key];
+      
+      let found = false;
+      const isSmCvar = (key === 'sv_consistency');
+      const targetPrefix = isSmCvar ? `sm_cvar ${key}` : key;
+      const fullCmd = `${targetPrefix} "${val}"`;
+      
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        if (line.trim().startsWith('//')) continue;
+        
+        let matchStr = isSmCvar ? /^sm_cvar\s+([^\s]+)/ : /^([^\s]+)\s+/;
+        let match = line.trim().match(matchStr);
+        // ensure exact key match
+        if (match && match[1] === key && (!isSmCvar || line.trim().startsWith('sm_cvar'))) {
+           const leadingSpace = line.match(/^\s*/)[0];
+           lines[i] = `${leadingSpace}${fullCmd}`;
+           found = true;
+           liveCmds.push(fullCmd);
+        } else if (!isSmCvar && match && match[1] === key && !line.trim().startsWith('sm_cvar')) {
+           const leadingSpace = line.match(/^\s*/)[0];
+           lines[i] = `${leadingSpace}${fullCmd}`;
+           found = true;
+           liveCmds.push(fullCmd);
+        }
+      }
+      
+      if (!found && val !== '') {
+         lines.push(fullCmd);
+         liveCmds.push(fullCmd);
+      }
+    }
+    
+    if (config['friendly_fire'] !== undefined) {
+      const isFF = (config['friendly_fire'] === '1' || config['friendly_fire'] === true || config['friendly_fire'] === 1);
+      
+      for (const fKey of ffKeys) {
+         let defVal = "0.2";
+         if (fKey.includes('hard')) defVal = "0.4";
+         if (fKey.includes('expert')) defVal = "0.5";
+         if (fKey.includes('easy')) defVal = "0"; 
+         
+         const finalVal = isFF ? defVal : "0";
+         const fullCmd = `sm_cvar ${fKey} "${finalVal}"`;
+         
+         let found = false;
+         for (let i = 0; i < lines.length; i++) {
+           let line = lines[i].trim();
+           if (line.startsWith('//')) continue;
+           
+           let smMatch = line.match(/^sm_cvar\s+([^\s]+)/);
+           if (smMatch && smMatch[1] === fKey) {
+             const leadingSpace = lines[i].match(/^\s*/)[0];
+             lines[i] = `${leadingSpace}${fullCmd}`;
+             found = true;
+             liveCmds.push(fullCmd);
+           } else if (!smMatch) {
+             let rawMatch = line.match(/^([^\s]+)\s+/);
+             if (rawMatch && rawMatch[1] === fKey) {
+                 const leadingSpace = lines[i].match(/^\s*/)[0];
+                 lines[i] = `${leadingSpace}${fullCmd}`;
+                 found = true;
+                 liveCmds.push(fullCmd);
+             }
+           }
+         }
+         
+         if (!found && !isFF) {
+           lines.push(fullCmd);
+           liveCmds.push(fullCmd);
+         } else if (!found && isFF) {
+           liveCmds.push(fullCmd);
+         }
+      }
+    }
+    
+    fs.copyFileSync(cfgPath, cfgPath + '.bak');
+    fs.writeFileSync(cfgPath, lines.join('\n'), 'utf8');
+    
+    if (liveCmds.length > 0) {
+      sendToGame(liveCmds.join('; '), () => {});
+    }
+    
+    res.json({ success: true, commands: liveCmds.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/addons', async (req, res) => {
   const addonsDir = path.join(L4D2_DIR, 'left4dead2', 'addons');
   if (!fs.existsSync(addonsDir)) return res.json({ addons: [] });
