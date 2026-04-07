@@ -151,6 +151,43 @@ const InfectedBotsDataConfig = [
   { key: 'spawn_time_max', type: 'number', label: 'Max Spawn Time', desc: 'Thời gian chờ lớn nhất (giây).' }
 ];
 
+const NotifierDIConfig = [
+  { cvar: 'tuan_notifier_di_enable', type: 'toggle', label: 'Bật DI Notifier', desc: 'Bật/tắt thông báo Death/Incap.' },
+  { cvar: 'tuan_notifier_di_notify_incap_other', type: 'toggle', label: 'Incap Other', desc: 'Thông báo khi bị ai đó bắn gục.' },
+  { cvar: 'tuan_notifier_di_notify_kill_other', type: 'toggle', label: 'Kill Other', desc: 'Thông báo khi giết ai đó.' },
+  { cvar: 'tuan_notifier_di_notify_killed_by_unknown', type: 'toggle', label: 'Killed By Unknown', desc: 'Thông báo khi chết do môi trường.' },
+  { cvar: 'tuan_notifier_di_notify_incapped_by_unknown', type: 'toggle', label: 'Incapped By Unknown', desc: 'Thông báo khi gục do môi trường.' }
+];
+
+const NotifierBWConfig = [
+  { cvar: 'tuan_notifier_bw_enable', type: 'toggle', label: 'Bật B&W Notifier', desc: 'Bật/tắt thông báo trắng đen.' },
+  { cvar: 'tuan_notifier_bw_notify_healed_other', type: 'toggle', label: 'Heal Other', desc: 'Thông báo khi cứu thương người B&W.' },
+  { cvar: 'tuan_notifier_bw_notify_go_bnw', type: 'toggle', label: 'Go B&W', desc: 'Thông báo khi một người rơi vào B&W.' },
+  { cvar: 'tuan_notifier_bw_notify_revived_other', type: 'toggle', label: 'Revive Other', desc: 'Thông báo khi gọi người khác dậy.' }
+];
+
+const NotifierThrowableConfig = [
+  { cvar: 'l4d_throwable_announcer_enable', type: 'toggle', label: 'Bật Throwable', desc: 'Bật/tắt thông báo ném lựu đạn.' },
+  { cvar: 'l4d_throwable_announcer_team', type: 'number', label: 'Team', desc: '1=Surv, 2=Inf, 4=Spec. (Ví dụ 3 là Surv+Inf)' },
+  { cvar: 'l4d_throwable_announcer_self', type: 'toggle', label: 'Self Notify', desc: 'Thông báo cho bản thân.' },
+  { cvar: 'l4d_throwable_announcer_fake_throw', type: 'number', label: 'Fake Throw Delay', desc: 'Delay để bỏ qua fake throw (s).' },
+  { cvar: 'l4d_throwable_announcer_molotov', type: 'toggle', label: 'Molotov', desc: 'Thông báo ném Molotov.' },
+  { cvar: 'l4d_throwable_announcer_pipebomb', type: 'toggle', label: 'Pipebomb', desc: 'Thông báo ném Pipebomb.' },
+  { cvar: 'l4d_throwable_announcer_vomitjar', type: 'toggle', label: 'Vomitjar', desc: 'Thông báo ném Bile/Boomer Vomit.' }
+];
+
+const NotifierExplosionConfig = [
+  { cvar: 'l4d_explosion_announcer_enable', type: 'toggle', label: 'Bật Explosion', desc: 'Bật/tắt thông báo bắn nổ.' },
+  { cvar: 'l4d_explosion_announcer_team', type: 'number', label: 'Team', desc: '1=Surv, 2=Inf, 4=Spec.' },
+  { cvar: 'l4d_explosion_announcer_spam_protection', type: 'number', label: 'Spam Protection (s)', desc: 'Thời gian delay chống spam chat.' },
+  { cvar: 'l4d_explosion_announcer_self', type: 'toggle', label: 'Self Notify', desc: 'Thông báo cho bản thân.' },
+  { cvar: 'l4d_explosion_announcer_gascan', type: 'toggle', label: 'Gascan', desc: 'Thông báo nổ bình xăng.' },
+  { cvar: 'l4d_explosion_announcer_propanecanister', type: 'toggle', label: 'Propane', desc: 'Thông báo nổ bình gas.' },
+  { cvar: 'l4d_explosion_announcer_oxygentank', type: 'toggle', label: 'Oxygen', desc: 'Thông báo nổ bình oxy.' },
+  { cvar: 'l4d_explosion_announcer_fireworkscrate', type: 'toggle', label: 'Fireworks', desc: 'Thông báo nổ pháo hoa.' },
+  { cvar: 'l4d_explosion_announcer_fuelbarrel', type: 'toggle', label: 'Fuel Barrel', desc: 'Thông báo nổ thùng dầu lớn.' }
+];
+
 const parseBlockData = (content, blockName) => {
   if (!content) return {};
   const blockRegex = new RegExp(`"([^"]*\\b${blockName}\\b[^"]*)"\\s*\\{[^}]+\\}`, 'i');
@@ -355,6 +392,7 @@ const TabTutorial = ({ addToast }) => {
           <button className={`tut-tab-btn ${activeTab === 'multislots' ? 'active' : ''}`} onClick={() => setActiveTab('multislots')}>MultiSlots</button>
           <button className={`tut-tab-btn ${activeTab === 'infectedbots' ? 'active' : ''}`} onClick={() => setActiveTab('infectedbots')}>InfectedBots</button>
           <button className={`tut-tab-btn ${activeTab === 'gundamage' ? 'active' : ''}`} onClick={() => setActiveTab('gundamage')}>Gun Damage</button>
+          <button className={`tut-tab-btn ${activeTab === 'notifier' ? 'active' : ''}`} onClick={() => setActiveTab('notifier')}>Notifier (Chat)</button>
         </div>
 
         {activeTab === 'multislots' && (
@@ -460,6 +498,44 @@ const TabTutorial = ({ addToast }) => {
             
             <div className="tut-actions" style={{ marginTop: 32 }}>
                <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>💾 Áp Dụng (Viết vào CFG)</button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'notifier' && (
+          <div className="tut-card">
+            <div className="tut-header">
+               <h2>Tuan's Event Notifier</h2>
+               <p>Hệ thống thông báo cho Death/Incap, Black & White, Ném lựu đạn và Bắn nổ thùng.</p>
+            </div>
+
+            <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
+               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>🔄 Tải Cvars Mới Nhất</button>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig])}>💾 Áp Dụng Tất Cả</button>
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>☠️ Death & Incap</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {NotifierDIConfig.map(renderCvarField)}
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>🖤 Black & White</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {NotifierBWConfig.map(renderCvarField)}
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>🔥 Throwable Announcer</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {NotifierThrowableConfig.map(renderCvarField)}
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>💥 Explosion Announcer</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {NotifierExplosionConfig.map(renderCvarField)}
+            </div>
+            
+            <div className="tut-actions" style={{ marginTop: 32 }}>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig])}>💾 Lưu Mọi Trạng Thái (Notifier)</button>
             </div>
           </div>
         )}
