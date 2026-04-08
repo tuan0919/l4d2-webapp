@@ -1038,12 +1038,24 @@ app.post('/api/workshop', async (req, res) => {
 
   // Step 2: Download each item sequentially via SteamCMD
   let totalInstalled = 0;
+  const installedFilePaths = []; // track all installed VPK paths for post-scan
 
   const downloadItem = (index) => {
     if (index >= items.length) {
+      // Scan all installed VPK files for BSP map names
+      const discoveredMaps = [];
+      for (const vpkPath of installedFilePaths) {
+        try {
+          const maps = getVpkMaps(vpkPath);
+          discoveredMaps.push(...maps);
+        } catch(e) {}
+      }
+      const uniqueMaps = [...new Set(discoveredMaps)].sort();
+
       sendToGame('update_addon_paths', () => {
         sendEvent('success', {
-          message: `Done! Installed ${totalInstalled} file(s) from ${items.length} workshop item(s).`
+          message: `Done! Installed ${totalInstalled} file(s) from ${items.length} workshop item(s).`,
+          maps: uniqueMaps
         });
         res.end();
       });
@@ -1099,15 +1111,29 @@ app.post('/api/workshop', async (req, res) => {
           sourcePaths.forEach((sourcePath, fileIndex) => {
             const ext = path.extname(sourcePath).toLowerCase();
             let filename = path.basename(sourcePath);
-            if (ext !== '.vpk') {
+            let destDir = addonsDir;
+
+            if (ext === '.bsp') {
+              // BSP files belong in maps/, not addons/
+              destDir = path.join(L4D2_DIR, 'left4dead2', 'maps');
+              fs.mkdirSync(destDir, { recursive: true });
+            } else if (ext !== '.vpk') {
+              // Other non-VPK files: rename to .vpk as fallback
               filename = sourcePaths.length > 1
                 ? `workshop_${item.id}_part${fileIndex + 1}.vpk`
                 : `workshop_${item.id}.vpk`;
             }
-            const destPath = path.join(addonsDir, filename);
+
+            const destPath = path.join(destDir, filename);
             exec(`cp "${sourcePath}" "${destPath}"`, (errCopy) => {
               copiedCount++;
-              if (!errCopy) totalInstalled++;
+              if (!errCopy) {
+                totalInstalled++;
+                if (ext === '.vpk' || ext !== '.bsp') {
+                  // Track VPK paths for post-scan
+                  installedFilePaths.push(destPath);
+                }
+              }
               if (copiedCount === sourcePaths.length) {
                 downloadItem(index + 1);
               }

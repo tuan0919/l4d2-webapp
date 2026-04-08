@@ -14,6 +14,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
   // New: resolved items list + current item being downloaded
   const [resolvedItems, setResolvedItems] = useState([]); // [{ id, title }]
   const [currentItem, setCurrentItem] = useState(null);   // { index, total, id, title }
+  const [discoveredMaps, setDiscoveredMaps] = useState([]); // BSP names found after install
 
   const sortedAddons = useMemo(() => addons.slice(), [addons]);
 
@@ -79,6 +80,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     setProgressError(false);
     setResolvedItems([]);
     setCurrentItem(null);
+    setDiscoveredMaps([]);
 
     try {
       const response = await fetch('/api/workshop', {
@@ -147,6 +149,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
             }
 
             if (event === 'success') {
+              const detectedMaps = parsed.maps || [];
               addToast(parsed.message || 'Workshop map(s) installed', 'success');
               setProgressStatus(`✅ ${parsed.message || 'Done!'}`);
               setProgressPercent(100);
@@ -154,13 +157,19 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
               setInstalling(false);
               setWorkshopInput('');
               setCurrentItem(null);
+              setDiscoveredMaps(detectedMaps);
               fetchAddons();
-              setTimeout(() => {
-                setProgressVisible(false);
-                setProgressSuccess(false);
-                setProgressError(false);
-                setResolvedItems([]);
-              }, 4000);
+
+              if (detectedMaps.length === 0) {
+                setTimeout(() => {
+                  setProgressVisible(false);
+                  setProgressSuccess(false);
+                  setProgressError(false);
+                  setResolvedItems([]);
+                  setDiscoveredMaps([]);
+                }, 5000);
+              }
+              // If maps detected, keep progress box open so user can click changelevel
             }
           }
 
@@ -187,6 +196,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     setProgressError(false);
     setResolvedItems([]);
     setCurrentItem(null);
+    setDiscoveredMaps([]);
 
     const formData = new FormData();
     formData.append('addonFile', file);
@@ -420,6 +430,50 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Discovered map names — changelevel buttons */}
+            {discoveredMaps.length > 0 && progressSuccess && (
+              <div style={{
+                marginTop: 2,
+                padding: '10px 12px',
+                background: 'rgba(0,200,100,0.07)',
+                borderRadius: 6,
+                border: '1px solid rgba(0,200,100,0.2)'
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--green)', marginBottom: 8, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  🗺️ Maps detected — click to changelevel:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {discoveredMaps.map(map => (
+                    <button
+                      key={map}
+                      className="btn btn-ghost"
+                      style={{
+                        width: 'auto', margin: 0, padding: '5px 12px',
+                        fontSize: 12, fontWeight: 600,
+                        borderColor: 'rgba(0,200,100,0.4)',
+                        color: 'var(--green)'
+                      }}
+                      onClick={() => {
+                        changeMap(map);
+                        addToast(`Changing level to ${map}...`, 'info');
+                        setTimeout(() => {
+                          setProgressVisible(false);
+                          setProgressSuccess(false);
+                          setResolvedItems([]);
+                          setDiscoveredMaps([]);
+                        }, 1500);
+                      }}
+                    >
+                      ▶ {map}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+                  Tip: Start with the first map in the campaign (e.g., <code style={{fontSize:11}}>c1m1_*</code> pattern).
                 </div>
               </div>
             )}
