@@ -5,6 +5,7 @@ const { exec, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const https = require('https');
 const dgram = require('dgram');
 const multer = require('multer');
 
@@ -386,6 +387,120 @@ function listDeveloperDirectory(target) {
     parentTarget,
     entries
   };
+}
+
+// --- Steam Workshop API Helpers ---
+
+function steamApiPost(apiPath, params) {
+  return new Promise((resolve, reject) => {
+    const body = Object.entries(params)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join('&');
+    const options = {
+      hostname: 'api.steampowered.com',
+      path: apiPath,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(body)
+      },
+      timeout: 12000
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch(e) { reject(new Error('Invalid JSON from Steam API')); }
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Steam API timeout')); });
+    req.write(body);
+    req.end();
+  });
+}
+
+async function fetchWorkshopDetails(ids) {
+  const params = { itemcount: ids.length };
+  ids.forEach((id, i) => { params[`publishedfileids[${i}]`] = id; });
+  const data = await steamApiPost('/ISteamRemoteStorage/GetPublishedFileDetails/v1/', params);
+  return data?.response?.publishedfiledetails || [];
+}
+
+async function fetchCollectionDetails(ids) {
+  const params = { collectioncount: ids.length };
+  ids.forEach((id, i) => { params[`publishedfileids[${i}]`] = id; });
+  const data = await steamApiPost('/ISteamRemoteStorage/GetCollectionDetails/v1/', params);
+  return data?.response?.collectiondetails || [];
+}
+
+// Recursively resolve workshop IDs: handles collections, dependencies up to 3 levels deep
+async function resolveAllWorkshopIds(rootIds, onStatus) {
+  const visited = new Set();
+  const result = []; // [{ id, title }]
+
+  async function resolve(ids, depth) {
+    if (depth > 3) return;
+    const toFetch = ids.filter(id => !visited.has(id));
+    if (toFetch.length === 0) return;
+    toFetch.forEach(id => visited.add(id));
+
+    if (onStatus) onStatus(`Fetching metadata for ${toFetch.length} item(s) from Steam...`);
+
+    let details;
+    try {
+      details = await fetchWorkshopDetails(toFetch);
+    } catch(e) {
+      if (onStatus) onStatus(`[Warning] Steam API unavailable (${e.message}). Proceeding with original IDs.`);
+      toFetch.forEach(id => {
+        if (!result.find(r => r.id === id)) result.push({ id, title: `Workshop Item ${id}` });
+      });
+      return;
+    }
+
+    const childIds = [];
+    for (const detail of details) {
+      const id = String(detail.publishedfileid);
+      const title = detail.title || `Workshop Item ${id}`;
+      const isCollection = detail.file_type === 2;
+
+      if (isCollection) {
+        if (onStatus) onStatus(`"${title}" is a Workshop Collection — fetching items...`);
+        try {
+          const cols = await fetchCollectionDetails([id]);
+          const colItems = (cols[0]?.children || []).map(c => String(c.publishedfileid));
+          if (colItems.length > 0) {
+            if (onStatus) onStatus(`Collection "${title}" has ${colItems.length} item(s).`);
+            await resolve(colItems, depth + 1);
+          }
+        } catch(e) {
+          if (onStatus) onStatus(`[Warning] Could not expand collection "${title}": ${e.message}`);
+        }
+      } else {
+        if (!result.find(r => r.id === id)) result.push({ id, title });
+        const children = (detail.children || []).map(c => String(c.publishedfileid));
+        if (children.length > 0) {
+          if (onStatus) onStatus(`"${title}" has ${children.length} required item(s) (dependencies).`);
+          childIds.push(...children);
+        }
+      }
+    }
+    if (childIds.length > 0) await resolve(childIds, depth + 1);
+  }
+
+  await resolve(rootIds, 0);
+  return result;
+}
+
+function extractWorkshopIds(rawInputs) {
+  return rawInputs
+    .map(input => {
+      const s = String(input).trim();
+      const m = s.match(/id=(\d+)/) || s.match(/^(\d+)$/);
+      return m ? m[1] : null;
+    })
+    .filter(Boolean);
 }
 
 // --- API Routes ---
@@ -864,15 +979,31 @@ app.post('/api/addons/upload', addonUpload.single('addonFile'), (req, res) => {
   });
 });
 
-app.post('/api/workshop', (req, res) => {
-  const { url } = req.body;
-  if (!url) return res.status(400).json({ error: 'No Workshop URL provided' });
+// Resolve workshop dependencies without downloading
+app.post('/api/workshop/resolve', async (req, res) => {
+  const { url, urls } = req.body;
+  const rawInputs = Array.isArray(urls) ? urls : (url ? [url] : []);
+  if (rawInputs.length === 0) return res.status(400).json({ error: 'No workshop URL or ID provided' });
 
-  let idMatch = url.match(/id=(\d+)/) || url.match(/^(\d+)$/);
-  if (!idMatch) {
-    return res.status(400).json({ error: 'Could not extract Workshop ID from the URL.' });
+  const extractedIds = extractWorkshopIds(rawInputs);
+  if (extractedIds.length === 0) return res.status(400).json({ error: 'Could not extract Workshop IDs from input' });
+
+  try {
+    const items = await resolveAllWorkshopIds(extractedIds, null);
+    res.json({ items, total: items.length });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
   }
-  const workshopId = idMatch[1];
+});
+
+// Download workshop items — supports multiple URLs, collections, and auto-resolves dependencies
+app.post('/api/workshop', async (req, res) => {
+  const { url, urls } = req.body;
+  const rawInputs = Array.isArray(urls) ? urls : (url ? [url] : []);
+  if (rawInputs.length === 0) return res.status(400).json({ error: 'No Workshop URL provided' });
+
+  const extractedIds = extractWorkshopIds(rawInputs);
+  if (extractedIds.length === 0) return res.status(400).json({ error: 'Could not extract any Workshop IDs from input' });
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -883,96 +1014,120 @@ app.post('/api/workshop', (req, res) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  sendEvent('status', { message: `Preparing to download workshop item ${workshopId}...` });
+  const addonsDir = path.join(L4D2_DIR, 'left4dead2', 'addons');
 
-  // Start SteamCMD
-  const steamCmdProcess = spawn('/root/steamcmd.sh', [
-    '+login', 'anonymous',
-    '+workshop_download_item', '550', workshopId, 'validate',
-    '+quit'
-  ]);
+  // Step 1: Resolve all IDs (collections + dependencies)
+  sendEvent('status', { message: `Resolving workshop items and dependencies...` });
+  let items;
+  try {
+    items = await resolveAllWorkshopIds(extractedIds, (msg) => sendEvent('status', { message: msg }));
+  } catch(e) {
+    sendEvent('error', { message: `Failed to resolve: ${e.message}` });
+    res.end();
+    return;
+  }
 
-  steamCmdProcess.stdout.on('data', (data) => {
-    const output = data.toString();
-    // Parse progress: "Update state (0x61) downloading, progress: 14.28 (4325376 / 30282136)"
-    const progressMatch = output.match(/progress:\s*([0-9.]+)/);
-    if (progressMatch) {
-      sendEvent('progress', { percent: parseFloat(progressMatch[1]) });
-    }
-    // Forward general logs for UI status
-    if (output.toLowerCase().includes('success') || output.toLowerCase().includes('download')) {
-       sendEvent('status', { log: output.trim() });
-    }
-  });
+  if (items.length === 0) {
+    sendEvent('error', { message: 'No items resolved. Aborting.' });
+    res.end();
+    return;
+  }
 
-  steamCmdProcess.stderr.on('data', (data) => {
-    const output = data.toString().trim();
-    if (output) sendEvent('status', { log: `[stderr] ${output}` });
-  });
+  sendEvent('resolved', { items, total: items.length });
+  sendEvent('status', { message: `Resolved ${items.length} item(s). Starting downloads...` });
 
-  steamCmdProcess.on('close', (code) => {
-    if (code !== 0) {
-      sendEvent('error', { message: `SteamCMD exited with code ${code}.` });
-      res.end();
+  // Step 2: Download each item sequentially via SteamCMD
+  let totalInstalled = 0;
+
+  const downloadItem = (index) => {
+    if (index >= items.length) {
+      sendToGame('update_addon_paths', () => {
+        sendEvent('success', {
+          message: `Done! Installed ${totalInstalled} file(s) from ${items.length} workshop item(s).`
+        });
+        res.end();
+      });
       return;
     }
-    sendEvent('status', { message: 'Download complete. Locating workshop files...' });
-    
-    // Find ALL files in the workshop content directory
-    const searchPath = `/root/Steam/steamapps/workshop/content/550/${workshopId}`;
-    exec(`find ${searchPath} -type f 2>/dev/null`, (err, stdout) => {
-      let files = stdout ? stdout.trim().split('\n').filter(Boolean) : [];
-      if (files.length === 0 || err) {
-        // Fallback: broader search
-        exec(`find /root/Steam /root/.steam -path "*/550/${workshopId}/*" -type f 2>/dev/null`, (err2, stdout2) => {
-            files = stdout2 ? stdout2.trim().split('\n').filter(Boolean) : [];
-            if (files.length === 0) {
-                sendEvent('error', { message: "Could not locate the downloaded workshop files. SteamCMD may have failed silently." });
-                res.end();
-                return;
-            }
-            installWorkshopFiles(files);
-        });
-      } else {
-        installWorkshopFiles(files);
+
+    const item = items[index];
+    sendEvent('item', { index, total: items.length, id: item.id, title: item.title });
+    sendEvent('status', { message: `[${index + 1}/${items.length}] Downloading "${item.title}" (${item.id})...` });
+    sendEvent('progress', { percent: 0, itemIndex: index, total: items.length });
+
+    const steamCmdProcess = spawn('/root/steamcmd.sh', [
+      '+login', 'anonymous',
+      '+workshop_download_item', '550', item.id, 'validate',
+      '+quit'
+    ]);
+
+    steamCmdProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      const progressMatch = output.match(/progress:\s*([0-9.]+)/);
+      if (progressMatch) {
+        sendEvent('progress', { percent: parseFloat(progressMatch[1]), itemIndex: index, total: items.length });
+      }
+      if (output.toLowerCase().includes('success') || output.toLowerCase().includes('download')) {
+        sendEvent('status', { log: output.trim() });
       }
     });
 
-    function installWorkshopFiles(sourcePaths) {
-      sendEvent('status', { message: `Installing ${sourcePaths.length} file(s) to addons/ ...` });
-      
-      let copied = 0;
-      let hasError = false;
+    steamCmdProcess.stderr.on('data', (data) => {
+      const out = data.toString().trim();
+      if (out) sendEvent('status', { log: `[stderr] ${out}` });
+    });
 
-      sourcePaths.forEach((sourcePath, index) => {
-        const ext = path.extname(sourcePath).toLowerCase();
-        let filename = path.basename(sourcePath);
-        
-        // Always install as .vpk — if the downloaded file is .bin or other format, rename it
-        // Append part number if there are multiple parts and it's not natively named with .vpk
-        if (ext !== '.vpk') {
-          filename = sourcePaths.length > 1 ? `workshop_${workshopId}_part${index + 1}.vpk` : `workshop_${workshopId}.vpk`;
-        }
+    steamCmdProcess.on('close', (code) => {
+      if (code !== 0) {
+        sendEvent('status', { message: `[Warning] "${item.title}" — SteamCMD exited with code ${code}, skipping...` });
+        downloadItem(index + 1);
+        return;
+      }
 
-        const destPath = path.join(L4D2_DIR, 'left4dead2', 'addons', filename);
-        
-        exec(`cp "${sourcePath}" "${destPath}"`, (errCopy) => {
-          copied++;
-          if (errCopy && !hasError) {
-            hasError = true;
-            sendEvent('error', { message: `Failed to install file: ${errCopy.message}` });
-            res.end();
-          } else if (copied === sourcePaths.length && !hasError) {
-            // Tell the server to refresh its addon paths so it sees the new VPK immediately
-            sendToGame('update_addon_paths', () => {
-              sendEvent('success', { message: `Successfully installed ${sourcePaths.length} file(s)!` });
-              res.end();
-            });
+      const searchPath = `/root/Steam/steamapps/workshop/content/550/${item.id}`;
+      exec(`find "${searchPath}" -type f 2>/dev/null`, (err, stdout) => {
+        let files = stdout ? stdout.trim().split('\n').filter(Boolean) : [];
+
+        const installFiles = (sourcePaths) => {
+          if (sourcePaths.length === 0) {
+            sendEvent('status', { message: `[Warning] No files found for "${item.title}", skipping...` });
+            downloadItem(index + 1);
+            return;
           }
-        });
+          sendEvent('status', { message: `Installing ${sourcePaths.length} file(s) for "${item.title}"...` });
+          let copiedCount = 0;
+          sourcePaths.forEach((sourcePath, fileIndex) => {
+            const ext = path.extname(sourcePath).toLowerCase();
+            let filename = path.basename(sourcePath);
+            if (ext !== '.vpk') {
+              filename = sourcePaths.length > 1
+                ? `workshop_${item.id}_part${fileIndex + 1}.vpk`
+                : `workshop_${item.id}.vpk`;
+            }
+            const destPath = path.join(addonsDir, filename);
+            exec(`cp "${sourcePath}" "${destPath}"`, (errCopy) => {
+              copiedCount++;
+              if (!errCopy) totalInstalled++;
+              if (copiedCount === sourcePaths.length) {
+                downloadItem(index + 1);
+              }
+            });
+          });
+        };
+
+        if (files.length > 0) {
+          installFiles(files);
+        } else {
+          exec(`find /root/Steam /root/.steam -path "*/550/${item.id}/*" -type f 2>/dev/null`, (err2, stdout2) => {
+            files = stdout2 ? stdout2.trim().split('\n').filter(Boolean) : [];
+            installFiles(files);
+          });
+        }
       });
-    }
-  });
+    });
+  };
+
+  downloadItem(0);
 });
 
 app.get('/api/dev/roots', (req, res) => {

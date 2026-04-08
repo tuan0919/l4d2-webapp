@@ -3,14 +3,17 @@ import React, { useMemo, useState, useRef } from 'react';
 const TabAddons = ({ addToast, onAddonsUpdated }) => {
   const [addons, setAddons] = useState([]);
   const [note, setNote] = useState('Installed Addons (.vpk)');
-  const [workshopUrl, setWorkshopUrl] = useState('');
+  const [workshopInput, setWorkshopInput] = useState('');
   const fileInputRef = useRef(null);
   const [installing, setInstalling] = useState(false);
   const [progressVisible, setProgressVisible] = useState(false);
-  const [progressStatus, setProgressStatus] = useState('Connecting to SteamCMD...');
+  const [progressStatus, setProgressStatus] = useState('');
   const [progressPercent, setProgressPercent] = useState(0);
   const [progressSuccess, setProgressSuccess] = useState(false);
   const [progressError, setProgressError] = useState(false);
+  // New: resolved items list + current item being downloaded
+  const [resolvedItems, setResolvedItems] = useState([]); // [{ id, title }]
+  const [currentItem, setCurrentItem] = useState(null);   // { index, total, id, title }
 
   const sortedAddons = useMemo(() => addons.slice(), [addons]);
 
@@ -62,9 +65,9 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
   };
 
   const installWorkshop = async () => {
-    const url = workshopUrl.trim();
-    if (!url) {
-      addToast('Please enter a workshop URL', 'error');
+    const lines = workshopInput.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) {
+      addToast('Please enter at least one workshop URL or ID', 'error');
       return;
     }
 
@@ -74,17 +77,17 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     setProgressPercent(0);
     setProgressSuccess(false);
     setProgressError(false);
+    setResolvedItems([]);
+    setCurrentItem(null);
 
     try {
       const response = await fetch('/api/workshop', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ urls: lines })
       });
 
-      if (!response.body) {
-        throw new Error('No streaming body');
-      }
+      if (!response.body) throw new Error('No streaming body');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -120,27 +123,44 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
               setProgressPercent(Number(parsed.percent || 0));
             }
 
+            // New: list of resolved items (with titles)
+            if (event === 'resolved') {
+              setResolvedItems(parsed.items || []);
+            }
+
+            // New: current item being downloaded
+            if (event === 'item') {
+              setCurrentItem({
+                index: parsed.index,
+                total: parsed.total,
+                id: parsed.id,
+                title: parsed.title
+              });
+              setProgressPercent(0);
+            }
+
             if (event === 'error') {
               addToast(parsed.message || 'Workshop install failed', 'error');
-              setProgressStatus(`Error: ${parsed.message || 'Unknown error'}`);
+              setProgressStatus(`❌ ${parsed.message || 'Unknown error'}`);
               setProgressError(true);
               setInstalling(false);
             }
 
             if (event === 'success') {
-              addToast(parsed.message || 'Workshop map installed', 'success');
-              setProgressStatus('Installed!');
+              addToast(parsed.message || 'Workshop map(s) installed', 'success');
+              setProgressStatus(`✅ ${parsed.message || 'Done!'}`);
               setProgressPercent(100);
               setProgressSuccess(true);
               setInstalling(false);
-              setWorkshopUrl('');
+              setWorkshopInput('');
+              setCurrentItem(null);
               fetchAddons();
-
               setTimeout(() => {
                 setProgressVisible(false);
                 setProgressSuccess(false);
                 setProgressError(false);
-              }, 3000);
+                setResolvedItems([]);
+              }, 4000);
             }
           }
 
@@ -149,7 +169,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
       }
     } catch {
       addToast('Streaming connection lost', 'error');
-      setProgressStatus('Error: Streaming connection lost');
+      setProgressStatus('❌ Streaming connection lost');
       setProgressError(true);
       setInstalling(false);
     }
@@ -165,6 +185,8 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     setProgressPercent(0);
     setProgressSuccess(false);
     setProgressError(false);
+    setResolvedItems([]);
+    setCurrentItem(null);
 
     const formData = new FormData();
     formData.append('addonFile', file);
@@ -174,15 +196,14 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
-        const percentComplete = (event.loaded / event.total) * 100;
-        setProgressPercent(percentComplete);
+        setProgressPercent((event.loaded / event.total) * 100);
       }
     };
 
     xhr.onload = () => {
       if (xhr.status === 200) {
         addToast(`Uploaded ${file.name}`, 'success');
-        setProgressStatus(`Upload of ${file.name} complete!`);
+        setProgressStatus(`✅ Upload of ${file.name} complete!`);
         setProgressPercent(100);
         setProgressSuccess(true);
         fetchAddons();
@@ -190,50 +211,85 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
         let errorMsg = 'Upload failed';
         try { errorMsg = JSON.parse(xhr.responseText)?.error || errorMsg; } catch (e) {}
         addToast(errorMsg, 'error');
-        setProgressStatus(`Error: ${errorMsg}`);
+        setProgressStatus(`❌ ${errorMsg}`);
         setProgressError(true);
       }
       setInstalling(false);
       setTimeout(() => {
         if (xhr.status === 200) {
-            setProgressVisible(false);
-            setProgressSuccess(false);
+          setProgressVisible(false);
+          setProgressSuccess(false);
         }
       }, 5000);
     };
 
     xhr.onerror = () => {
       addToast('Upload network error', 'error');
-      setProgressStatus('Error: Upload connection failed');
+      setProgressStatus('❌ Upload connection failed');
       setProgressError(true);
       setInstalling(false);
     };
 
     xhr.send(formData);
-
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  // --- Progress border color
+  const progressBorderColor = progressError
+    ? '1px solid var(--red)'
+    : progressSuccess
+    ? '1px solid var(--green)'
+    : '1px solid var(--border-color)';
+
+  // --- Overall progress when downloading multiple items
+  const overallPercent = currentItem && currentItem.total > 1
+    ? ((currentItem.index / currentItem.total) * 100) + (progressPercent / currentItem.total)
+    : progressPercent;
 
   return (
     <div className="plugins-panel">
       <div className="addons-install-box" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+        {/* Option 1: Workshop */}
         <div>
-          <h2 style={{ marginBottom: '8px' }}>Option 1: Install from Workshop</h2>
-          <div className="input-row">
-            <input
-              type="text"
-              placeholder="Paste Steam Workshop URL here..."
-              value={workshopUrl}
-              onChange={(e) => setWorkshopUrl(e.target.value)}
+          <h2 style={{ marginBottom: '4px' }}>Option 1: Install from Workshop</h2>
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: '8px', lineHeight: 1.5 }}>
+            Paste one or more Workshop URLs / IDs (one per line). Supports single maps, multi-part maps, and collections.
+            Dependencies are resolved automatically.
+          </p>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <textarea
+              rows={3}
+              placeholder={`https://steamcommunity.com/sharedfiles/filedetails/?id=123456789\n2345678901\nhttps://steamcommunity.com/workshop/filedetails/?id=3456789012`}
+              value={workshopInput}
+              onChange={(e) => setWorkshopInput(e.target.value)}
               disabled={installing}
+              style={{
+                flex: 1,
+                padding: '9px 12px',
+                background: 'rgba(0,0,0,0.2)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                color: 'var(--text-color)',
+                fontSize: 13,
+                fontFamily: 'inherit',
+                resize: 'vertical',
+                lineHeight: 1.6,
+                outline: 'none'
+              }}
             />
-            <button className="btn btn-primary" style={{ width: 120, margin: 0 }} onClick={installWorkshop} disabled={installing}>
-              {installing ? 'Running...' : '📥 Install'}
+            <button
+              className="btn btn-primary"
+              style={{ width: 120, margin: 0, flexShrink: 0, alignSelf: 'flex-end', height: 38 }}
+              onClick={installWorkshop}
+              disabled={installing}
+            >
+              {installing ? '⏳ Running...' : '📥 Install'}
             </button>
           </div>
         </div>
 
+        {/* Option 2: Direct upload */}
         <div>
           <h2 style={{ marginBottom: '8px' }}>Option 2: Direct .vpk Upload</h2>
           <div className="input-row">
@@ -253,32 +309,125 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
           </div>
         </div>
 
+        {/* Progress box */}
         {progressVisible && (
-          <div className="workshop-progress" style={{
-            marginTop: '8px', padding: '14px',
-            background: 'rgba(0,0,0,0.25)', borderRadius: '8px',
-            border: progressError ? '1px solid var(--red)' : progressSuccess ? '1px solid var(--green)' : '1px solid var(--border-color)'
+          <div style={{
+            padding: '14px 16px',
+            background: 'rgba(0,0,0,0.25)',
+            borderRadius: '8px',
+            border: progressBorderColor,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10
           }}>
-            <div className="workshop-progress-header" style={{ marginBottom: '8px' }}>
-              <span className="workshop-status" style={{ fontWeight: 500 }}>{progressStatus}</span>
-              <span className="workshop-pct">{Math.round(progressPercent)}%</span>
+
+            {/* Current item label */}
+            {currentItem && currentItem.total > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{
+                  background: 'rgba(91,200,245,0.15)',
+                  color: 'var(--blue)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: 0.5
+                }}>
+                  {currentItem.index + 1} / {currentItem.total}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentItem.title}
+                </span>
+              </div>
+            )}
+
+            {/* Status + percent */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-color)', flex: 1, paddingRight: 8, opacity: 0.9 }}>
+                {progressStatus}
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>
+                {Math.round(progressPercent)}%
+              </span>
             </div>
-            <div className="hp-bar-bg" style={{ height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.08)' }}>
-              <div
-                className="hp-bar-fill"
-                style={{
-                  width: `${progressPercent}%`,
-                  height: '100%',
-                  borderRadius: 5,
-                  background: progressError ? 'var(--red)' : progressSuccess ? 'var(--green)' : 'var(--blue)',
-                  transition: 'width 0.2s ease, background 0.3s'
-                }}
-              ></div>
+
+            {/* Per-item progress bar */}
+            <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.07)' }}>
+              <div style={{
+                width: `${progressPercent}%`,
+                height: '100%',
+                borderRadius: 3,
+                background: progressError ? 'var(--red)' : progressSuccess ? 'var(--green)' : 'var(--blue)',
+                transition: 'width 0.2s ease, background 0.3s'
+              }} />
             </div>
+
+            {/* Overall progress bar (only when multiple items) */}
+            {currentItem && currentItem.total > 1 && (
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+                  Overall: {currentItem.index + 1} of {currentItem.total} items
+                </div>
+                <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+                  <div style={{
+                    width: `${Math.min(overallPercent, 100)}%`,
+                    height: '100%',
+                    borderRadius: 2,
+                    background: 'rgba(91,200,245,0.5)',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
+              </div>
+            )}
+
+            {/* Resolved items list */}
+            {resolvedItems.length > 0 && (
+              <div style={{
+                marginTop: 2,
+                padding: '8px 10px',
+                background: 'rgba(0,0,0,0.2)',
+                borderRadius: 6,
+                border: '1px solid rgba(255,255,255,0.06)'
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  Queue ({resolvedItems.length} item{resolvedItems.length !== 1 ? 's' : ''})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 120, overflowY: 'auto' }}>
+                  {resolvedItems.map((item, i) => {
+                    const isDone = currentItem && i < currentItem.index;
+                    const isActive = currentItem && i === currentItem.index;
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontSize: 12,
+                          opacity: isDone ? 0.45 : 1,
+                          color: isActive ? 'var(--blue)' : 'var(--text-color)'
+                        }}
+                      >
+                        <span style={{ flexShrink: 0, width: 16, textAlign: 'center' }}>
+                          {isDone ? '✓' : isActive ? '▶' : '○'}
+                        </span>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.title}
+                        </span>
+                        <span style={{ color: 'var(--muted)', fontSize: 10, flexShrink: 0 }}>
+                          {item.id}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
+      {/* Toolbar */}
       <div className="plugins-toolbar">
         <div style={{ fontSize: 13, color: 'var(--muted)' }}>{note}</div>
         <button className="btn btn-ghost" style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }} onClick={fetchAddons}>
@@ -286,6 +435,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
         </button>
       </div>
 
+      {/* Addons list */}
       <div className="plugins-list" style={{ padding: 0 }}>
         {sortedAddons.length === 0 ? (
           <div className="empty-state">
