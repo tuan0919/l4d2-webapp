@@ -51,6 +51,16 @@ const styles = `
 
   .tut-toolbar { display: flex; gap: 12px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 16px; align-items: center; }
   .tut-toolbar-label { font-size: 13px; font-weight: 600; color: #a8b4c8; margin-right: 8px; }
+
+  .tut-cvar-panel { border-top: 1px solid var(--border); background: #090b10; overflow: hidden; border-radius: 0 0 12px 12px; margin-top: -1px; }
+  .tut-cvar-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(91,200,245,0.05); border-bottom: 1px solid rgba(91,200,245,0.12); }
+  .tut-cvar-toolbar span { font-size: 11px; color: var(--muted); flex: 1; font-family: 'JetBrains Mono', monospace; }
+  .tut-cvar-toolbar .tut-btn { padding: 4px 10px; font-size: 11px; margin: 0; width: auto; }
+  .tut-cvar-pre { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; color: #a8c0e0; padding: 14px 16px; margin: 0; overflow: auto; max-height: 50vh; white-space: pre; }
+  .tut-cvar-textarea { width: 100%; min-height: 300px; max-height: 50vh; background: #090b10; color: #a8c0e0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; padding: 14px 16px; border: none; outline: none; resize: vertical; display: block; }
+  .tut-btn-cvar-view { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(91,200,245,0.3); background: rgba(91,200,245,0.08); color: var(--blue); transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+  .tut-btn-cvar-view:hover { background: rgba(91,200,245,0.15); border-color: rgba(91,200,245,0.5); }
+  .tut-btn-cvar-view.active { background: rgba(91,200,245,0.2); border-color: var(--blue); }
 `;
 
 const WEAPONS = [
@@ -219,10 +229,89 @@ const updateBlockData = (content, blockName, newValues) => {
   });
 };
 
+// Reusable "View as Cvar" panel component
+const CvarViewPanel = ({ configList, values, onApply, addToast, label }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  const generateText = () => {
+    const lines = [];
+    lines.push(`// ${label}`);
+    configList.forEach((item) => {
+      const val = values[item.cvar] !== undefined ? String(values[item.cvar]) : '';
+      if (item.desc) lines.push(`// ${item.desc}`);
+      lines.push(`${item.cvar} "${val}"`);
+    });
+    return lines.join('\n');
+  };
+
+  const handleCopy = () => {
+    const text = editing ? draft : generateText();
+    navigator.clipboard.writeText(text).then(() => {
+      addToast(`Copied ${label} cvars to clipboard`, 'success');
+    }).catch(() => {
+      addToast('Copy failed', 'error');
+    });
+  };
+
+  const handleEdit = () => {
+    setDraft(generateText());
+    setEditing(true);
+  };
+
+  const handleApply = () => {
+    const newValues = {};
+    draft.split('\n').forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('//')) return;
+      const match = trimmed.match(/^([^\s]+)\s+"(.*)"$/);
+      if (match) newValues[match[1]] = match[2];
+    });
+    onApply(newValues);
+    setEditing(false);
+    addToast('Cvar values updated from text — click Save to apply to server', 'success');
+  };
+
+  return (
+    <div className="tut-cvar-panel">
+      <div className="tut-cvar-toolbar">
+        <span>{label} — raw cvar format</span>
+        {!editing ? (
+          <>
+            <button className="tut-btn tut-btn-refresh" onClick={handleCopy}>Copy</button>
+            <button className="tut-btn tut-btn-refresh" onClick={handleEdit}>Edit</button>
+          </>
+        ) : (
+          <>
+            <button className="tut-btn tut-btn-save" onClick={handleApply}>Apply</button>
+            <button className="tut-btn tut-btn-refresh" onClick={handleCopy}>Copy</button>
+            <button className="tut-btn tut-btn-refresh" onClick={() => setEditing(false)}>Cancel</button>
+          </>
+        )}
+      </div>
+      {editing ? (
+        <textarea
+          className="tut-cvar-textarea"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          spellCheck={false}
+        />
+      ) : (
+        <pre className="tut-cvar-pre">{generateText()}</pre>
+      )}
+    </div>
+  );
+};
+
 const TabTutorial = ({ addToast }) => {
   const [activeTab, setActiveTab] = useState('multislots');
   const [values, setValues] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // Cvar view panel open state per sub-tab
+  const [cvarViewOpen, setCvarViewOpen] = useState({});
+  const toggleCvarView = (key) => setCvarViewOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+  const applyCvarText = (newValues) => setValues((prev) => ({ ...prev, ...newValues }));
 
   // InfectedBots Data states
   const [dataFiles, setDataFiles] = useState([]);
@@ -405,9 +494,15 @@ const TabTutorial = ({ addToast }) => {
                {MultiSlotsConfig.map(renderCvarField)}
             </div>
             <div className="tut-actions">
-               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>🔄 Load CVARs</button>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(MultiSlotsConfig)}>💾 Áp Dụng (CVARs)</button>
+               <button className={`tut-btn-cvar-view${cvarViewOpen.multislots ? ' active' : ''}`} onClick={() => toggleCvarView('multislots')}>
+                 {cvarViewOpen.multislots ? 'Close Cvar View' : 'View as Cvar'}
+               </button>
+               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load CVARs</button>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(MultiSlotsConfig)}>Save (CVARs)</button>
             </div>
+            {cvarViewOpen.multislots && (
+              <CvarViewPanel configList={MultiSlotsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="MultiSlots" />
+            )}
           </div>
         )}
 
@@ -423,8 +518,14 @@ const TabTutorial = ({ addToast }) => {
                  {InfectedBotsCvarsConfig.map(renderCvarField)}
               </div>
               <div className="tut-actions" style={{ marginTop: 12 }}>
-                 <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(InfectedBotsCvarsConfig)}>💾 Áp Dụng (CVARs)</button>
+                 <button className={`tut-btn-cvar-view${cvarViewOpen.infectedbots ? ' active' : ''}`} onClick={() => toggleCvarView('infectedbots')}>
+                   {cvarViewOpen.infectedbots ? 'Close Cvar View' : 'View as Cvar'}
+                 </button>
+                 <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(InfectedBotsCvarsConfig)}>Save (CVARs)</button>
               </div>
+              {cvarViewOpen.infectedbots && (
+                <CvarViewPanel configList={InfectedBotsCvarsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="InfectedBots CVARs" />
+              )}
             </div>
 
             {/* Data Settings Section */}
@@ -474,12 +575,19 @@ const TabTutorial = ({ addToast }) => {
                <h2>Gun Damage Modify</h2>
                <p>Điều chỉnh hệ số sát thương cho từng loại súng lên từng mục tiêu cụ thể. Giá trị 1.0 (nhân 1) là giữ nguyên.</p>
             </div>
-            
+
             <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
-               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>🔄 Tải Dữ Liệu</button>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>💾 Áp Dụng Tất Cả</button>
+               <button className={`tut-btn-cvar-view${cvarViewOpen.gundamage ? ' active' : ''}`} onClick={() => toggleCvarView('gundamage')}>
+                 {cvarViewOpen.gundamage ? 'Close Cvar View' : 'View as Cvar'}
+               </button>
+               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Data</button>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>Save All</button>
             </div>
-            
+
+            {cvarViewOpen.gundamage && (
+              <CvarViewPanel configList={GunDamageConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Gun Damage" />
+            )}
+
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
                {renderCvarField(GunDamageConfig[0])}
             </div>
@@ -495,9 +603,9 @@ const TabTutorial = ({ addToast }) => {
                 </div>
               </div>
             ))}
-            
+
             <div className="tut-actions" style={{ marginTop: 32 }}>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>💾 Áp Dụng (Viết vào CFG)</button>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>Save (Write to CFG)</button>
             </div>
           </div>
         )}
@@ -510,32 +618,39 @@ const TabTutorial = ({ addToast }) => {
             </div>
 
             <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
-               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>🔄 Tải Cvars Mới Nhất</button>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig])}>💾 Áp Dụng Tất Cả</button>
+               <button className={`tut-btn-cvar-view${cvarViewOpen.notifier ? ' active' : ''}`} onClick={() => toggleCvarView('notifier')}>
+                 {cvarViewOpen.notifier ? 'Close Cvar View' : 'View as Cvar'}
+               </button>
+               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Cvars</button>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig])}>Save All</button>
             </div>
 
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>☠️ Death & Incap</div>
+            {cvarViewOpen.notifier && (
+              <CvarViewPanel configList={[...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig]} values={values} onApply={applyCvarText} addToast={addToast} label="Notifier" />
+            )}
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Death & Incap</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
                {NotifierDIConfig.map(renderCvarField)}
             </div>
 
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>🖤 Black & White</div>
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Black & White</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
                {NotifierBWConfig.map(renderCvarField)}
             </div>
 
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>🔥 Throwable Announcer</div>
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Throwable Announcer</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
                {NotifierThrowableConfig.map(renderCvarField)}
             </div>
 
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>💥 Explosion Announcer</div>
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Explosion Announcer</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
                {NotifierExplosionConfig.map(renderCvarField)}
             </div>
-            
+
             <div className="tut-actions" style={{ marginTop: 32 }}>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig])}>💾 Lưu Mọi Trạng Thái (Notifier)</button>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig])}>Save All (Notifier)</button>
             </div>
           </div>
         )}
