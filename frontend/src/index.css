@@ -595,6 +595,7 @@ select option { background: var(--surface2); }
 .dev-section {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -718,6 +719,7 @@ select option { background: var(--surface2); }
   min-width: 0;
   display: flex;
   overflow: hidden;
+  width: 100%;
 }
 .dev-console-box {
   margin: 0;
@@ -725,7 +727,8 @@ select option { background: var(--surface2); }
   border-radius: 10px;
   min-height: 420px;
   height: 100%;
-  width: 100%;
+  width: 0;
+  min-width: 100%;
   max-height: none;
   resize: vertical;
   overflow-y: auto;
