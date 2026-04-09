@@ -714,7 +714,9 @@ select option { background: var(--surface2); }
   padding: 0 16px 16px;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
+  overflow: hidden;
 }
 .dev-console-box {
   margin: 0;
@@ -725,7 +727,8 @@ select option { background: var(--surface2); }
   width: 100%;
   max-height: none;
   resize: vertical;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
   padding: 18px 20px;
   font-size: 12.5px;
   line-height: 1.8;
@@ -735,6 +738,7 @@ select option { background: var(--surface2); }
   white-space: pre;
   word-break: normal;
   overscroll-behavior: contain;
+  min-width: max-content;
 }
 .dev-browser-header {
   display: flex;

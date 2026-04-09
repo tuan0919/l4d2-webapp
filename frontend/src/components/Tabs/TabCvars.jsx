@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 const TabCvars = ({ addToast }) => {
   const [groups, setGroups] = useState([]);
@@ -6,6 +6,9 @@ const TabCvars = ({ addToast }) => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [values, setValues] = useState({});
+
+  // Raw CFG mode: { [plugin]: { open: bool, content: string, loading: bool, editing: bool, draft: string } }
+  const [rawState, setRawState] = useState({});
 
   const fetchCvars = async () => {
     setLoading(true);
@@ -66,6 +69,71 @@ const TabCvars = ({ addToast }) => {
     }
   };
 
+  // ---- Raw CFG helpers ----
+  const openRaw = async (plugin) => {
+    setRawState((prev) => ({
+      ...prev,
+      [plugin]: { open: true, content: '', loading: true, editing: false, draft: '' }
+    }));
+    try {
+      const res = await fetch(`/api/cvars/raw?plugin=${encodeURIComponent(plugin)}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setRawState((prev) => ({
+        ...prev,
+        [plugin]: { open: true, content: data.content, loading: false, editing: false, draft: data.content }
+      }));
+    } catch (e) {
+      addToast(`Failed to load ${plugin}.cfg: ${e.message}`, 'error');
+      setRawState((prev) => ({ ...prev, [plugin]: { open: false, content: '', loading: false, editing: false, draft: '' } }));
+    }
+  };
+
+  const closeRaw = (plugin) => {
+    setRawState((prev) => ({ ...prev, [plugin]: { ...prev[plugin], open: false, editing: false } }));
+  };
+
+  const copyRaw = (plugin) => {
+    const content = rawState[plugin]?.content ?? '';
+    navigator.clipboard.writeText(content).then(() => {
+      addToast(`Copied ${plugin}.cfg to clipboard`, 'success');
+    }).catch(() => {
+      addToast('Copy failed — check browser permissions', 'error');
+    });
+  };
+
+  const startEdit = (plugin) => {
+    setRawState((prev) => ({
+      ...prev,
+      [plugin]: { ...prev[plugin], editing: true, draft: prev[plugin]?.content ?? '' }
+    }));
+  };
+
+  const cancelEdit = (plugin) => {
+    setRawState((prev) => ({ ...prev, [plugin]: { ...prev[plugin], editing: false } }));
+  };
+
+  const saveRaw = async (plugin) => {
+    const draft = rawState[plugin]?.draft ?? '';
+    try {
+      const res = await fetch('/api/cvars/raw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plugin, content: draft })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Save failed');
+      setRawState((prev) => ({
+        ...prev,
+        [plugin]: { ...prev[plugin], content: draft, editing: false }
+      }));
+      addToast(`Saved ${plugin}.cfg`, 'success');
+    } catch (e) {
+      addToast(`Save failed: ${e.message}`, 'error');
+    }
+  };
+
+  // ---- Filter ----
   const q = search.trim().toLowerCase();
   const filteredGroups = groups
     .map((group) => {
@@ -106,31 +174,175 @@ const TabCvars = ({ addToast }) => {
             <p>No Cvars matched your search</p>
           </div>
         ) : (
-          filteredGroups.map((group) => (
-            <details key={group.plugin} className="cvar-group" open>
-              <summary>📦 {group.plugin}.cfg</summary>
-              <div className="cvar-group-body">
-                {group.cvars.map((cvar) => (
-                  <div key={`${group.plugin}-${cvar.name}`} className="cvar-item">
-                    <div style={{ paddingRight: 20, flex: 1 }}>
-                      <div className="cvar-name">{cvar.name}</div>
-                      <div className="cvar-desc">{cvar.desc || 'No description available'}</div>
+          filteredGroups.map((group) => {
+            const raw = rawState[group.plugin] || {};
+            return (
+              <details key={group.plugin} className="cvar-group" open>
+                <summary style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>📦 {group.plugin}.cfg</span>
+                  {/* Raw CFG toggle button inside summary */}
+                  <span
+                    title={raw.open ? 'Close raw CFG view' : 'View / Edit raw .cfg file'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      if (raw.open) {
+                        closeRaw(group.plugin);
+                      } else {
+                        openRaw(group.plugin);
+                      }
+                    }}
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: 0.4,
+                      padding: '3px 9px',
+                      borderRadius: 5,
+                      background: raw.open ? 'rgba(91,200,245,0.2)' : 'rgba(91,200,245,0.09)',
+                      color: 'var(--blue)',
+                      border: '1px solid rgba(91,200,245,0.25)',
+                      fontFamily: 'inherit',
+                      transition: 'background 0.2s',
+                      marginLeft: 8,
+                      flexShrink: 0,
+                      userSelect: 'none'
+                    }}
+                  >
+                    {raw.open ? '✕ Close CFG' : '📄 Raw CFG'}
+                  </span>
+                </summary>
+
+                {/* Raw CFG panel */}
+                {raw.open && (
+                  <div style={{
+                    margin: '0 0 0 0',
+                    borderBottom: '1px solid var(--border)',
+                    background: '#090b10',
+                    borderRadius: '0 0 8px 8px',
+                    overflow: 'hidden'
+                  }}>
+                    {/* Raw toolbar */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 12px',
+                      background: 'rgba(91,200,245,0.05)',
+                      borderBottom: '1px solid rgba(91,200,245,0.12)'
+                    }}>
+                      <span style={{ fontSize: 11, color: 'var(--muted)', flex: 1, fontFamily: 'JetBrains Mono, monospace' }}>
+                        {raw.loading ? 'Loading...' : `left4dead2/cfg/sourcemod/${group.plugin}.cfg`}
+                      </span>
+                      {!raw.loading && !raw.editing && (
+                        <>
+                          <button
+                            className="btn btn-ghost"
+                            style={{ width: 'auto', margin: 0, padding: '4px 10px', fontSize: 11 }}
+                            onClick={() => copyRaw(group.plugin)}
+                          >
+                            📋 Copy
+                          </button>
+                          <button
+                            className="btn btn-ghost"
+                            style={{ width: 'auto', margin: 0, padding: '4px 10px', fontSize: 11 }}
+                            onClick={() => startEdit(group.plugin)}
+                          >
+                            ✏️ Edit
+                          </button>
+                        </>
+                      )}
+                      {raw.editing && (
+                        <>
+                          <button
+                            className="btn btn-primary"
+                            style={{ width: 'auto', margin: 0, padding: '4px 12px', fontSize: 11 }}
+                            onClick={() => saveRaw(group.plugin)}
+                          >
+                            💾 Save
+                          </button>
+                          <button
+                            className="btn btn-ghost"
+                            style={{ width: 'auto', margin: 0, padding: '4px 10px', fontSize: 11 }}
+                            onClick={() => cancelEdit(group.plugin)}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
                     </div>
-                    <div className="cvar-controls">
-                      <input
-                        type="text"
-                        value={values[cvar.name] ?? ''}
-                        onChange={(e) => setValues((prev) => ({ ...prev, [cvar.name]: e.target.value }))}
+
+                    {/* Content area */}
+                    {raw.loading ? (
+                      <div style={{ padding: 20, color: 'var(--muted)', fontSize: 12, textAlign: 'center' }}>
+                        Loading {group.plugin}.cfg...
+                      </div>
+                    ) : raw.editing ? (
+                      <textarea
+                        value={raw.draft}
+                        onChange={(e) => setRawState((prev) => ({
+                          ...prev,
+                          [group.plugin]: { ...prev[group.plugin], draft: e.target.value }
+                        }))}
+                        spellCheck={false}
+                        style={{
+                          width: '100%',
+                          minHeight: 260,
+                          background: '#090b10',
+                          color: '#a8c0e0',
+                          fontFamily: 'JetBrains Mono, monospace',
+                          fontSize: 12.5,
+                          lineHeight: 1.7,
+                          padding: '14px 16px',
+                          border: 'none',
+                          outline: 'none',
+                          resize: 'vertical',
+                          display: 'block'
+                        }}
                       />
-                      <button className="btn btn-primary cvar-save-btn" onClick={() => saveCvar(cvar.name)}>
-                        Save
-                      </button>
-                    </div>
+                    ) : (
+                      <pre style={{
+                        fontFamily: 'JetBrains Mono, monospace',
+                        fontSize: 12.5,
+                        lineHeight: 1.7,
+                        color: '#a8c0e0',
+                        padding: '14px 16px',
+                        margin: 0,
+                        overflowX: 'auto',
+                        overflowY: 'auto',
+                        maxHeight: 320,
+                        whiteSpace: 'pre'
+                      }}>
+                        {raw.content}
+                      </pre>
+                    )}
                   </div>
-                ))}
-              </div>
-            </details>
-          ))
+                )}
+
+                {/* Regular form editor */}
+                <div className="cvar-group-body">
+                  {group.cvars.map((cvar) => (
+                    <div key={`${group.plugin}-${cvar.name}`} className="cvar-item">
+                      <div style={{ paddingRight: 20, flex: 1 }}>
+                        <div className="cvar-name">{cvar.name}</div>
+                        <div className="cvar-desc">{cvar.desc || 'No description available'}</div>
+                      </div>
+                      <div className="cvar-controls">
+                        <input
+                          type="text"
+                          value={values[cvar.name] ?? ''}
+                          onChange={(e) => setValues((prev) => ({ ...prev, [cvar.name]: e.target.value }))}
+                        />
+                        <button className="btn btn-primary cvar-save-btn" onClick={() => saveCvar(cvar.name)}>
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            );
+          })
         )}
       </div>
     </div>

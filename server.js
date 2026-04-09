@@ -632,6 +632,42 @@ app.get('/api/plugins', (req, res) => {
   });
 });
 
+// --- Raw .cfg file read/write for Cvars tab ---
+app.get('/api/cvars/raw', (req, res) => {
+  const { plugin } = req.query;
+  if (!plugin || plugin.includes('..') || plugin.includes('/') || plugin.includes('\\')) {
+    return res.status(400).json({ error: 'Invalid plugin name' });
+  }
+  const cfgPath = path.join(L4D2_DIR, 'left4dead2', 'cfg', 'sourcemod', `${plugin}.cfg`);
+  if (!fs.existsSync(cfgPath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  try {
+    const content = fs.readFileSync(cfgPath, 'utf8');
+    res.json({ content, plugin });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/cvars/raw', (req, res) => {
+  const { plugin, content } = req.body;
+  if (!plugin || plugin.includes('..') || plugin.includes('/') || plugin.includes('\\') || typeof content !== 'string') {
+    return res.status(400).json({ error: 'Invalid parameters' });
+  }
+  const cfgPath = path.join(L4D2_DIR, 'left4dead2', 'cfg', 'sourcemod', `${plugin}.cfg`);
+  if (!fs.existsSync(cfgPath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  try {
+    fs.copyFileSync(cfgPath, cfgPath + '.bak');
+    fs.writeFileSync(cfgPath, content, 'utf8');
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/cvars', (req, res) => {
   const cfgDir = path.join(L4D2_DIR, 'left4dead2', 'cfg', 'sourcemod');
   const result = [];
@@ -749,7 +785,13 @@ app.post('/api/command', (req, res) => {
 app.post('/api/map', (req, res) => {
   const { map } = req.body;
   if (!map) return res.status(400).json({ error: 'No map provided' });
-  sendToGame(`update_addon_paths; changelevel ${map}`, (result) => res.json(result));
+  // Send update_addon_paths first so the engine re-indexes any pre-installed VPKs,
+  // then wait 800ms before issuing changelevel so addons are fully registered.
+  sendToGame('update_addon_paths', () => {
+    setTimeout(() => {
+      sendToGame(`changelevel ${map}`, (result) => res.json(result));
+    }, 800);
+  });
 });
 
 app.post('/api/maxplayers', (req, res) => {
