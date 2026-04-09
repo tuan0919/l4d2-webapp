@@ -297,7 +297,7 @@ select option { background: var(--surface2); }
   white-space: pre;
   word-break: normal;
 }
-.console-box::-webkit-scrollbar { width: 5px; }
+.console-box::-webkit-scrollbar { width: 5px; height: 5px; }
 .console-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .console-line { display: block; }
