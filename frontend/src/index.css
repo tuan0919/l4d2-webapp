@@ -719,16 +719,13 @@ select option { background: var(--surface2); }
   min-width: 0;
   display: flex;
   overflow: hidden;
-  width: 100%;
 }
 .dev-console-box {
   margin: 0;
   border: 1px solid var(--border);
   border-radius: 10px;
-  min-height: 420px;
-  height: 100%;
-  width: 0;
-  min-width: 100%;
+  min-height: 0;
+  flex: 1;
   max-height: none;
   resize: vertical;
   overflow-y: auto;
