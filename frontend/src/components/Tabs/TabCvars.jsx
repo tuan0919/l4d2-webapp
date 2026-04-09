@@ -10,6 +10,11 @@ const TabCvars = ({ addToast }) => {
   // Raw CFG mode: { [plugin]: { open: bool, content: string, loading: bool, editing: bool, draft: string } }
   const [rawState, setRawState] = useState({});
 
+  // Global .cfg format view
+  const [cfgViewOpen, setCfgViewOpen] = useState(false);
+  const [cfgViewEditing, setCfgViewEditing] = useState(false);
+  const [cfgViewDraft, setCfgViewDraft] = useState('');
+
   const fetchCvars = async () => {
     setLoading(true);
     setNote('Parsing .cfg files...');
@@ -146,6 +151,52 @@ const TabCvars = ({ addToast }) => {
     })
     .filter((group) => group.cvars.length > 0);
 
+  // ---- Global .cfg format helpers ----
+  const generateCfgText = () => {
+    const lines = [];
+    groups.forEach((group) => {
+      lines.push(`// ── ${group.plugin}.cfg ──`);
+      group.cvars.forEach((cvar) => {
+        if (cvar.desc) lines.push(`// ${cvar.desc}`);
+        lines.push(`${cvar.name} "${values[cvar.name] ?? cvar.value ?? ''}"`);
+      });
+      lines.push('');
+    });
+    return lines.join('\n');
+  };
+
+  const openCfgView = () => {
+    const text = generateCfgText();
+    setCfgViewDraft(text);
+    setCfgViewOpen(true);
+    setCfgViewEditing(false);
+  };
+
+  const copyCfgView = () => {
+    const text = cfgViewEditing ? cfgViewDraft : generateCfgText();
+    navigator.clipboard.writeText(text).then(() => {
+      addToast('Copied all cvars as .cfg to clipboard', 'success');
+    }).catch(() => {
+      addToast('Copy failed — check browser permissions', 'error');
+    });
+  };
+
+  const applyCfgDraft = () => {
+    const lines = cfgViewDraft.split('\n');
+    const newValues = { ...values };
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('//')) continue;
+      const match = trimmed.match(/^([^\s]+)\s+"(.*)"$/);
+      if (match) {
+        newValues[match[1]] = match[2];
+      }
+    }
+    setValues(newValues);
+    setCfgViewEditing(false);
+    addToast('Cvar values updated from .cfg — click Save on individual cvars to apply', 'success');
+  };
+
   return (
     <div className="plugins-panel">
       <div className="plugins-toolbar">
@@ -160,7 +211,96 @@ const TabCvars = ({ addToast }) => {
         <button className="btn btn-ghost" style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }} onClick={fetchCvars}>
           ↻ Refresh
         </button>
+        <button
+          className="btn btn-ghost"
+          style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12, borderColor: cfgViewOpen ? 'var(--blue)' : undefined, color: cfgViewOpen ? 'var(--blue)' : undefined }}
+          onClick={() => cfgViewOpen ? setCfgViewOpen(false) : openCfgView()}
+          disabled={groups.length === 0}
+        >
+          {cfgViewOpen ? '✕ Close .cfg' : '📄 View as .cfg'}
+        </button>
       </div>
+
+      {/* Global .cfg format view */}
+      {cfgViewOpen && groups.length > 0 && (
+        <div style={{
+          borderBottom: '1px solid var(--border)',
+          background: '#090b10',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px',
+            background: 'rgba(91,200,245,0.05)',
+            borderBottom: '1px solid rgba(91,200,245,0.12)'
+          }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)', flex: 1, fontFamily: 'JetBrains Mono, monospace' }}>
+              All Cvars — .cfg format
+            </span>
+            {!cfgViewEditing ? (
+              <>
+                <button className="btn btn-ghost" style={{ width: 'auto', margin: 0, padding: '4px 10px', fontSize: 11 }} onClick={copyCfgView}>
+                  📋 Copy
+                </button>
+                <button className="btn btn-ghost" style={{ width: 'auto', margin: 0, padding: '4px 10px', fontSize: 11 }} onClick={() => { setCfgViewDraft(generateCfgText()); setCfgViewEditing(true); }}>
+                  ✏️ Edit
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn btn-primary" style={{ width: 'auto', margin: 0, padding: '4px 12px', fontSize: 11 }} onClick={applyCfgDraft}>
+                  💾 Apply
+                </button>
+                <button className="btn btn-ghost" style={{ width: 'auto', margin: 0, padding: '4px 10px', fontSize: 11 }} onClick={copyCfgView}>
+                  📋 Copy
+                </button>
+                <button className="btn btn-ghost" style={{ width: 'auto', margin: 0, padding: '4px 10px', fontSize: 11 }} onClick={() => setCfgViewEditing(false)}>
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+          {cfgViewEditing ? (
+            <textarea
+              value={cfgViewDraft}
+              onChange={(e) => setCfgViewDraft(e.target.value)}
+              spellCheck={false}
+              style={{
+                width: '100%',
+                minHeight: 300,
+                maxHeight: '50vh',
+                background: '#090b10',
+                color: '#a8c0e0',
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: 12.5,
+                lineHeight: 1.7,
+                padding: '14px 16px',
+                border: 'none',
+                outline: 'none',
+                resize: 'vertical',
+                display: 'block'
+              }}
+            />
+          ) : (
+            <pre style={{
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: 12.5,
+              lineHeight: 1.7,
+              color: '#a8c0e0',
+              padding: '14px 16px',
+              margin: 0,
+              overflowX: 'auto',
+              overflowY: 'auto',
+              maxHeight: '50vh',
+              whiteSpace: 'pre'
+            }}>
+              {generateCfgText()}
+            </pre>
+          )}
+        </div>
+      )}
 
       <div className="plugins-list" style={{ padding: 16 }}>
         {!loading && groups.length === 0 ? (

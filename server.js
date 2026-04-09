@@ -785,12 +785,16 @@ app.post('/api/command', (req, res) => {
 app.post('/api/map', (req, res) => {
   const { map } = req.body;
   if (!map) return res.status(400).json({ error: 'No map provided' });
-  // Send update_addon_paths first so the engine re-indexes any pre-installed VPKs,
-  // then wait 800ms before issuing changelevel so addons are fully registered.
+  // Force engine to re-index addon VPKs twice with enough delay so pre-existing
+  // custom maps are fully registered before changelevel.
   sendToGame('update_addon_paths', () => {
     setTimeout(() => {
-      sendToGame(`changelevel ${map}`, (result) => res.json(result));
-    }, 800);
+      sendToGame('update_addon_paths', () => {
+        setTimeout(() => {
+          sendToGame(`changelevel ${map}`, (result) => res.json(result));
+        }, 1500);
+      });
+    }, 1500);
   });
 });
 
@@ -989,6 +993,10 @@ app.get('/api/addons', async (req, res) => {
       if (maps.length > 0) console.log(`[VPK] Found ${maps.length} maps in ${f}: ${maps.join(', ')}`);
       return { name: f, size: stats.size, modified: stats.mtime, maps };
     });
+    // Auto re-index addon VPKs so pre-existing maps are recognized by the engine
+    if (addons.some(a => a.maps && a.maps.length > 0)) {
+      sendToGame('update_addon_paths', () => {});
+    }
     res.json({ addons });
   } catch (e) {
     res.json({ error: e.message, addons: [] });
