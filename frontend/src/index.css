@@ -118,6 +118,7 @@ header {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  flex: 1;
 }
 
 /* ══════════════════════════════════════
