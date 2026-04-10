@@ -74,8 +74,8 @@ const WEBAPP_CFG_DIR = path.join(CFG_DIR, 'webapp');
 const WEBAPP_OVERRIDE_LOADER_NAME = 'overrides_loader.cfg';
 const WEBAPP_OVERRIDE_LOADER_PATH = path.join(WEBAPP_CFG_DIR, WEBAPP_OVERRIDE_LOADER_NAME);
 const WEBAPP_OVERRIDE_LOADER_EXEC = `exec webapp/${WEBAPP_OVERRIDE_LOADER_NAME}`;
-const OVERRIDE_AUTO_APPLY_RETRIES = 6;
-const OVERRIDE_AUTO_APPLY_DELAY_MS = 2500;
+const OVERRIDE_AUTO_APPLY_RETRIES = 12;
+const OVERRIDE_AUTO_APPLY_DELAY_MS = 3000;
 const GAME_WATCH_INTERVAL_MS = 15000;
 const DEV_ROOTS = {
   game: L4D2_DIR,
@@ -155,6 +155,62 @@ function buildSmCvarCommands(cvars) {
   }
 
   return commands;
+}
+
+function stripOptionalQuotes(value) {
+  const text = String(value || '').trim();
+  if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) {
+    return text.substring(1, text.length - 1);
+  }
+  return text;
+}
+
+function parseCfgAssignments(content) {
+  const assignments = new Map();
+  const lines = String(content || '').split('\n');
+
+  for (let line of lines) {
+    line = line.split('//')[0].trim();
+    if (!line) continue;
+
+    const smCvarMatch = line.match(/^sm_cvar\s+([^\s]+)\s+(.+)$/i);
+    if (smCvarMatch) {
+      assignments.set(smCvarMatch[1], stripOptionalQuotes(smCvarMatch[2]));
+      continue;
+    }
+
+    const directMatch = line.match(/^([^\s]+)\s+(.+)$/);
+    if (directMatch) {
+      assignments.set(directMatch[1], stripOptionalQuotes(directMatch[2]));
+    }
+  }
+
+  return assignments;
+}
+
+function buildSmCvarCommandsFromWebappOverrides() {
+  const effectiveOverrides = new Map();
+
+  if (!fs.existsSync(WEBAPP_CFG_DIR)) {
+    return [];
+  }
+
+  const overrideFiles = listWebappOverrideFiles();
+  for (const file of overrideFiles) {
+    const overridePath = path.join(WEBAPP_CFG_DIR, file);
+    const content = fs.readFileSync(overridePath, 'utf8');
+    const assignments = parseCfgAssignments(content);
+    assignments.forEach((value, key) => {
+      effectiveOverrides.set(key, value);
+    });
+  }
+
+  const cvars = {};
+  effectiveOverrides.forEach((value, key) => {
+    cvars[key] = value;
+  });
+
+  return buildSmCvarCommands(cvars);
 }
 
 function sendCommandsToGame(commands, callback) {
@@ -379,24 +435,28 @@ function syncWebappOverrideLoader() {
 
 function applyWebappOverridesNow(reason, retriesLeft = OVERRIDE_AUTO_APPLY_RETRIES) {
   let syncInfo;
+  let smCvarCommands = [];
   try {
     syncInfo = syncWebappOverrideLoader();
+    smCvarCommands = buildSmCvarCommandsFromWebappOverrides();
   } catch (e) {
     console.error(`[L4D2 Dashboard] Override sync failed (${reason}): ${e.message}`);
     return;
   }
 
   sendToGame(WEBAPP_OVERRIDE_LOADER_EXEC, (result) => {
-    if (result && result.error) {
-      if (retriesLeft > 0) {
-        setTimeout(() => applyWebappOverridesNow(reason, retriesLeft - 1), OVERRIDE_AUTO_APPLY_DELAY_MS);
-        return;
-      }
+    if (!result || !result.error) {
+      sendCommandsToGame(smCvarCommands, () => {});
+    } else if (retriesLeft <= 1) {
       console.warn(`[L4D2 Dashboard] Failed to auto-apply overrides (${reason}): ${result.error}`);
+    }
+
+    if (retriesLeft <= 1) {
+      console.log(`[L4D2 Dashboard] Auto-apply cycle done (${reason}) with ${syncInfo.overrideFiles.length} file(s), ${smCvarCommands.length} cvar command(s).`);
       return;
     }
 
-    console.log(`[L4D2 Dashboard] Auto-applied overrides (${reason}) with ${syncInfo.overrideFiles.length} file(s).`);
+    setTimeout(() => applyWebappOverridesNow(reason, retriesLeft - 1), OVERRIDE_AUTO_APPLY_DELAY_MS);
   });
 }
 
@@ -889,27 +949,6 @@ app.get('/api/cvars', (req, res) => {
   const cfgDir = path.join(L4D2_DIR, 'left4dead2', 'cfg', 'sourcemod');
   const result = [];
   if (!fs.existsSync(cfgDir)) return res.json({ cvars: [] });
-
-  const parseCfgAssignments = (content) => {
-    const assignments = new Map();
-    const lines = content.split('\n');
-    for (let line of lines) {
-      line = line.trim();
-      if (!line || line.startsWith('//')) continue;
-
-      const smCvarMatch = line.match(/^sm_cvar\s+([^\s]+)\s+"(.*)"$/i);
-      if (smCvarMatch) {
-        assignments.set(smCvarMatch[1], smCvarMatch[2]);
-        continue;
-      }
-
-      const directMatch = line.match(/^([^\s]+)\s+"(.*)"$/);
-      if (directMatch) {
-        assignments.set(directMatch[1], directMatch[2]);
-      }
-    }
-    return assignments;
-  };
 
   try {
     const effectiveOverrides = new Map();
