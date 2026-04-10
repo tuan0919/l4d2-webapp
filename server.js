@@ -855,6 +855,64 @@ app.get('/api/servercfg', (req, res) => {
   }
 });
 
+// Query live cvar values from the running server via console.log scraping
+app.get('/api/servercfg/live', (req, res) => {
+  if (!fs.existsSync(CONSOLE_LOG)) {
+    return res.json({ error: 'console.log not found', config: {} });
+  }
+
+  const cvarsToQuery = [
+    'sv_contact', 'sv_tags', 'sv_search_key', 'sv_gametypes',
+    'sv_region', 'z_difficulty', 'sv_consistency',
+    'survivor_friendly_fire_factor_normal',
+    'survivor_friendly_fire_factor_hard',
+    'survivor_friendly_fire_factor_expert'
+  ];
+
+  const beforeSize = fs.statSync(CONSOLE_LOG).size;
+  // Send each cvar name as a command — Source engine prints its current value
+  const queryCmd = cvarsToQuery.join('; ');
+  sendToGame(queryCmd, () => {
+    setTimeout(() => {
+      try {
+        const afterSize = fs.statSync(CONSOLE_LOG).size;
+        const newBytes = afterSize - beforeSize;
+        if (newBytes <= 0) return res.json({ config: {} });
+
+        const fd = fs.openSync(CONSOLE_LOG, 'r');
+        const buf = Buffer.alloc(Math.min(newBytes + 512, 16384));
+        fs.readSync(fd, buf, 0, buf.length, Math.max(0, beforeSize - 100));
+        fs.closeSync(fd);
+        const output = buf.toString('utf8');
+
+        // Parse lines like: "sv_contact" = "value" ( def. "default" )
+        // or: "sv_contact" = "value"
+        const config = {};
+        const cvarRegex = /^"([^"]+)"\s+=\s+"([^"]*)"/gm;
+        let match;
+        while ((match = cvarRegex.exec(output)) !== null) {
+          if (cvarsToQuery.includes(match[1])) {
+            config[match[1]] = match[2];
+          }
+        }
+
+        // Derive friendly_fire from the factor cvars
+        const ffNormal = config['survivor_friendly_fire_factor_normal'];
+        const ffHard = config['survivor_friendly_fire_factor_hard'];
+        const ffExpert = config['survivor_friendly_fire_factor_expert'];
+        if (ffNormal !== undefined || ffHard !== undefined || ffExpert !== undefined) {
+          const ffOff = (ffNormal === '0' || ffHard === '0' || ffExpert === '0');
+          config['friendly_fire'] = ffOff ? '0' : '1';
+        }
+
+        res.json({ config });
+      } catch (e) {
+        res.status(500).json({ error: e.message, config: {} });
+      }
+    }, 1500);
+  });
+});
+
 app.post('/api/servercfg', (req, res) => {
   const { config } = req.body;
   if (!config) return res.status(400).json({ error: 'No config provided' });

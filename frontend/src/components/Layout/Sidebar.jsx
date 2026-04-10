@@ -52,11 +52,20 @@ const Sidebar = ({ addToast }) => {
 
   const fetchServerCfg = async () => {
     try {
+      // First load from file as baseline
       const res = await fetch('/api/servercfg');
       const data = await res.json();
       if (data.config) {
         setServerInfo(prev => ({...prev, ...data.config}));
       }
+      // Then query live values from the running server to override
+      try {
+        const liveRes = await fetch('/api/servercfg/live');
+        const liveData = await liveRes.json();
+        if (liveData.config && Object.keys(liveData.config).length > 0) {
+          setServerInfo(prev => ({...prev, ...liveData.config}));
+        }
+      } catch {}
     } catch {}
   };
 
