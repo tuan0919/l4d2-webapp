@@ -120,6 +120,67 @@ function sendToGame(command, callback) {
   });
 }
 
+function isValidCvarName(name) {
+  return typeof name === 'string' && /^[A-Za-z0-9_]+$/.test(name);
+}
+
+function normalizeCvarValue(value) {
+  if (value === undefined || value === null) return '';
+  return String(value).replace(/[\r\n]+/g, ' ').trim();
+}
+
+function buildSmCvarCommands(cvars) {
+  const commands = [];
+
+  if (!cvars || typeof cvars !== 'object') {
+    return commands;
+  }
+
+  for (const [cvarName, cvarVal] of Object.entries(cvars)) {
+    if (!isValidCvarName(cvarName)) {
+      continue;
+    }
+
+    commands.push(`sm_cvar ${cvarName} "${normalizeCvarValue(cvarVal)}"`);
+  }
+
+  return commands;
+}
+
+function sendCommandsToGame(commands, callback) {
+  const validCommands = Array.isArray(commands)
+    ? commands.filter((command) => typeof command === 'string' && command.trim())
+    : [];
+
+  if (validCommands.length === 0) {
+    callback && callback({ ok: true, commands: [] });
+    return;
+  }
+
+  let index = 0;
+  const results = [];
+
+  const sendNext = () => {
+    if (index >= validCommands.length) {
+      callback && callback({ ok: true, commands: results });
+      return;
+    }
+
+    const command = validCommands[index++];
+    sendToGame(command, (result) => {
+      results.push(result || { ok: true, command });
+      if (result && result.error) {
+        callback && callback({ error: result.error, commands: results });
+        return;
+      }
+
+      setTimeout(sendNext, 60);
+    });
+  };
+
+  sendNext();
+}
+
 // --- Source Query Protocol (A2S_PLAYER) ---
 function sourceQuery(type, callback) {
   const client = dgram.createSocket('udp4');
@@ -882,21 +943,20 @@ app.post('/api/cvars/write', (req, res) => {
     const sessionFileName = `session_${Date.now()}.cfg`;
     const sessionFilePath = path.join(WEBAPP_CFG_DIR, sessionFileName);
 
+    const commands = buildSmCvarCommands(cvars);
+
     const lines = [
       '// Auto-generated session override by l4d2-webapp /api/cvars/write.',
       '// This file is recreated on each save and deleted on full redeploy.',
       ''
     ];
-    for (const [cvarName, cvarVal] of Object.entries(cvars)) {
-      lines.push(`${cvarName} "${String(cvarVal)}"`);
-    }
+    lines.push(...commands);
     lines.push('');
     fs.writeFileSync(sessionFilePath, lines.join('\n'), 'utf8');
 
     // Also send immediately to the running server
-    const cmds = Object.keys(cvars).map(k => `sm_cvar ${k} "${cvars[k]}"`).join('; ');
-    if (cmds) {
-      sendToGame(cmds, () => {});
+    if (commands.length > 0) {
+      sendCommandsToGame(commands, () => {});
     }
 
     const syncInfo = syncWebappOverrideLoader();
@@ -1077,8 +1137,7 @@ app.get('/api/servercfg/live', (req, res) => {
 
   const beforeSize = fs.statSync(CONSOLE_LOG).size;
   // Send each cvar name as a command — Source engine prints its current value
-  const queryCmd = cvarsToQuery.join('; ');
-  sendToGame(queryCmd, () => {
+  sendCommandsToGame(cvarsToQuery, () => {
     setTimeout(() => {
       try {
         const afterSize = fs.statSync(CONSOLE_LOG).size;
@@ -1238,7 +1297,7 @@ app.post('/api/servercfg', (req, res) => {
     fs.writeFileSync(cfgPath, lines.join('\n'), 'utf8');
     
     if (liveCmds.length > 0) {
-      sendToGame(liveCmds.join('; '), () => {});
+      sendCommandsToGame(liveCmds, () => {});
     }
     
     res.json({ success: true, commands: liveCmds.length });
