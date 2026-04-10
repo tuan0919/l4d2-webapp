@@ -548,6 +548,8 @@ app.post('/api/data/write', (req, res) => {
     // Create backup just in case
     fs.copyFileSync(targetPath, targetPath + '.bak');
     fs.writeFileSync(targetPath, content, 'utf8');
+    // Reload the plugin so it re-reads its data files on the live server
+    sendToGame(`sm plugins reload ${plugin}`, () => {});
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

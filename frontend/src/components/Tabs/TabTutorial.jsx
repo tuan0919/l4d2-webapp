@@ -419,7 +419,7 @@ const TabTutorial = ({ addToast }) => {
         body: JSON.stringify({ plugin: 'l4dinfectedbots', file: selectedFile, content: newContent })
       });
       if (res.ok) {
-        addToast(`Lưu Data Config (${selectedBlock}) thành công!`, 'success');
+        addToast(`Lưu Data Config (${selectedBlock}) thành công! Plugin đã được reload.`, 'success');
         fetchDataContent(selectedFile); // Refresh
       } else {
         addToast('Lỗi khi lưu Data config.', 'error');
