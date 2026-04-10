@@ -830,56 +830,42 @@ app.post('/api/cvars/write', (req, res) => {
   }
 
   try {
-    const cfgDir = path.join(L4D2_DIR, 'left4dead2', 'cfg');
-    const sourcemodDir = path.join(cfgDir, 'sourcemod');
-    
-    let filesToCheck = [];
-    if (fs.existsSync(sourcemodDir)) {
-      filesToCheck = fs.readdirSync(sourcemodDir).filter(f => f.endsWith('.cfg')).map(f => path.join(sourcemodDir, f));
-    }
-    const serverCfg = path.join(cfgDir, 'server.cfg');
-    if (fs.existsSync(serverCfg)) {
-      filesToCheck.push(serverCfg);
+    // Build the webapp override session file.
+    // This file is written fresh each time — named with a timestamp so it doesn't
+    // conflict with manually-placed user override files.
+    // On full redeploy (rsync from repo), session files are wiped because they
+    // don't exist in the repo. Only files the user deliberately places in
+    // cfg/webapp/ (e.g. permanent overrides) survive restarts.
+    ensureDirectoryExists(WEBAPP_CFG_DIR);
+
+    // Remove any previous session files written by /api/cvars/write
+    const existingSessionFiles = fs.readdirSync(WEBAPP_CFG_DIR).filter(f => f.startsWith('session_') && f.endsWith('.cfg'));
+    for (const sessionFile of existingSessionFiles) {
+      try { fs.unlinkSync(path.join(WEBAPP_CFG_DIR, sessionFile)); } catch (e) {}
     }
 
-    let updatedCount = 0;
-    for (const p of filesToCheck) {
-      if (!fs.existsSync(p)) continue;
-      let content = fs.readFileSync(p, 'utf8');
-      const lines = content.split(/\r?\n/);
-      let changed = false;
-      
-      for (let i = 0; i < lines.length; i++) {
-        let line = lines[i];
-        if (line.trim().startsWith('//')) continue;
-        
-        const match = line.trim().match(/^([^\s]+)\s+"(.*)"$/) || line.trim().match(/^([^\s]+)\s+(.+)$/);
-        if (match) {
-          const cvarName = match[1];
-          if (cvarName.toLowerCase() === 'exec') continue; 
-          
-          if (cvars[cvarName] !== undefined) {
-            const newVal = String(cvars[cvarName]);
-            const leadingSpace = line.match(/^\s*/)[0];
-            lines[i] = `${leadingSpace}${cvarName} "${newVal}"`;
-            changed = true;
-            updatedCount++;
-          }
-        }
-      }
-      if (changed) {
-        fs.copyFileSync(p, p + '.bak');
-        fs.writeFileSync(p, lines.join('\n'), 'utf8');
-      }
+    const sessionFileName = `session_${Date.now()}.cfg`;
+    const sessionFilePath = path.join(WEBAPP_CFG_DIR, sessionFileName);
+
+    const lines = [
+      '// Auto-generated session override by l4d2-webapp /api/cvars/write.',
+      '// This file is recreated on each save and deleted on full redeploy.',
+      ''
+    ];
+    for (const [cvarName, cvarVal] of Object.entries(cvars)) {
+      lines.push(`${cvarName} "${String(cvarVal)}"`);
     }
-    
-    // Also send immediately to the server
+    lines.push('');
+    fs.writeFileSync(sessionFilePath, lines.join('\n'), 'utf8');
+
+    // Also send immediately to the running server
     const cmds = Object.keys(cvars).map(k => `sm_cvar ${k} "${cvars[k]}"`).join('; ');
     if (cmds) {
       sendToGame(cmds, () => {});
     }
+
     const syncInfo = syncWebappOverrideLoader();
-    res.json({ success: true, updatedCount, overrideSync: syncInfo });
+    res.json({ success: true, sessionFile: sessionFileName, overrideSync: syncInfo });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
