@@ -19,6 +19,7 @@ const Sidebar = ({ addToast }) => {
     sv_consistency: '0'
   });
   const [loadingConfig, setLoadingConfig] = useState(false);
+  const [loadingLive, setLoadingLive] = useState(false);
 
   const customMapOptions = useMemo(() => {
     const options = [];
@@ -52,21 +53,29 @@ const Sidebar = ({ addToast }) => {
 
   const fetchServerCfg = async () => {
     try {
-      // First load from file as baseline
       const res = await fetch('/api/servercfg');
       const data = await res.json();
       if (data.config) {
         setServerInfo(prev => ({...prev, ...data.config}));
       }
-      // Then query live values from the running server to override
-      try {
-        const liveRes = await fetch('/api/servercfg/live');
-        const liveData = await liveRes.json();
-        if (liveData.config && Object.keys(liveData.config).length > 0) {
-          setServerInfo(prev => ({...prev, ...liveData.config}));
-        }
-      } catch {}
     } catch {}
+  };
+
+  const fetchLiveConfig = async () => {
+    setLoadingLive(true);
+    try {
+      const liveRes = await fetch('/api/servercfg/live');
+      const liveData = await liveRes.json();
+      if (liveData.config && Object.keys(liveData.config).length > 0) {
+        setServerInfo(prev => ({...prev, ...liveData.config}));
+        addToast('Synced live values from server!', 'success');
+      } else {
+        addToast('No live values returned (server may be offline)', 'error');
+      }
+    } catch {
+      addToast('Failed to sync from server', 'error');
+    }
+    setLoadingLive(false);
   };
 
   const apiPost = async (path, body, successMessage) => {
@@ -266,9 +275,14 @@ const Sidebar = ({ addToast }) => {
                <input type="checkbox" id="cons_toggle" checked={serverInfo.sv_consistency === '1'} onChange={e => handleServerInfoChange('sv_consistency', e.target.checked ? '1' : '0')} style={{ width: 'auto', marginBottom: 0 }} />
                <label htmlFor="cons_toggle" style={{ margin: 0, cursor: 'pointer' }}>Enforce File Consistency</label>
              </div>
-             <button className="btn btn-primary" style={{ marginTop: '10px' }} onClick={applyServerInfo} disabled={loadingConfig}>
-               {loadingConfig ? 'Saving...' : '💾 Apply Config'}
-             </button>
+             <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+               <button className="btn btn-secondary" onClick={fetchLiveConfig} disabled={loadingLive} title="Query live cvar values from the running game server">
+                 {loadingLive ? '⏳ Syncing...' : '🔄 Sync from Server'}
+               </button>
+               <button className="btn btn-primary" style={{ flex: 1 }} onClick={applyServerInfo} disabled={loadingConfig}>
+                 {loadingConfig ? 'Saving...' : '💾 Apply Config'}
+               </button>
+             </div>
           </div>
         </div>
       </div>

@@ -195,6 +195,12 @@ select option { background: var(--surface2); }
   border: 1px solid var(--border);
 }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-secondary {
+  background: rgba(91,200,245,0.12);
+  color: var(--blue);
+  border: 1px solid rgba(91,200,245,0.3);
+}
+.btn-secondary:hover { background: rgba(91,200,245,0.22); border-color: var(--blue); transform: translateY(-1px); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 .input-row { display: flex; gap: 7px; align-items: flex-end; }
