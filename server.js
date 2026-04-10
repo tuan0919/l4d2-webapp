@@ -74,6 +74,9 @@ const WEBAPP_CFG_DIR = path.join(CFG_DIR, 'webapp');
 const WEBAPP_OVERRIDE_LOADER_NAME = 'overrides_loader.cfg';
 const WEBAPP_OVERRIDE_LOADER_PATH = path.join(WEBAPP_CFG_DIR, WEBAPP_OVERRIDE_LOADER_NAME);
 const WEBAPP_OVERRIDE_LOADER_EXEC = `exec webapp/${WEBAPP_OVERRIDE_LOADER_NAME}`;
+const OVERRIDE_AUTO_APPLY_RETRIES = 6;
+const OVERRIDE_AUTO_APPLY_DELAY_MS = 2500;
+const GAME_WATCH_INTERVAL_MS = 15000;
 const DEV_ROOTS = {
   game: L4D2_DIR,
   webapp: WEBAPP_DIR
@@ -117,6 +120,13 @@ function sendToGame(command, callback) {
   exec(cmd, (err) => {
     if (err) return callback && callback({ error: err.message });
     callback && callback({ ok: true, command });
+  });
+}
+
+function isGameScreenRunning(callback) {
+  exec('screen -ls | grep l4d2', (err, stdout) => {
+    const running = !!(stdout && stdout.includes('l4d2'));
+    callback(running);
   });
 }
 
@@ -365,6 +375,45 @@ function syncWebappOverrideLoader() {
     serverCfgUpdated,
     loaderExec: WEBAPP_OVERRIDE_LOADER_EXEC
   };
+}
+
+function applyWebappOverridesNow(reason, retriesLeft = OVERRIDE_AUTO_APPLY_RETRIES) {
+  let syncInfo;
+  try {
+    syncInfo = syncWebappOverrideLoader();
+  } catch (e) {
+    console.error(`[L4D2 Dashboard] Override sync failed (${reason}): ${e.message}`);
+    return;
+  }
+
+  sendToGame(WEBAPP_OVERRIDE_LOADER_EXEC, (result) => {
+    if (result && result.error) {
+      if (retriesLeft > 0) {
+        setTimeout(() => applyWebappOverridesNow(reason, retriesLeft - 1), OVERRIDE_AUTO_APPLY_DELAY_MS);
+        return;
+      }
+      console.warn(`[L4D2 Dashboard] Failed to auto-apply overrides (${reason}): ${result.error}`);
+      return;
+    }
+
+    console.log(`[L4D2 Dashboard] Auto-applied overrides (${reason}) with ${syncInfo.overrideFiles.length} file(s).`);
+  });
+}
+
+function watchGameLifecycleForOverrideApply() {
+  let lastRunningState = null;
+
+  const poll = () => {
+    isGameScreenRunning((running) => {
+      if (running && lastRunningState !== true) {
+        setTimeout(() => applyWebappOverridesNow('game-start-detected'), OVERRIDE_AUTO_APPLY_DELAY_MS);
+      }
+      lastRunningState = running;
+    });
+  };
+
+  poll();
+  setInterval(poll, GAME_WATCH_INTERVAL_MS);
 }
 
 function normalizeRelativePath(input) {
@@ -723,8 +772,7 @@ app.post('/api/data/write', (req, res) => {
 });
 
 app.get('/api/status', (req, res) => {
-  exec("screen -ls | grep l4d2", (err, stdout) => {
-    const running = !!(stdout && stdout.includes('l4d2'));
+  isGameScreenRunning((running) => {
     res.json({ running });
   });
 });
@@ -1648,5 +1696,6 @@ server.listen(PORT, '0.0.0.0', () => {
   } catch (e) {
     console.error('[L4D2 Dashboard] Failed to sync override loader:', e.message);
   }
+  watchGameLifecycleForOverrideApply();
   console.log(`[L4D2 Dashboard] Running at http://0.0.0.0:${PORT}`);
 });
