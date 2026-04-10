@@ -226,9 +226,11 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d_hp_rewards_witch_mode', type: 'radio', label: 'Witch Reward Mode', desc: 'Cách phát thưởng khi hạ Witch.', options: [{ v: '0', n: 'Chỉ attacker' }, { v: '1', n: 'Toàn team sống' }] },
   { cvar: 'l4d_hp_rewards_witch_amount', type: 'number', label: 'Witch Reward Amount', desc: 'Lượng thưởng cơ bản khi hạ Witch.' },
 
-  { cvar: 'l4d_hp_rewards_elite_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI thường trở thành Elite.' },
+  { cvar: 'l4d_hp_rewards_elite_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI thường trở thành Elite. Roll này áp cho SI thường, không phải Tank.' },
   { cvar: 'l4d_hp_rewards_elite_hp_mult', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
-  { cvar: 'l4d_hp_rewards_elite_fire', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ loại này mới kháng lửa.' }
+  { cvar: 'l4d_hp_rewards_elite_fire', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ Elite tự cháy mới kháng damage lửa.' },
+  { cvar: 'l4d_hp_rewards_elite_ability_movement_chance_smoker', type: 'number', label: 'Smoker AbilityMovement Chance (%)', desc: 'Nếu Smoker đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
+  { cvar: 'l4d_hp_rewards_elite_ability_movement_chance_spitter', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' }
 ];
 
 const parseBlockData = (content, blockName) => {
@@ -654,7 +656,7 @@ const TabTutorial = ({ addToast }) => {
           <div className="tut-card">
             <div className="tut-header">
                <h2>Elite SI Reward</h2>
-               <p>Tinh chỉnh phần thưởng theo từng SI, scale theo độ khó và cấu hình thưởng riêng cho Tank/Witch.</p>
+               <p>Tinh chỉnh reward theo từng SI, scale theo độ khó và cấu hình subtype elite. Smoker/Spitter elite có thể được roll sang nhánh `AbilityMovement`, còn các elite khác giữ nhánh `HardSI`.</p>
             </div>
 
             <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
@@ -684,10 +686,13 @@ const TabTutorial = ({ addToast }) => {
                {EliteSIRewardConfig.slice(17, 21).map(renderCvarField)}
             </div>
 
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Elite Spawn Traits</div>
-            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-               {EliteSIRewardConfig.slice(21).map(renderCvarField)}
-            </div>
+             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Elite Spawn & Subtype</div>
+             <p style={{ marginTop: 0, marginBottom: 12, color: 'rgba(255,255,255,0.72)' }}>
+               Một elite SI chỉ thuộc một nhánh duy nhất. `AbilityMovement` hiện chỉ random cho `Smoker` và `Spitter`; Tank không đi qua hệ subtype elite này.
+             </p>
+             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+                {EliteSIRewardConfig.slice(21).map(renderCvarField)}
+             </div>
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
                <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(EliteSIRewardConfig)}>Save All (Elite SI Reward)</button>
