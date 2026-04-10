@@ -780,37 +780,72 @@ app.get('/api/cvars', (req, res) => {
   const cfgDir = path.join(L4D2_DIR, 'left4dead2', 'cfg', 'sourcemod');
   const result = [];
   if (!fs.existsSync(cfgDir)) return res.json({ cvars: [] });
-  
+
+  const parseCfgAssignments = (content) => {
+    const assignments = new Map();
+    const lines = content.split('\n');
+    for (let line of lines) {
+      line = line.trim();
+      if (!line || line.startsWith('//')) continue;
+
+      const smCvarMatch = line.match(/^sm_cvar\s+([^\s]+)\s+"(.*)"$/i);
+      if (smCvarMatch) {
+        assignments.set(smCvarMatch[1], smCvarMatch[2]);
+        continue;
+      }
+
+      const directMatch = line.match(/^([^\s]+)\s+"(.*)"$/);
+      if (directMatch) {
+        assignments.set(directMatch[1], directMatch[2]);
+      }
+    }
+    return assignments;
+  };
+
   try {
+    const effectiveOverrides = new Map();
+    if (fs.existsSync(WEBAPP_CFG_DIR)) {
+      const overrideFiles = listWebappOverrideFiles();
+
+      for (const file of overrideFiles) {
+        const overridePath = path.join(WEBAPP_CFG_DIR, file);
+        const content = fs.readFileSync(overridePath, 'utf8');
+        const assignments = parseCfgAssignments(content);
+        assignments.forEach((value, key) => {
+          effectiveOverrides.set(key, value);
+        });
+      }
+    }
+
     const files = fs.readdirSync(cfgDir).filter(f => f.endsWith('.cfg'));
     for (const f of files) {
       const p = path.join(cfgDir, f);
       const content = fs.readFileSync(p, 'utf8');
       const lines = content.split('\n');
-      
+
       const cvarsList = [];
       let currentDesc = [];
-      
+
       for (let line of lines) {
         line = line.trim();
         if (!line) continue;
-        
+
         if (line.startsWith('//')) {
           const cleanDesc = line.replace(/^\/\/\s*/, '').trim();
           if (cleanDesc && cleanDesc !== '-' && !cleanDesc.includes('This file was auto-generated') && !cleanDesc.includes('ConVars for plugin')) {
             currentDesc.push(cleanDesc);
           }
         } else {
-          // Match cvar: sm_cvar_name "value"
           const match = line.match(/^([^\s]+)\s+"(.*)"$/);
           if (match) {
+            const cvarName = match[1];
             cvarsList.push({
-              name: match[1],
-              value: match[2],
+              name: cvarName,
+              value: effectiveOverrides.has(cvarName) ? effectiveOverrides.get(cvarName) : match[2],
               desc: currentDesc.join(' | ')
             });
           }
-          currentDesc = []; // reset desc after finding a cvar
+          currentDesc = [];
         }
       }
       if (cvarsList.length > 0) {

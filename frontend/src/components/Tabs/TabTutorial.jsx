@@ -240,7 +240,7 @@ const CvarViewPanel = ({ configList, values, onApply, addToast, label }) => {
     configList.forEach((item) => {
       const val = values[item.cvar] !== undefined ? String(values[item.cvar]) : '';
       if (item.desc) lines.push(`// ${item.desc}`);
-      lines.push(`${item.cvar} "${val}"`);
+      lines.push(`sm_cvar ${item.cvar} "${val}"`);
     });
     return lines.join('\n');
   };
@@ -264,8 +264,14 @@ const CvarViewPanel = ({ configList, values, onApply, addToast, label }) => {
     draft.split('\n').forEach((line) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('//')) return;
-      const match = trimmed.match(/^([^\s]+)\s+"(.*)"$/);
-      if (match) newValues[match[1]] = match[2];
+      const smCvarMatch = trimmed.match(/^sm_cvar\s+([^\s]+)\s+"(.*)"$/i);
+      if (smCvarMatch) {
+        newValues[smCvarMatch[1]] = smCvarMatch[2];
+        return;
+      }
+
+      const directMatch = trimmed.match(/^([^\s]+)\s+"(.*)"$/);
+      if (directMatch) newValues[directMatch[1]] = directMatch[2];
     });
     onApply(newValues);
     setEditing(false);
