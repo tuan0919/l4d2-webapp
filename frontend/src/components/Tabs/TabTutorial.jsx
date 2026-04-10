@@ -199,6 +199,38 @@ const NotifierExplosionConfig = [
   { cvar: 'l4d_explosion_announcer_fuelbarrel', type: 'toggle', label: 'Fuel Barrel', desc: 'Thông báo nổ thùng dầu lớn.' }
 ];
 
+const EliteSIRewardConfig = [
+  { cvar: 'l4d_hp_rewards_si', type: 'toggle', label: 'Bật thưởng Elite SI', desc: 'Bật/tắt thưởng khi hạ Elite Special Infected.' },
+  { cvar: 'l4d_hp_rewards_tank', type: 'toggle', label: 'Bật thưởng Tank', desc: 'Bật/tắt thưởng khi hạ Tank.' },
+  { cvar: 'l4d_hp_rewards_witch', type: 'toggle', label: 'Bật thưởng Witch', desc: 'Bật/tắt thưởng khi hạ Witch.' },
+  { cvar: 'l4d_hp_rewards_max', type: 'number', label: 'Giới hạn HP tối đa', desc: 'Ngưỡng HP thật + HP tạm sau khi cộng thưởng.' },
+
+  { cvar: 'l4d_hp_rewards_smoker', type: 'number', label: 'Smoker Reward', desc: 'HP thưởng khi hạ Elite Smoker.' },
+  { cvar: 'l4d_hp_rewards_boomer', type: 'number', label: 'Boomer Reward', desc: 'HP thưởng khi hạ Elite Boomer.' },
+  { cvar: 'l4d_hp_rewards_hunter', type: 'number', label: 'Hunter Reward', desc: 'HP thưởng khi hạ Elite Hunter.' },
+  { cvar: 'l4d_hp_rewards_spitter', type: 'number', label: 'Spitter Reward', desc: 'HP thưởng khi hạ Elite Spitter.' },
+  { cvar: 'l4d_hp_rewards_jockey', type: 'number', label: 'Jockey Reward', desc: 'HP thưởng khi hạ Elite Jockey.' },
+  { cvar: 'l4d_hp_rewards_charger', type: 'number', label: 'Charger Reward', desc: 'HP thưởng khi hạ Elite Charger.' },
+
+  { cvar: 'l4d_hp_rewards_headshot_bonus', type: 'toggle', label: 'Headshot Bonus', desc: 'Nhân thưởng nếu kết liễu bằng headshot.' },
+  { cvar: 'l4d_hp_rewards_headshot_mult', type: 'number', label: 'Headshot Multiplier', desc: 'Hệ số nhân thưởng khi headshot (ví dụ 2.0).' },
+
+  { cvar: 'l4d_hp_rewards_scale_difficulty', type: 'toggle', label: 'Scale theo độ khó', desc: 'Bật nhân thưởng theo z_difficulty hiện tại.' },
+  { cvar: 'l4d_hp_rewards_diff_easy', type: 'number', label: 'Easy Multiplier', desc: 'Hệ số thưởng khi độ khó easy.' },
+  { cvar: 'l4d_hp_rewards_diff_normal', type: 'number', label: 'Normal Multiplier', desc: 'Hệ số thưởng khi độ khó normal.' },
+  { cvar: 'l4d_hp_rewards_diff_hard', type: 'number', label: 'Hard/Advanced Multiplier', desc: 'Hệ số thưởng khi độ khó hard/advanced.' },
+  { cvar: 'l4d_hp_rewards_diff_expert', type: 'number', label: 'Expert Multiplier', desc: 'Hệ số thưởng khi độ khó impossible/expert.' },
+
+  { cvar: 'l4d_hp_rewards_tank_mode', type: 'radio', label: 'Tank Reward Mode', desc: 'Cách phát thưởng khi hạ Tank.', options: [{ v: '0', n: 'Chỉ attacker' }, { v: '1', n: 'Toàn team sống' }] },
+  { cvar: 'l4d_hp_rewards_tank_amount', type: 'number', label: 'Tank Reward Amount', desc: 'Lượng thưởng cơ bản khi hạ Tank.' },
+  { cvar: 'l4d_hp_rewards_witch_mode', type: 'radio', label: 'Witch Reward Mode', desc: 'Cách phát thưởng khi hạ Witch.', options: [{ v: '0', n: 'Chỉ attacker' }, { v: '1', n: 'Toàn team sống' }] },
+  { cvar: 'l4d_hp_rewards_witch_amount', type: 'number', label: 'Witch Reward Amount', desc: 'Lượng thưởng cơ bản khi hạ Witch.' },
+
+  { cvar: 'l4d_hp_rewards_elite_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI thường trở thành Elite.' },
+  { cvar: 'l4d_hp_rewards_elite_hp_mult', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
+  { cvar: 'l4d_hp_rewards_elite_fire', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ loại này mới kháng lửa.' }
+];
+
 const parseBlockData = (content, blockName) => {
   if (!content) return {};
   const blockRegex = new RegExp(`"([^"]*\\b${blockName}\\b[^"]*)"\\s*\\{[^}]+\\}`, 'i');
@@ -488,6 +520,7 @@ const TabTutorial = ({ addToast }) => {
           <button className={`tut-tab-btn ${activeTab === 'multislots' ? 'active' : ''}`} onClick={() => setActiveTab('multislots')}>MultiSlots</button>
           <button className={`tut-tab-btn ${activeTab === 'infectedbots' ? 'active' : ''}`} onClick={() => setActiveTab('infectedbots')}>InfectedBots</button>
           <button className={`tut-tab-btn ${activeTab === 'gundamage' ? 'active' : ''}`} onClick={() => setActiveTab('gundamage')}>Gun Damage</button>
+          <button className={`tut-tab-btn ${activeTab === 'eliteReward' ? 'active' : ''}`} onClick={() => setActiveTab('eliteReward')}>Elite SI Reward</button>
           <button className={`tut-tab-btn ${activeTab === 'notifier' ? 'active' : ''}`} onClick={() => setActiveTab('notifier')}>Notifier (Chat)</button>
         </div>
 
@@ -613,6 +646,51 @@ const TabTutorial = ({ addToast }) => {
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
                <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>Save (Write to CFG)</button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'eliteReward' && (
+          <div className="tut-card">
+            <div className="tut-header">
+               <h2>Elite SI Reward</h2>
+               <p>Tinh chỉnh phần thưởng theo từng SI, scale theo độ khó và cấu hình thưởng riêng cho Tank/Witch.</p>
+            </div>
+
+            <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
+               <button className={`tut-btn-cvar-view${cvarViewOpen.eliteReward ? ' active' : ''}`} onClick={() => toggleCvarView('eliteReward')}>
+                 {cvarViewOpen.eliteReward ? 'Close Cvar View' : 'View as Cvar'}
+               </button>
+               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Cvars</button>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(EliteSIRewardConfig)}>Save All</button>
+            </div>
+
+            {cvarViewOpen.eliteReward && (
+              <CvarViewPanel configList={EliteSIRewardConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Elite SI Reward" />
+            )}
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Rewards & Limits</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {EliteSIRewardConfig.slice(0, 10).map(renderCvarField)}
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Headshot & Difficulty Scaling</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {EliteSIRewardConfig.slice(10, 17).map(renderCvarField)}
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Tank / Witch Modes</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {EliteSIRewardConfig.slice(17, 21).map(renderCvarField)}
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Elite Spawn Traits</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {EliteSIRewardConfig.slice(21).map(renderCvarField)}
+            </div>
+
+            <div className="tut-actions" style={{ marginTop: 32 }}>
+               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(EliteSIRewardConfig)}>Save All (Elite SI Reward)</button>
             </div>
           </div>
         )}
