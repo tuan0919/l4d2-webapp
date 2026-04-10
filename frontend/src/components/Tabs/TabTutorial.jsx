@@ -163,6 +163,7 @@ const InfectedBotsDataConfig = [
 
 const NotifierDIConfig = [
   { cvar: 'tuan_notifier_di_enable', type: 'toggle', label: 'Bật DI Notifier', desc: 'Bật/tắt thông báo Death/Incap.' },
+  { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite SI Tag', desc: 'Hiện chữ Elite trong thông báo kill SI (chat đỏ).' },
   { cvar: 'tuan_notifier_di_notify_incap_other', type: 'toggle', label: 'Incap Other', desc: 'Thông báo khi bị ai đó bắn gục.' },
   { cvar: 'tuan_notifier_di_notify_kill_other', type: 'toggle', label: 'Kill Other', desc: 'Thông báo khi giết ai đó.' },
   { cvar: 'tuan_notifier_di_notify_killed_by_unknown', type: 'toggle', label: 'Killed By Unknown', desc: 'Thông báo khi chết do môi trường.' },
