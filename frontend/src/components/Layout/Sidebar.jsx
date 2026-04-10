@@ -56,9 +56,9 @@ const Sidebar = ({ addToast }) => {
       const res = await fetch('/api/servercfg');
       const data = await res.json();
       if (data.config) {
-        setServerInfo(prev => ({...prev, ...data.config}));
+        setServerInfo(prev => ({ ...prev, ...data.config }));
       }
-    } catch {}
+    } catch { }
   };
 
   const fetchLiveConfig = async () => {
@@ -67,7 +67,7 @@ const Sidebar = ({ addToast }) => {
       const liveRes = await fetch('/api/servercfg/live');
       const liveData = await liveRes.json();
       if (liveData.config && Object.keys(liveData.config).length > 0) {
-        setServerInfo(prev => ({...prev, ...liveData.config}));
+        setServerInfo(prev => ({ ...prev, ...liveData.config }));
         addToast('Synced live values from server!', 'success');
       } else {
         addToast('No live values returned (server may be offline)', 'error');
@@ -235,59 +235,60 @@ const Sidebar = ({ addToast }) => {
         <div className="card-body">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-               <label>Contact Name / Admin</label>
-               <input type="text" value={serverInfo.sv_contact || ''} onChange={e => handleServerInfoChange('sv_contact', e.target.value)} />
-             </div>
-             <div>
-               <label>Tags</label>
-               <input type="text" value={serverInfo.sv_tags || ''} onChange={e => handleServerInfoChange('sv_tags', e.target.value)} />
-             </div>
-             <div>
-               <label>Search Key</label>
-               <input type="text" value={serverInfo.sv_search_key || ''} onChange={e => handleServerInfoChange('sv_search_key', e.target.value)} />
-             </div>
-             <div>
-               <label>Game Types (e.g., coop, realism)</label>
-               <input type="text" value={serverInfo.sv_gametypes || ''} onChange={e => handleServerInfoChange('sv_gametypes', e.target.value)} />
-             </div>
-             <div>
-               <label>Server Region (4 = Asia)</label>
-               <input type="number" min="0" max="255" value={serverInfo.sv_region || ''} onChange={e => handleServerInfoChange('sv_region', e.target.value)} />
-             </div>
-             <div>
-               <label>Server Name Override</label>
-               <input type="text" value={serverInfo.l4d_current_mode || ''} onChange={e => handleServerInfoChange('l4d_current_mode', e.target.value)} />
-             </div>
-             <div>
-               <label>Difficulty</label>
-               <select value={serverInfo.z_difficulty || 'Normal'} onChange={e => handleServerInfoChange('z_difficulty', e.target.value)}>
-                 <option value="Easy">Easy</option>
-                 <option value="Normal">Normal</option>
-                 <option value="Hard">Hard</option>
-                 <option value="Impossible">Impossible (Expert)</option>
-               </select>
-             </div>
-             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-               <input type="checkbox" id="ff_toggle" checked={serverInfo.friendly_fire === '1'} onChange={e => handleServerInfoChange('friendly_fire', e.target.checked ? '1' : '0')} style={{ width: 'auto', marginBottom: 0 }} />
-               <label htmlFor="ff_toggle" style={{ margin: 0, cursor: 'pointer' }}>Enable Friendly Fire</label>
-             </div>
-             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-               <input type="checkbox" id="cons_toggle" checked={serverInfo.sv_consistency === '1'} onChange={e => handleServerInfoChange('sv_consistency', e.target.checked ? '1' : '0')} style={{ width: 'auto', marginBottom: 0 }} />
-               <label htmlFor="cons_toggle" style={{ margin: 0, cursor: 'pointer' }}>Enforce File Consistency</label>
-             </div>
-             <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-               <button className="btn btn-secondary" onClick={fetchLiveConfig} disabled={loadingLive} title="Query live cvar values from the running game server">
-                 {loadingLive ? '⏳ Syncing...' : '🔄 Sync from Server'}
-               </button>
-               <button className="btn btn-primary" style={{ flex: 1 }} onClick={applyServerInfo} disabled={loadingConfig}>
-                 {loadingConfig ? 'Saving...' : '💾 Apply Config'}
-               </button>
-             </div>
+              <label>Contact Name / Admin</label>
+              <input type="text" value={serverInfo.sv_contact || ''} onChange={e => handleServerInfoChange('sv_contact', e.target.value)} />
+            </div>
+            <div>
+              <label>Tags</label>
+              <input type="text" value={serverInfo.sv_tags || ''} onChange={e => handleServerInfoChange('sv_tags', e.target.value)} />
+            </div>
+            <div>
+              <label>Search Key</label>
+              <input type="text" value={serverInfo.sv_search_key || ''} onChange={e => handleServerInfoChange('sv_search_key', e.target.value)} />
+            </div>
+            <div>
+              <label>Game Types (e.g., coop, realism)</label>
+              <input type="text" value={serverInfo.sv_gametypes || ''} onChange={e => handleServerInfoChange('sv_gametypes', e.target.value)} />
+            </div>
+            <div>
+              <label>Server Region (4 = Asia)</label>
+              <input type="number" min="0" max="255" value={serverInfo.sv_region || ''} onChange={e => handleServerInfoChange('sv_region', e.target.value)} />
+            </div>
+            <div>
+              <label>Server Name Override</label>
+              <input type="text" value={serverInfo.l4d_current_mode || ''} onChange={e => handleServerInfoChange('l4d_current_mode', e.target.value)} />
+            </div>
+            <div>
+              <label>Difficulty</label>
+              <select value={serverInfo.z_difficulty || 'Normal'} onChange={e => handleServerInfoChange('z_difficulty', e.target.value)}>
+                <option value="Easy">Easy</option>
+                <option value="Normal">Normal</option>
+                <option value="Hard">Hard</option>
+                <option value="Impossible">Impossible (Expert)</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input type="checkbox" id="ff_toggle" checked={serverInfo.friendly_fire === '1'} onChange={e => handleServerInfoChange('friendly_fire', e.target.checked ? '1' : '0')} style={{ width: 'auto', marginBottom: 0 }} />
+              <label htmlFor="ff_toggle" style={{ margin: 0, cursor: 'pointer' }}>Enable Friendly Fire</label>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input type="checkbox" id="cons_toggle" checked={serverInfo.sv_consistency === '1'} onChange={e => handleServerInfoChange('sv_consistency', e.target.checked ? '1' : '0')} style={{ width: 'auto', marginBottom: 0 }} />
+              <label htmlFor="cons_toggle" style={{ margin: 0, cursor: 'pointer' }}>Enforce File Consistency</label>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+              <button className="btn btn-secondary" onClick={fetchLiveConfig} disabled={loadingLive} title="Query live cvar values from the running game server">
+                {loadingLive ? '⏳ Syncing...' : '🔄 Sync from Server'}
+              </button>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={applyServerInfo} disabled={loadingConfig}>
+                {loadingConfig ? 'Saving...' : '💾 Apply Config'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </aside>
   );
 };
+
 
 export default Sidebar;
