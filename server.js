@@ -1165,12 +1165,12 @@ function patchKeyValuesBlock(content, blockName, changes) {
   const { lines, root } = analyzeKeyValuesContent(content);
   const settingsNode = findSettingsNode(root);
   if (!settingsNode) {
-    throw new Error('Khong tim thay block "Settings" trong file data.');
+    throw new Error('Không tìm thấy block "Settings" trong file data.');
   }
 
   const blockNode = settingsNode.children.find((node) => node && node.name === targetBlock);
   if (!blockNode) {
-    throw new Error(`Khong tim thay block "${targetBlock}" trong Settings.`);
+    throw new Error(`Không tìm thấy block "${targetBlock}" trong Settings.`);
   }
 
   const oldValues = parseBlockAssignments(lines, blockNode);
@@ -1334,7 +1334,7 @@ app.patch('/api/data/patch-block', (req, res) => {
         changed: false,
         changedKeys: [],
         reloaded: false,
-        message: 'Khong co thay doi nao duoc ap dung.'
+        message: 'Không có thay đổi nào được áp dụng.'
       });
     }
 
@@ -1367,11 +1367,11 @@ app.patch('/api/data/patch-block', (req, res) => {
           backupPath: path.basename(backupPath),
           reloaded: false,
           reloadSkipped: true,
-          message: 'Game server khong chay, da bo qua reload plugin.'
+          message: 'Game server không chạy, đã bỏ qua reload plugin.'
         });
       }
 
-      sendToGame(`sm plugins reload ${plugin}`, (reloadResult) => {
+      sendToGame(`sm plugins load ${plugin}`, (reloadResult) => {
         if (reloadResult && reloadResult.error) {
           return res.status(500).json({
             success: false,

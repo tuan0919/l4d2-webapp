@@ -508,7 +508,7 @@ const TabTutorial = ({ addToast }) => {
     });
 
     if (changes.length === 0) {
-      addToast('Khong co thay doi de luu.', 'info');
+      addToast('Không có thay đổi để lưu.', 'info');
       return;
     }
 
@@ -525,7 +525,7 @@ const TabTutorial = ({ addToast }) => {
       const res = await fetch('/api/cvars/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cvars: reviewDialog.payload }) });
       if (res.ok) {
         setServerValues(prev => ({ ...prev, ...reviewDialog.payload }));
-        addToast(`Da luu ${reviewDialog.changes.length} thay doi CVAR.`, 'success');
+        addToast(`Đã lưu ${reviewDialog.changes.length} thay đổi CVAR.`, 'success');
         closeReviewDialog();
       } else {
         addToast('Lỗi khi lưu CVARs.', 'error');
@@ -549,7 +549,7 @@ const TabTutorial = ({ addToast }) => {
     });
 
     if (changes.length === 0) {
-      addToast('Khong co thay doi Data de luu.', 'info');
+       addToast('Không có thay đổi Data để lưu.', 'info');
       return;
     }
 
@@ -583,18 +583,18 @@ const TabTutorial = ({ addToast }) => {
       if (res.ok) {
         if (data.changed) {
           setServerDataValues((prev) => ({ ...prev, ...dataReviewDialog.payload.changes }));
-          const reloadText = data.reloaded ? 'Plugin da duoc reload.' : 'Khong reload plugin.';
-          addToast(`Da luu ${data.changedKeys?.length || 0} key Data (${selectedBlock}). ${reloadText}`, 'success');
+           const reloadText = data.reloaded ? 'Plugin đã được reload.' : 'Không reload plugin.';
+           addToast(`Đã lưu ${data.changedKeys?.length || 0} key Data (${selectedBlock}). ${reloadText}`, 'success');
         } else {
-          addToast(data.message || 'Khong co thay doi nao duoc ap dung.', 'info');
+          addToast(data.message || 'Không có thay đổi nào được áp dụng.', 'info');
         }
         closeDataReviewDialog();
         fetchDataBlockValues(selectedFile, selectedBlock);
       } else {
-        addToast(data.error || 'Loi khi luu Data config.', 'error');
+         addToast(data.error || 'Lỗi khi lưu Data config.', 'error');
       }
     } catch {
-      addToast('Error writing Data', 'error');
+      addToast('Lỗi khi ghi Data', 'error');
     } finally { setLoading(false); }
   };
 
@@ -724,22 +724,22 @@ const TabTutorial = ({ addToast }) => {
                    </select>
                  </div>
                  <div>
-                    <span className="tut-toolbar-label">Mốc người chơi (Block):</span>
+                     <span className="tut-toolbar-label">Mốc người chơi (Block):</span>
                     <select className="tut-input" value={selectedBlock} onChange={e => setSelectedBlock(e.target.value)} style={{ width: 'auto', display: 'inline-block' }}>
                       {availableBlocks.map((block) => (
                         <option key={block} value={block}>
-                          {block === 'default' ? 'Default (Mac dinh)' : `${block} Nguoi choi`}
+                           {block === 'default' ? 'Default (Mặc định)' : `${block} Người chơi`}
                         </option>
                       ))}
                     </select>
                   </div>
                   <label className="tut-checkbox" style={{ marginLeft: 'auto' }}>
                     <input type="checkbox" checked={dataReloadOnSave} onChange={(e) => setDataReloadOnSave(e.target.checked)} />
-                    Reload plugin sau khi luu
-                  </label>
-               </div>
+                     Reload plugin sau khi lưu
+                 </label>
+              </div>
 
-              {!loading && availableBlocks.length === 0 && <p style={{ color: 'var(--muted)' }}>Khong tim thay block nao trong file data.</p>}
+              {!loading && availableBlocks.length === 0 && <p style={{ color: 'var(--muted)' }}>Không tìm thấy block nào trong file data.</p>}
               
               {availableBlocks.length > 0 && (
                 <>
