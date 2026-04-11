@@ -87,6 +87,7 @@ const DEV_ROOT_LABELS = {
 };
 const DEV_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
 const DEV_BROWSE_MAX_ENTRIES = 250;
+const TUTORIAL_CVAR_FILE_MAP = require(path.join(WEBAPP_DIR, 'frontend', 'src', 'components', 'Tabs', 'tutorialCvarFileMap.json'));
 
 // --- Auth ---
 app.use(basicAuth({
@@ -186,6 +187,173 @@ function parseCfgAssignments(content) {
   }
 
   return assignments;
+}
+
+function getTutorialCvarRelativePath(cvarName) {
+  return TUTORIAL_CVAR_FILE_MAP[cvarName] || null;
+}
+
+function resolveGameRelativePath(relativePath) {
+  return path.join(L4D2_DIR, 'left4dead2', ...String(relativePath || '').split('/'));
+}
+
+function splitCodeAndComment(line) {
+  const commentIndex = line.indexOf('//');
+  if (commentIndex === -1) {
+    return { code: line, comment: '' };
+  }
+
+  const code = line.substring(0, commentIndex);
+  const trailingSpaces = code.match(/\s+$/);
+  const spacer = trailingSpaces ? trailingSpaces[0] : '\t\t';
+  return {
+    code,
+    comment: `${spacer}${line.substring(commentIndex)}`
+  };
+}
+
+function parseCfgAssignmentLine(line) {
+  const { code } = splitCodeAndComment(String(line || ''));
+  const trimmed = code.trim();
+  if (!trimmed) return null;
+
+  let match = trimmed.match(/^sm_cvar\s+([^\s]+)\s+(.+)$/i);
+  if (match) {
+    return { key: match[1], usesSmCvar: true };
+  }
+
+  match = trimmed.match(/^([^\s]+)\s+(.+)$/);
+  if (match) {
+    return { key: match[1], usesSmCvar: false };
+  }
+
+  return null;
+}
+
+function buildCfgAssignmentLine(key, value, usesSmCvar = false) {
+  const normalizedValue = normalizeCvarValue(value);
+  return usesSmCvar
+    ? `sm_cvar ${key} "${normalizedValue}"`
+    : `${key} "${normalizedValue}"`;
+}
+
+function writeCfgAssignments(relativePath, assignments, options = {}) {
+  const usesSmCvar = !!options.usesSmCvar;
+  const absolutePath = resolveGameRelativePath(relativePath);
+  ensureDirectoryExists(path.dirname(absolutePath));
+
+  let lines = [];
+  if (fs.existsSync(absolutePath)) {
+    lines = fs.readFileSync(absolutePath, 'utf8').split(/\r?\n/);
+  } else {
+    lines = [
+      '// Auto-managed by l4d2-webapp.',
+      `// Source path: ${relativePath}`,
+      ''
+    ];
+  }
+
+  for (const [key, value] of Object.entries(assignments || {})) {
+    if (!isValidCvarName(key)) continue;
+
+    const nextLine = buildCfgAssignmentLine(key, value, usesSmCvar);
+    let found = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.trim().startsWith('//')) continue;
+
+      const parsed = parseCfgAssignmentLine(line);
+      if (!parsed || parsed.key !== key) continue;
+
+      const leadingSpace = line.match(/^\s*/)[0];
+      const { comment } = splitCodeAndComment(line);
+      lines[i] = `${leadingSpace}${nextLine}${comment}`;
+      found = true;
+    }
+
+    if (!found) {
+      if (lines.length > 0 && lines[lines.length - 1] !== '') {
+        lines.push('');
+      }
+      lines.push(nextLine);
+    }
+  }
+
+  while (lines.length > 0 && lines[lines.length - 1] === '') {
+    lines.pop();
+  }
+
+  fs.writeFileSync(absolutePath, `${lines.join('\n')}\n`, 'utf8');
+  return absolutePath;
+}
+
+function migrateManagedWebappOverridesToCanonicalFiles() {
+  if (!fs.existsSync(WEBAPP_CFG_DIR)) {
+    return { migratedFiles: [], orphanFiles: [], migratedCvars: 0 };
+  }
+
+  const overrideFiles = listWebappOverrideFiles();
+  const managedByTarget = new Map();
+  const orphanByFile = new Map();
+  let migratedCvars = 0;
+
+  for (const file of overrideFiles) {
+    const absolutePath = path.join(WEBAPP_CFG_DIR, file);
+    const assignments = parseCfgAssignments(fs.readFileSync(absolutePath, 'utf8'));
+    const orphanAssignments = {};
+
+    assignments.forEach((value, key) => {
+      const targetRelativePath = getTutorialCvarRelativePath(key);
+      if (!targetRelativePath) {
+        orphanAssignments[key] = value;
+        return;
+      }
+
+      if (!managedByTarget.has(targetRelativePath)) {
+        managedByTarget.set(targetRelativePath, {});
+      }
+
+      managedByTarget.get(targetRelativePath)[key] = value;
+      migratedCvars += 1;
+    });
+
+    orphanByFile.set(file, orphanAssignments);
+  }
+
+  const migratedFiles = [];
+  managedByTarget.forEach((targetAssignments, relativePath) => {
+    writeCfgAssignments(relativePath, targetAssignments, { usesSmCvar: false });
+    migratedFiles.push(relativePath);
+  });
+
+  const orphanFiles = [];
+  orphanByFile.forEach((orphanAssignments, file) => {
+    const absolutePath = path.join(WEBAPP_CFG_DIR, file);
+    const orphanEntries = Object.entries(orphanAssignments);
+
+    if (orphanEntries.length === 0) {
+      try {
+        fs.unlinkSync(absolutePath);
+      } catch (e) {}
+      return;
+    }
+
+    const lines = [
+      '// Legacy webapp override file.',
+      '// Tutorial-managed cvars were migrated to their canonical cfg files.',
+      ''
+    ];
+
+    orphanEntries.forEach(([key, value]) => {
+      lines.push(buildCfgAssignmentLine(key, value, true));
+    });
+
+    fs.writeFileSync(absolutePath, `${lines.join('\n')}\n`, 'utf8');
+    orphanFiles.push(file);
+  });
+
+  return { migratedFiles, orphanFiles, migratedCvars };
 }
 
 function buildSmCvarCommandsFromWebappOverrides() {
@@ -938,7 +1106,6 @@ app.post('/api/cvars/raw', (req, res) => {
   try {
     fs.copyFileSync(cfgPath, cfgPath + '.bak');
     fs.writeFileSync(cfgPath, content, 'utf8');
-    syncWebappOverrideLoader();
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -951,20 +1118,6 @@ app.get('/api/cvars', (req, res) => {
   if (!fs.existsSync(cfgDir)) return res.json({ cvars: [] });
 
   try {
-    const effectiveOverrides = new Map();
-    if (fs.existsSync(WEBAPP_CFG_DIR)) {
-      const overrideFiles = listWebappOverrideFiles();
-
-      for (const file of overrideFiles) {
-        const overridePath = path.join(WEBAPP_CFG_DIR, file);
-        const content = fs.readFileSync(overridePath, 'utf8');
-        const assignments = parseCfgAssignments(content);
-        assignments.forEach((value, key) => {
-          effectiveOverrides.set(key, value);
-        });
-      }
-    }
-
     const files = fs.readdirSync(cfgDir).filter(f => f.endsWith('.cfg'));
     for (const f of files) {
       const p = path.join(cfgDir, f);
@@ -989,7 +1142,7 @@ app.get('/api/cvars', (req, res) => {
             const cvarName = match[1];
             cvarsList.push({
               name: cvarName,
-              value: effectiveOverrides.has(cvarName) ? effectiveOverrides.get(cvarName) : match[2],
+              value: match[2],
               desc: currentDesc.join(' | ')
             });
           }
@@ -997,7 +1150,7 @@ app.get('/api/cvars', (req, res) => {
         }
       }
       if (cvarsList.length > 0) {
-        result.push({ plugin: f.replace('.cfg', ''), cvars: cvarsList });
+        result.push({ plugin: f.replace('.cfg', ''), path: `cfg/sourcemod/${f}`, cvars: cvarsList });
       }
     }
     res.json({ cvars: result });
@@ -1013,41 +1166,42 @@ app.post('/api/cvars/write', (req, res) => {
   }
 
   try {
-    // Build the webapp override session file.
-    // This file is written fresh each time — named with a timestamp so it doesn't
-    // conflict with manually-placed user override files.
-    // On full redeploy (rsync from repo), session files are wiped because they
-    // don't exist in the repo. Only files the user deliberately places in
-    // cfg/webapp/ (e.g. permanent overrides) survive restarts.
-    ensureDirectoryExists(WEBAPP_CFG_DIR);
+    const targetFileAssignments = new Map();
+    const rejected = [];
 
-    // Remove any previous session files written by /api/cvars/write
-    const existingSessionFiles = fs.readdirSync(WEBAPP_CFG_DIR).filter(f => f.startsWith('session_') && f.endsWith('.cfg'));
-    for (const sessionFile of existingSessionFiles) {
-      try { fs.unlinkSync(path.join(WEBAPP_CFG_DIR, sessionFile)); } catch (e) {}
+    for (const [cvarName, cvarValue] of Object.entries(cvars)) {
+      const relativePath = getTutorialCvarRelativePath(cvarName);
+      if (!relativePath || !isValidCvarName(cvarName)) {
+        rejected.push(cvarName);
+        continue;
+      }
+
+      if (!targetFileAssignments.has(relativePath)) {
+        targetFileAssignments.set(relativePath, {});
+      }
+
+      targetFileAssignments.get(relativePath)[cvarName] = cvarValue;
     }
 
-    const sessionFileName = `session_${Date.now()}.cfg`;
-    const sessionFilePath = path.join(WEBAPP_CFG_DIR, sessionFileName);
+    if (targetFileAssignments.size === 0) {
+      return res.status(400).json({ error: 'No Tutorial-managed cvars provided', rejected });
+    }
 
-    const commands = buildSmCvarCommands(cvars);
+    const acceptedCvars = {};
+    const updatedFiles = [];
+    targetFileAssignments.forEach((fileAssignments, relativePath) => {
+      writeCfgAssignments(relativePath, fileAssignments, { usesSmCvar: false });
+      Object.assign(acceptedCvars, fileAssignments);
+      updatedFiles.push(relativePath);
+    });
 
-    const lines = [
-      '// Auto-generated session override by l4d2-webapp /api/cvars/write.',
-      '// This file is recreated on each save and deleted on full redeploy.',
-      ''
-    ];
-    lines.push(...commands);
-    lines.push('');
-    fs.writeFileSync(sessionFilePath, lines.join('\n'), 'utf8');
+    const commands = buildSmCvarCommands(acceptedCvars);
 
-    // Also send immediately to the running server
     if (commands.length > 0) {
       sendCommandsToGame(commands, () => {});
     }
 
-    const syncInfo = syncWebappOverrideLoader();
-    res.json({ success: true, sessionFile: sessionFileName, overrideSync: syncInfo });
+    res.json({ success: true, updatedFiles, rejected });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1730,7 +1884,11 @@ wss.on('connection', (ws) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   try {
+    const migrationInfo = migrateManagedWebappOverridesToCanonicalFiles();
     const syncInfo = syncWebappOverrideLoader();
+    if (migrationInfo.migratedCvars > 0) {
+      console.log(`[L4D2 Dashboard] Migrated ${migrationInfo.migratedCvars} Tutorial cvar override(s) to canonical cfg files.`);
+    }
     console.log(`[L4D2 Dashboard] Override loader ready (${syncInfo.overrideFiles.length} file(s)).`);
   } catch (e) {
     console.error('[L4D2 Dashboard] Failed to sync override loader:', e.message);

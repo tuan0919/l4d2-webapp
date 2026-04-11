@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import cvarFileMap from './tutorialCvarFileMap.json';
 
 // Custom CSS for premium looks embedded in the component
 const styles = `
@@ -141,12 +142,12 @@ const MultiSlotsConfig = [
 
 const InfectedBotsCvarsConfig = [
   { cvar: 'l4d_infectedbots_allow', type: 'toggle', label: 'Enable Plugin', desc: 'Kích hoạt plugin InfectedBots.' },
-  { cvar: 'coop_versus_enable', type: 'toggle', label: 'Playable SI', desc: 'Cho phép người chơi tham gia phe Zombie trong Coop/Survival (!ji).' },
   { cvar: 'l4d_infectedbots_sm_zss_disable_gamemode', type: 'multi-checkbox', label: 'Disable !zss (Suicide)', desc: 'Cấm phe Zombie dùng lệnh !zss tự sát.', 
-    options: [{v: 1, n: 'Coop/Realism'}, {v: 2, n: 'Versus/Scavenge'}, {v: 4, n: 'Survival'}] }
+     options: [{v: 1, n: 'Coop/Realism'}, {v: 2, n: 'Versus/Scavenge'}, {v: 4, n: 'Survival'}] }
 ];
 
 const InfectedBotsDataConfig = [
+  { key: 'coop_versus_enable', type: 'toggle', label: 'Playable SI', desc: 'Cho phép người chơi tham gia phe Zombie trong mode đang chọn (!ji).' },
   { key: 'max_specials', type: 'number', label: 'Max Specials', desc: 'Tổng số SI xuất hiện cùng lúc.' },
   { key: 'smoker_limit', type: 'number', label: 'Smoker Limit', desc: 'Tối đa Smoker.' },
   { key: 'boomer_limit', type: 'number', label: 'Boomer Limit', desc: 'Tối đa Boomer.' },
@@ -233,6 +234,8 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d_hp_rewards_elite_ability_movement_chance_spitter', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' }
 ];
 
+const getCvarSourcePath = (cvar) => cvarFileMap[cvar] || '';
+
 const parseBlockData = (content, blockName) => {
   if (!content) return {};
   const blockRegex = new RegExp(`"([^"]*\\b${blockName}\\b[^"]*)"\\s*\\{[^}]+\\}`, 'i');
@@ -265,18 +268,31 @@ const updateBlockData = (content, blockName, newValues) => {
 };
 
 // Reusable "View as Cvar" panel component
-const CvarViewPanel = ({ configList, values, onApply, addToast, label }) => {
+const CvarViewPanel = ({ configList, values, onApply, addToast, label, getSourcePath }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  const sourcePaths = [...new Set(configList.map((item) => getSourcePath(item.cvar)).filter(Boolean))];
 
   const generateText = () => {
     const lines = [];
     lines.push(`// ${label}`);
-    configList.forEach((item) => {
-      const val = values[item.cvar] !== undefined ? String(values[item.cvar]) : '';
-      if (item.desc) lines.push(`// ${item.desc}`);
-      lines.push(`sm_cvar ${item.cvar} "${val}"`);
+
+    sourcePaths.forEach((sourcePath, sourceIndex) => {
+      if (sourcePaths.length > 1) {
+        lines.push(`// File: ${sourcePath}`);
+      }
+
+      configList.filter((item) => getSourcePath(item.cvar) === sourcePath).forEach((item) => {
+        const val = values[item.cvar] !== undefined ? String(values[item.cvar]) : '';
+        if (item.desc) lines.push(`// ${item.desc}`);
+        lines.push(`sm_cvar ${item.cvar} "${val}"`);
+      });
+
+      if (sourceIndex !== sourcePaths.length - 1) {
+        lines.push('');
+      }
     });
+
     return lines.join('\n');
   };
 
@@ -316,7 +332,7 @@ const CvarViewPanel = ({ configList, values, onApply, addToast, label }) => {
   return (
     <div className="tut-cvar-panel">
       <div className="tut-cvar-toolbar">
-        <span>{label} — raw cvar format</span>
+        <span>{label} — raw cvar format{sourcePaths.length > 0 ? ` — ${sourcePaths.join(', ')}` : ''}</span>
         {!editing ? (
           <>
             <button className="tut-btn tut-btn-refresh" onClick={handleCopy}>Copy</button>
@@ -470,6 +486,7 @@ const TabTutorial = ({ addToast }) => {
 
   const renderCvarField = (item) => {
     const val = values[item.cvar] !== undefined ? values[item.cvar] : '';
+    const sourcePath = getCvarSourcePath(item.cvar);
     return (
       <div className="tut-item" key={item.cvar}>
         <div className="tut-label">
@@ -479,9 +496,10 @@ const TabTutorial = ({ addToast }) => {
                <input type="checkbox" checked={String(val) === '1'} onChange={e => handleUpdate(item.cvar, e.target.checked ? '1' : '0')} />
                <span className="tut-switch-slider"></span>
              </label>
-           )}
+            )}
         </div>
         <div className="tut-desc">{item.desc}</div>
+        {sourcePath && <div className="tut-desc" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'var(--blue)' }}>{sourcePath}</div>}
         {item.type === 'number' && <input type="number" className="tut-input" value={val} onChange={e => handleUpdate(item.cvar, e.target.value)} style={{ marginTop: 8 }} />}
         {item.type === 'select' && (
            <select className="tut-input" value={val} onChange={e => handleUpdate(item.cvar, e.target.value)} style={{ marginTop: 8 }}>
@@ -508,7 +526,14 @@ const TabTutorial = ({ addToast }) => {
       <div className="tut-item" key={item.key}>
         <div className="tut-label">{item.label}</div>
         <div className="tut-desc">{item.desc}</div>
-        <input type="number" step="any" className="tut-input" value={val} onChange={e => handleDataUpdate(item.key, e.target.value)} style={{ marginTop: 8 }} />
+        {item.type === 'toggle' ? (
+          <label className="tut-switch" style={{ marginTop: 8 }}>
+            <input type="checkbox" checked={String(val) === '1'} onChange={e => handleDataUpdate(item.key, e.target.checked ? '1' : '0')} />
+            <span className="tut-switch-slider"></span>
+          </label>
+        ) : (
+          <input type="number" step="any" className="tut-input" value={val} onChange={e => handleDataUpdate(item.key, e.target.value)} style={{ marginTop: 8 }} />
+        )}
       </div>
     );
   };
@@ -543,7 +568,7 @@ const TabTutorial = ({ addToast }) => {
                <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(MultiSlotsConfig)}>Save (CVARs)</button>
             </div>
             {cvarViewOpen.multislots && (
-              <CvarViewPanel configList={MultiSlotsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="MultiSlots" />
+               <CvarViewPanel configList={MultiSlotsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="MultiSlots" getSourcePath={getCvarSourcePath} />
             )}
           </div>
         )}
@@ -566,7 +591,7 @@ const TabTutorial = ({ addToast }) => {
                  <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(InfectedBotsCvarsConfig)}>Save (CVARs)</button>
               </div>
               {cvarViewOpen.infectedbots && (
-                <CvarViewPanel configList={InfectedBotsCvarsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="InfectedBots CVARs" />
+                 <CvarViewPanel configList={InfectedBotsCvarsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="InfectedBots CVARs" getSourcePath={getCvarSourcePath} />
               )}
             </div>
 
@@ -627,7 +652,7 @@ const TabTutorial = ({ addToast }) => {
             </div>
 
             {cvarViewOpen.gundamage && (
-              <CvarViewPanel configList={GunDamageConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Gun Damage" />
+               <CvarViewPanel configList={GunDamageConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Gun Damage" getSourcePath={getCvarSourcePath} />
             )}
 
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
@@ -668,7 +693,7 @@ const TabTutorial = ({ addToast }) => {
             </div>
 
             {cvarViewOpen.eliteReward && (
-              <CvarViewPanel configList={EliteSIRewardConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Elite SI Reward" />
+               <CvarViewPanel configList={EliteSIRewardConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Elite SI Reward" getSourcePath={getCvarSourcePath} />
             )}
 
             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Rewards & Limits</div>
@@ -716,7 +741,7 @@ const TabTutorial = ({ addToast }) => {
             </div>
 
             {cvarViewOpen.notifier && (
-              <CvarViewPanel configList={[...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig]} values={values} onApply={applyCvarText} addToast={addToast} label="Notifier" />
+               <CvarViewPanel configList={[...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig]} values={values} onApply={applyCvarText} addToast={addToast} label="Notifier" getSourcePath={getCvarSourcePath} />
             )}
 
             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Death & Incap</div>
