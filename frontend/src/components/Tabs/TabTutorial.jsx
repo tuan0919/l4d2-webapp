@@ -70,13 +70,20 @@ const styles = `
   .tut-review-subtitle { margin-top: 6px; font-size: 12px; color: #9fb0c9; }
   .tut-review-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(91,200,245,0.35); background: rgba(91,200,245,0.12); color: var(--blue); font-size: 11px; font-weight: 600; }
   .tut-review-body { padding: 10px 20px 16px; overflow: auto; }
-  .tut-review-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  .tut-review-table thead th { text-align: left; font-size: 11px; color: #94a3b8; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .tut-review-table tbody td { vertical-align: top; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
-  .tut-review-cvar { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; }
-  .tut-review-path { color: #5bc8f5; font-family: 'JetBrains Mono', monospace; word-break: break-word; }
-  .tut-review-old { color: #fca5a5; font-family: 'JetBrains Mono', monospace; word-break: break-word; }
-  .tut-review-new { color: #86efac; font-family: 'JetBrains Mono', monospace; word-break: break-word; }
+  .tut-review-diff { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; background: #0b1220; }
+  .tut-review-file { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(148, 163, 184, 0.08); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7dd3fc; }
+  .tut-review-file-badge { color: #cbd5e1; font-size: 11px; border: 1px solid rgba(148,163,184,0.35); border-radius: 999px; padding: 2px 8px; }
+  .tut-review-lines { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .tut-review-line { display: grid; grid-template-columns: 56px 56px 28px 1fr; align-items: stretch; }
+  .tut-review-line + .tut-review-line { border-top: 1px solid rgba(255,255,255,0.04); }
+  .tut-review-line-old { background: rgba(248, 113, 113, 0.11); }
+  .tut-review-line-new { background: rgba(74, 222, 128, 0.13); }
+  .tut-review-ln { color: #94a3b8; text-align: right; padding: 6px 10px 6px 0; border-right: 1px solid rgba(255,255,255,0.06); user-select: none; }
+  .tut-review-sign { text-align: center; padding: 6px 0; border-right: 1px solid rgba(255,255,255,0.06); font-weight: 700; }
+  .tut-review-line-old .tut-review-sign { color: #fca5a5; }
+  .tut-review-line-new .tut-review-sign { color: #86efac; }
+  .tut-review-code { padding: 6px 10px; color: #e2e8f0; word-break: break-word; white-space: pre-wrap; }
+  .tut-review-meta { color: #93c5fd; margin-left: 8px; }
   .tut-review-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px 18px; border-top: 1px solid rgba(255,255,255,0.08); }
   .tut-review-actions .tut-btn { margin: 0; }
 `;
@@ -832,26 +839,35 @@ const TabTutorial = ({ addToast }) => {
               <div className="tut-review-chip">{reviewDialog.sectionLabel} - {reviewDialog.changes.length} changes</div>
             </div>
             <div className="tut-review-body">
-              <table className="tut-review-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '26%' }}>Cvar</th>
-                    <th style={{ width: '24%' }}>File</th>
-                    <th style={{ width: '25%' }}>Current</th>
-                    <th style={{ width: '25%' }}>New</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reviewDialog.changes.map((change) => (
-                    <tr key={change.cvar}>
-                      <td className="tut-review-cvar">{change.cvar}</td>
-                      <td className="tut-review-path">{change.sourcePath || '-'}</td>
-                      <td className="tut-review-old">{change.oldValue === '' ? '(empty)' : change.oldValue}</td>
-                      <td className="tut-review-new">{change.newValue === '' ? '(empty)' : change.newValue}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {reviewDialog.changes.map((change, idx) => {
+                const oldLine = `sm_cvar ${change.cvar} "${change.oldValue === '' ? '(empty)' : change.oldValue}"`;
+                const newLine = `sm_cvar ${change.cvar} "${change.newValue === '' ? '(empty)' : change.newValue}"`;
+                const oldLn = idx + 1;
+                const newLn = idx + 1;
+
+                return (
+                  <div className="tut-review-diff" key={change.cvar} style={{ marginBottom: 12 }}>
+                    <div className="tut-review-file">
+                      <span>{change.sourcePath || '(unknown file)'}</span>
+                      <span className="tut-review-file-badge">{change.cvar}</span>
+                    </div>
+                    <div className="tut-review-lines">
+                      <div className="tut-review-line tut-review-line-old">
+                        <div className="tut-review-ln">{oldLn}</div>
+                        <div className="tut-review-ln"></div>
+                        <div className="tut-review-sign">-</div>
+                        <div className="tut-review-code">{oldLine}</div>
+                      </div>
+                      <div className="tut-review-line tut-review-line-new">
+                        <div className="tut-review-ln"></div>
+                        <div className="tut-review-ln">{newLn}</div>
+                        <div className="tut-review-sign">+</div>
+                        <div className="tut-review-code">{newLine}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div className="tut-review-actions">
               <button className="tut-btn tut-btn-refresh" onClick={closeReviewDialog}>Cancel</button>
