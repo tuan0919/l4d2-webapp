@@ -62,6 +62,23 @@ const styles = `
   .tut-btn-cvar-view { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(91,200,245,0.3); background: rgba(91,200,245,0.08); color: var(--blue); transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
   .tut-btn-cvar-view:hover { background: rgba(91,200,245,0.15); border-color: rgba(91,200,245,0.5); }
   .tut-btn-cvar-view.active { background: rgba(91,200,245,0.2); border-color: var(--blue); }
+
+  .tut-review-backdrop { position: fixed; inset: 0; background: rgba(2, 6, 16, 0.75); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1200; padding: 16px; }
+  .tut-review-dialog { width: min(980px, 100%); max-height: 84vh; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(180deg, #131825 0%, #0c1019 100%); box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55); overflow: hidden; }
+  .tut-review-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .tut-review-title { font-size: 18px; font-weight: 700; color: #f8fafc; margin: 0; }
+  .tut-review-subtitle { margin-top: 6px; font-size: 12px; color: #9fb0c9; }
+  .tut-review-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(91,200,245,0.35); background: rgba(91,200,245,0.12); color: var(--blue); font-size: 11px; font-weight: 600; }
+  .tut-review-body { padding: 10px 20px 16px; overflow: auto; }
+  .tut-review-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .tut-review-table thead th { text-align: left; font-size: 11px; color: #94a3b8; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .tut-review-table tbody td { vertical-align: top; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
+  .tut-review-cvar { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; }
+  .tut-review-path { color: #5bc8f5; font-family: 'JetBrains Mono', monospace; word-break: break-word; }
+  .tut-review-old { color: #fca5a5; font-family: 'JetBrains Mono', monospace; word-break: break-word; }
+  .tut-review-new { color: #86efac; font-family: 'JetBrains Mono', monospace; word-break: break-word; }
+  .tut-review-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px 18px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .tut-review-actions .tut-btn { margin: 0; }
 `;
 
 const WEAPONS = [
@@ -363,7 +380,9 @@ const CvarViewPanel = ({ configList, values, onApply, addToast, label, getSource
 const TabTutorial = ({ addToast }) => {
   const [activeTab, setActiveTab] = useState('multislots');
   const [values, setValues] = useState({});
+  const [serverValues, setServerValues] = useState({});
   const [loading, setLoading] = useState(false);
+  const [reviewDialog, setReviewDialog] = useState({ open: false, sectionLabel: '', changes: [], payload: {} });
 
   // Cvar view panel open state per sub-tab
   const [cvarViewOpen, setCvarViewOpen] = useState({});
@@ -414,6 +433,7 @@ const TabTutorial = ({ addToast }) => {
         });
       }
       setValues(prev => ({ ...prev, ...currentValues }));
+      setServerValues(prev => ({ ...prev, ...currentValues }));
     } catch { } finally { setLoading(false); }
   };
 
@@ -448,16 +468,46 @@ const TabTutorial = ({ addToast }) => {
   };
   const isMultiCheckboxChecked = (cvar, val) => ((parseInt(values[cvar] || 0, 10) & val) !== 0);
 
-  const saveCvarConfig = async (configList) => {
+  const openReviewDialog = (configList, sectionLabel) => {
     const payload = {};
+    const changes = [];
+
     configList.forEach(item => {
-       payload[item.cvar] = values[item.cvar] !== undefined ? String(values[item.cvar]) : '';
+      const cvar = item.cvar;
+      const nextValue = values[cvar] !== undefined ? String(values[cvar]) : '';
+      const prevValue = serverValues[cvar] !== undefined ? String(serverValues[cvar]) : '';
+      payload[cvar] = nextValue;
+
+      if (nextValue !== prevValue) {
+        changes.push({
+          cvar,
+          sourcePath: getCvarSourcePath(cvar),
+          oldValue: prevValue,
+          newValue: nextValue
+        });
+      }
     });
+
+    if (changes.length === 0) {
+      addToast('Khong co thay doi de luu.', 'info');
+      return;
+    }
+
+    setReviewDialog({ open: true, sectionLabel, changes, payload });
+  };
+
+  const closeReviewDialog = () => {
+    setReviewDialog({ open: false, sectionLabel: '', changes: [], payload: {} });
+  };
+
+  const confirmSaveCvarConfig = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/cvars/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cvars: payload }) });
+      const res = await fetch('/api/cvars/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cvars: reviewDialog.payload }) });
       if (res.ok) {
-        addToast('Lưu CVARs vào file config thành công!', 'success');
+        setServerValues(prev => ({ ...prev, ...reviewDialog.payload }));
+        addToast(`Da luu ${reviewDialog.changes.length} thay doi CVAR.`, 'success');
+        closeReviewDialog();
       } else {
         addToast('Lỗi khi lưu CVARs.', 'error');
       }
@@ -565,7 +615,7 @@ const TabTutorial = ({ addToast }) => {
                  {cvarViewOpen.multislots ? 'Close Cvar View' : 'View as Cvar'}
                </button>
                <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load CVARs</button>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(MultiSlotsConfig)}>Save (CVARs)</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(MultiSlotsConfig, 'MultiSlots')}>Save (CVARs)</button>
             </div>
             {cvarViewOpen.multislots && (
                <CvarViewPanel configList={MultiSlotsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="MultiSlots" getSourcePath={getCvarSourcePath} />
@@ -588,7 +638,7 @@ const TabTutorial = ({ addToast }) => {
                  <button className={`tut-btn-cvar-view${cvarViewOpen.infectedbots ? ' active' : ''}`} onClick={() => toggleCvarView('infectedbots')}>
                    {cvarViewOpen.infectedbots ? 'Close Cvar View' : 'View as Cvar'}
                  </button>
-                 <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(InfectedBotsCvarsConfig)}>Save (CVARs)</button>
+                 <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(InfectedBotsCvarsConfig, 'InfectedBots CVARs')}>Save (CVARs)</button>
               </div>
               {cvarViewOpen.infectedbots && (
                  <CvarViewPanel configList={InfectedBotsCvarsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="InfectedBots CVARs" getSourcePath={getCvarSourcePath} />
@@ -648,7 +698,7 @@ const TabTutorial = ({ addToast }) => {
                  {cvarViewOpen.gundamage ? 'Close Cvar View' : 'View as Cvar'}
                </button>
                <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Data</button>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>Save All</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(GunDamageConfig, 'Gun Damage')}>Save All</button>
             </div>
 
             {cvarViewOpen.gundamage && (
@@ -672,7 +722,7 @@ const TabTutorial = ({ addToast }) => {
             ))}
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(GunDamageConfig)}>Save (Write to CFG)</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(GunDamageConfig, 'Gun Damage')}>Save (Write to CFG)</button>
             </div>
           </div>
         )}
@@ -689,7 +739,7 @@ const TabTutorial = ({ addToast }) => {
                  {cvarViewOpen.eliteReward ? 'Close Cvar View' : 'View as Cvar'}
                </button>
                <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Cvars</button>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(EliteSIRewardConfig)}>Save All</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(EliteSIRewardConfig, 'Elite SI Reward')}>Save All</button>
             </div>
 
             {cvarViewOpen.eliteReward && (
@@ -720,7 +770,7 @@ const TabTutorial = ({ addToast }) => {
              </div>
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig(EliteSIRewardConfig)}>Save All (Elite SI Reward)</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(EliteSIRewardConfig, 'Elite SI Reward')}>Save All (Elite SI Reward)</button>
             </div>
           </div>
         )}
@@ -737,7 +787,7 @@ const TabTutorial = ({ addToast }) => {
                  {cvarViewOpen.notifier ? 'Close Cvar View' : 'View as Cvar'}
                </button>
                <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Cvars</button>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig])}>Save All</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig], 'Notifier')}>Save All</button>
             </div>
 
             {cvarViewOpen.notifier && (
@@ -765,12 +815,51 @@ const TabTutorial = ({ addToast }) => {
             </div>
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
-               <button className="tut-btn tut-btn-save" onClick={() => saveCvarConfig([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig])}>Save All (Notifier)</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig], 'Notifier')}>Save All (Notifier)</button>
             </div>
           </div>
         )}
 
       </div>
+      {reviewDialog.open && (
+        <div className="tut-review-backdrop" onClick={closeReviewDialog}>
+          <div className="tut-review-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="tut-review-header">
+              <div>
+                <h3 className="tut-review-title">Review Changes Before Save</h3>
+                <div className="tut-review-subtitle">Xac nhan thay doi CVAR truoc khi ghi vao file config.</div>
+              </div>
+              <div className="tut-review-chip">{reviewDialog.sectionLabel} - {reviewDialog.changes.length} changes</div>
+            </div>
+            <div className="tut-review-body">
+              <table className="tut-review-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '26%' }}>Cvar</th>
+                    <th style={{ width: '24%' }}>File</th>
+                    <th style={{ width: '25%' }}>Current</th>
+                    <th style={{ width: '25%' }}>New</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reviewDialog.changes.map((change) => (
+                    <tr key={change.cvar}>
+                      <td className="tut-review-cvar">{change.cvar}</td>
+                      <td className="tut-review-path">{change.sourcePath || '-'}</td>
+                      <td className="tut-review-old">{change.oldValue === '' ? '(empty)' : change.oldValue}</td>
+                      <td className="tut-review-new">{change.newValue === '' ? '(empty)' : change.newValue}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="tut-review-actions">
+              <button className="tut-btn tut-btn-refresh" onClick={closeReviewDialog}>Cancel</button>
+              <button className="tut-btn tut-btn-save" onClick={confirmSaveCvarConfig}>Confirm Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
