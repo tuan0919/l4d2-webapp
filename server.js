@@ -1140,6 +1140,16 @@ app.get('/api/cvars', (req, res) => {
           const match = line.match(/^([^\s]+)\s+"(.*)"$/);
           if (match) {
             const cvarName = match[1];
+            const currentRelativePath = `cfg/sourcemod/${f}`;
+            const canonicalRelativePath = getTutorialCvarRelativePath(cvarName);
+
+            // Tutorial-managed cvars must be read from their canonical cfg only.
+            // This avoids legacy/merged cfg files from overriding the UI state.
+            if (canonicalRelativePath && canonicalRelativePath !== currentRelativePath) {
+              currentDesc = [];
+              continue;
+            }
+
             cvarsList.push({
               name: cvarName,
               value: match[2],
