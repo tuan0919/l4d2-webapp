@@ -805,7 +805,7 @@ const TabTutorial = ({ addToast }) => {
           <div className="tut-card">
             <div className="tut-header">
                <h2>Elite SI Reward</h2>
-               <p>Tinh chỉnh reward theo từng SI, scale theo độ khó và cấu hình subtype elite. Smoker/Spitter elite có thể được roll sang nhánh `AbilityMovement`, còn các elite khác giữ nhánh `HardSI`.</p>
+               <p>Tinh chỉnh reward theo từng SI, scale theo độ khó và cấu hình subtype elite. Smoker/Spitter elite có thể được roll sang nhánh `AbilityMovement`, Charger có thể được roll sang `ChargerAction`, còn các elite còn lại giữ nhánh `HardSI`.</p>
             </div>
 
             <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
