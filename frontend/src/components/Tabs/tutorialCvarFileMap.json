@@ -126,6 +126,7 @@
   "l4d_hp_rewards_elite_fire": "cfg/sourcemod/l4d_hp_rewards.cfg",
   "l4d_hp_rewards_elite_ability_movement_chance_smoker": "cfg/sourcemod/l4d_hp_rewards.cfg",
   "l4d_hp_rewards_elite_ability_movement_chance_spitter": "cfg/sourcemod/l4d_hp_rewards.cfg",
+  "l4d_hp_rewards_elite_charger_action_chance": "cfg/sourcemod/l4d_hp_rewards.cfg",
   "tuan_notifier_di_enable": "cfg/sourcemod/tuan_notifier_unified_death_incap.cfg",
   "l4d2_redannounce_announce_elite_si_kill": "cfg/sourcemod/Tuan_l4d2_death_incap_red.cfg",
   "tuan_notifier_di_notify_incap_other": "cfg/sourcemod/tuan_notifier_unified_death_incap.cfg",

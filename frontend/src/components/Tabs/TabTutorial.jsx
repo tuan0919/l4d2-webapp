@@ -261,7 +261,8 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d_hp_rewards_elite_hp_mult', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
   { cvar: 'l4d_hp_rewards_elite_fire', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ Elite tự cháy mới kháng damage lửa.' },
   { cvar: 'l4d_hp_rewards_elite_ability_movement_chance_smoker', type: 'number', label: 'Smoker AbilityMovement Chance (%)', desc: 'Nếu Smoker đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
-  { cvar: 'l4d_hp_rewards_elite_ability_movement_chance_spitter', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' }
+  { cvar: 'l4d_hp_rewards_elite_ability_movement_chance_spitter', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
+  { cvar: 'l4d_hp_rewards_elite_charger_action_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction thay vì HardSI.' }
 ];
 
 const getCvarSourcePath = (cvar) => cvarFileMap[cvar] || '';
@@ -836,8 +837,8 @@ const TabTutorial = ({ addToast }) => {
 
              <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Elite Spawn & Subtype</div>
              <p style={{ marginTop: 0, marginBottom: 12, color: 'rgba(255,255,255,0.72)' }}>
-               Một elite SI chỉ thuộc một nhánh duy nhất. `AbilityMovement` hiện chỉ random cho `Smoker` và `Spitter`; Tank không đi qua hệ subtype elite này.
-             </p>
+               Một elite SI chỉ thuộc một nhánh duy nhất. `AbilityMovement` random cho `Smoker/Spitter`, `ChargerAction` random cho `Charger`; Tank không đi qua hệ subtype elite này.
+              </p>
              <div className="tut-form-grid" style={{ marginBottom: 24 }}>
                 {EliteSIRewardConfig.slice(21).map(renderCvarField)}
              </div>
