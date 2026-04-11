@@ -172,6 +172,7 @@ const InfectedBotsCvarsConfig = [
 
 const InfectedBotsDataConfig = [
   { key: 'coop_versus_enable', type: 'toggle', label: 'Playable SI', desc: 'Cho phép người chơi tham gia phe Zombie trong mode đang chọn (!ji).' },
+  { key: 'coop_versus_human_limit', type: 'number', label: 'Max Human SI', desc: 'Số lượng người chơi tối đa phe Infected trong coop_versus.' },
   { key: 'max_specials', type: 'number', label: 'Max Specials', desc: 'Tổng số SI xuất hiện cùng lúc.' },
   { key: 'smoker_limit', type: 'number', label: 'Smoker Limit', desc: 'Tối đa Smoker.' },
   { key: 'boomer_limit', type: 'number', label: 'Boomer Limit', desc: 'Tối đa Boomer.' },
@@ -180,8 +181,13 @@ const InfectedBotsDataConfig = [
   { key: 'jockey_limit', type: 'number', label: 'Jockey Limit', desc: 'Tối đa Jockey.' },
   { key: 'charger_limit', type: 'number', label: 'Charger Limit', desc: 'Tối đa Charger.' },
   { key: 'tank_limit', type: 'number', label: 'Tank Limit', desc: 'Số Tank tối đa.' },
+  { key: 'tank_spawn_probability', type: 'number', label: 'Tank Spawn Probability (%)', desc: 'Tỷ lệ spawn Tank theo block hiện tại.' },
   { key: 'tank_health', type: 'number', label: 'Tank Health', desc: 'Máu cơ bản của Tank.' },
+  { key: 'tank_spawn_final', type: 'toggle', label: 'Tank Spawn Finale', desc: 'Cho phép Tank spawn ở map finale.' },
   { key: 'witch_max_limit', type: 'number', label: 'Witch Limit', desc: 'Số Witch tối đa.' },
+  { key: 'witch_spawn_time_min', type: 'number', label: 'Min Witch Spawn Time', desc: 'Thời gian chờ nhỏ nhất để spawn Witch (giây).' },
+  { key: 'witch_spawn_time_max', type: 'number', label: 'Max Witch Spawn Time', desc: 'Thời gian chờ lớn nhất để spawn Witch (giây).' },
+  { key: 'life', type: 'number', label: 'SI Life Time', desc: 'Thời gian SI tồn tại trước khi tự despawn.' },
   { key: 'spawn_time_min', type: 'number', label: 'Min Spawn Time', desc: 'Thời gian chờ nhỏ nhất (giây).' },
   { key: 'spawn_time_max', type: 'number', label: 'Max Spawn Time', desc: 'Thời gian chờ lớn nhất (giây).' }
 ];
@@ -259,37 +265,6 @@ const EliteSIRewardConfig = [
 ];
 
 const getCvarSourcePath = (cvar) => cvarFileMap[cvar] || '';
-
-const parseBlockData = (content, blockName) => {
-  if (!content) return {};
-  const blockRegex = new RegExp(`"([^"]*\\b${blockName}\\b[^"]*)"\\s*\\{[^}]+\\}`, 'i');
-  const match = content.match(blockRegex);
-  if (!match) return {};
-  const lines = match[0].split('\n');
-  const values = {};
-  for (const line of lines) {
-    const m = line.match(/"([^"]+)"\s+"([^"]*)"/);
-    if (m) values[m[1]] = m[2];
-  }
-  return values;
-};
-
-const updateBlockData = (content, blockName, newValues) => {
-  const blockRegex = new RegExp(`("([^"]*\\b${blockName}\\b[^"]*)"\\s*\\{)([^}]+)(\\})`, 'i');
-  return content.replace(blockRegex, (match, open, blockRealName, body, close) => {
-    let newBody = body;
-    for (const key of Object.keys(newValues)) {
-       const valStr = newValues[key];
-       const keyRegex = new RegExp(`("${key}"\\s+)"([^"]*)"`, 'i');
-       if (keyRegex.test(newBody)) {
-         newBody = newBody.replace(keyRegex, `$1"${valStr}"`);
-       } else {
-         newBody += `\n            "${key}"      "${valStr}"`;
-       }
-    }
-    return open + newBody + close;
-  });
-};
 
 // Reusable "View as Cvar" panel component
 const CvarViewPanel = ({ configList, values, onApply, addToast, label, getSourcePath }) => {
@@ -400,8 +375,11 @@ const TabTutorial = ({ addToast }) => {
   const [dataFiles, setDataFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState('coop.cfg');
   const [selectedBlock, setSelectedBlock] = useState('default');
-  const [dataContent, setDataContent] = useState('');
+  const [availableBlocks, setAvailableBlocks] = useState([]);
   const [dataValues, setDataValues] = useState({});
+  const [serverDataValues, setServerDataValues] = useState({});
+  const [dataReloadOnSave, setDataReloadOnSave] = useState(true);
+  const [dataReviewDialog, setDataReviewDialog] = useState({ open: false, changes: [], payload: null });
 
   useEffect(() => {
     fetchCvars();
@@ -410,21 +388,21 @@ const TabTutorial = ({ addToast }) => {
   useEffect(() => {
     if (activeTab === 'infectedbots') {
       fetchDataFiles();
-      fetchDataContent(selectedFile);
+      fetchDataBlocks(selectedFile);
     }
   }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === 'infectedbots' && selectedFile) {
-      fetchDataContent(selectedFile);
+      fetchDataBlocks(selectedFile);
     }
   }, [selectedFile]);
 
   useEffect(() => {
-    if (dataContent) {
-      setDataValues(parseBlockData(dataContent, selectedBlock));
+    if (activeTab === 'infectedbots' && selectedFile && selectedBlock) {
+      fetchDataBlockValues(selectedFile, selectedBlock);
     }
-  }, [dataContent, selectedBlock]);
+  }, [activeTab, selectedFile, selectedBlock]);
 
   const fetchCvars = async () => {
     setLoading(true);
@@ -450,18 +428,52 @@ const TabTutorial = ({ addToast }) => {
       const data = await res.json();
       if (data.files && data.files.length > 0) {
         setDataFiles(data.files);
-        if (!data.files.includes(selectedFile)) setSelectedFile(data.files[0]);
+        if (!data.files.includes(selectedFile)) {
+          setSelectedFile(data.files[0]);
+        }
+      } else {
+        setDataFiles([]);
+        setAvailableBlocks([]);
+        setDataValues({});
+        setServerDataValues({});
       }
     } catch {}
   };
 
-  const fetchDataContent = async (file) => {
+  const fetchDataBlocks = async (file) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/data/read?plugin=l4dinfectedbots&file=${file}`);
+      const res = await fetch(`/api/data/blocks?plugin=l4dinfectedbots&file=${encodeURIComponent(file)}`);
       const data = await res.json();
-      if (data.content) setDataContent(data.content);
+      const blocks = Array.isArray(data.blocks) ? data.blocks : [];
+      setAvailableBlocks(blocks);
+
+      if (blocks.length === 0) {
+        setSelectedBlock('default');
+        setDataValues({});
+        setServerDataValues({});
+      } else if (!blocks.includes(selectedBlock)) {
+        setSelectedBlock(blocks[0]);
+      }
     } catch {} finally { setLoading(false); }
+  };
+
+  const fetchDataBlockValues = async (file, block) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/data/block-values?plugin=l4dinfectedbots&file=${encodeURIComponent(file)}&block=${encodeURIComponent(block)}`);
+      const data = await res.json();
+      if (res.ok && data.values && typeof data.values === 'object') {
+        setDataValues(data.values);
+        setServerDataValues(data.values);
+      } else {
+        setDataValues({});
+        setServerDataValues({});
+      }
+    } catch {
+      setDataValues({});
+      setServerDataValues({});
+    } finally { setLoading(false); }
   };
 
   // Shared generic handlers
@@ -522,23 +534,68 @@ const TabTutorial = ({ addToast }) => {
     } catch { addToast('Lỗi khi lưu CVARs.', 'error'); } finally { setLoading(false); }
   };
 
-  const saveDataConfig = async () => {
-    if (!dataContent) return;
-    const newContent = updateBlockData(dataContent, selectedBlock, dataValues);
+  const openDataReviewDialog = () => {
+    const changes = [];
+    const payload = {};
+
+    InfectedBotsDataConfig.forEach((item) => {
+      const key = item.key;
+      const newValue = dataValues[key] !== undefined ? String(dataValues[key]) : '';
+      const oldValue = serverDataValues[key] !== undefined ? String(serverDataValues[key]) : '';
+      if (newValue === oldValue) return;
+
+      changes.push({ key, oldValue, newValue });
+      payload[key] = newValue;
+    });
+
+    if (changes.length === 0) {
+      addToast('Khong co thay doi Data de luu.', 'info');
+      return;
+    }
+
+    setDataReviewDialog({
+      open: true,
+      changes,
+      payload: {
+        plugin: 'l4dinfectedbots',
+        file: selectedFile,
+        block: selectedBlock,
+        changes: payload,
+        reload: dataReloadOnSave
+      }
+    });
+  };
+
+  const closeDataReviewDialog = () => {
+    setDataReviewDialog({ open: false, changes: [], payload: null });
+  };
+
+  const confirmSaveDataConfig = async () => {
+    if (!dataReviewDialog.payload) return;
     try {
       setLoading(true);
-      const res = await fetch('/api/data/write', {
-        method: 'POST',
+      const res = await fetch('/api/data/patch-block', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plugin: 'l4dinfectedbots', file: selectedFile, content: newContent })
+        body: JSON.stringify(dataReviewDialog.payload)
       });
+      const data = await res.json();
       if (res.ok) {
-        addToast(`Lưu Data Config (${selectedBlock}) thành công! Plugin đã được reload.`, 'success');
-        fetchDataContent(selectedFile); // Refresh
+        if (data.changed) {
+          setServerDataValues((prev) => ({ ...prev, ...dataReviewDialog.payload.changes }));
+          const reloadText = data.reloaded ? 'Plugin da duoc reload.' : 'Khong reload plugin.';
+          addToast(`Da luu ${data.changedKeys?.length || 0} key Data (${selectedBlock}). ${reloadText}`, 'success');
+        } else {
+          addToast(data.message || 'Khong co thay doi nao duoc ap dung.', 'info');
+        }
+        closeDataReviewDialog();
+        fetchDataBlockValues(selectedFile, selectedBlock);
       } else {
-        addToast('Lỗi khi lưu Data config.', 'error');
+        addToast(data.error || 'Loi khi luu Data config.', 'error');
       }
-    } catch { addToast('Error writing Data', 'error'); } finally { setLoading(false); }
+    } catch {
+      addToast('Error writing Data', 'error');
+    } finally { setLoading(false); }
   };
 
   const renderCvarField = (item) => {
@@ -667,25 +724,32 @@ const TabTutorial = ({ addToast }) => {
                    </select>
                  </div>
                  <div>
-                   <span className="tut-toolbar-label">Mốc người chơi (Block):</span>
-                   <select className="tut-input" value={selectedBlock} onChange={e => setSelectedBlock(e.target.value)} style={{ width: 'auto', display: 'inline-block' }}>
-                     <option value="default">Default (Mặc định)</option>
-                     {[...Array(10)].map((_, i) => <option key={i+1} value={String(i+1)}>{i+1} Người chơi</option>)}
-                   </select>
-                 </div>
-              </div>
+                    <span className="tut-toolbar-label">Mốc người chơi (Block):</span>
+                    <select className="tut-input" value={selectedBlock} onChange={e => setSelectedBlock(e.target.value)} style={{ width: 'auto', display: 'inline-block' }}>
+                      {availableBlocks.map((block) => (
+                        <option key={block} value={block}>
+                          {block === 'default' ? 'Default (Mac dinh)' : `${block} Nguoi choi`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <label className="tut-checkbox" style={{ marginLeft: 'auto' }}>
+                    <input type="checkbox" checked={dataReloadOnSave} onChange={(e) => setDataReloadOnSave(e.target.checked)} />
+                    Reload plugin sau khi luu
+                  </label>
+               </div>
 
-              {!dataContent && !loading && <p style={{ color: 'var(--muted)' }}>Không đọc được file data.</p>}
+              {!loading && availableBlocks.length === 0 && <p style={{ color: 'var(--muted)' }}>Khong tim thay block nao trong file data.</p>}
               
-              {dataContent && (
+              {availableBlocks.length > 0 && (
                 <>
                   <div className="tut-section-title">Chỉnh sửa cho "{selectedBlock}"</div>
                   <div className="tut-form-grid">
                      {InfectedBotsDataConfig.map(renderDataField)}
                   </div>
                   <div className="tut-actions">
-                     <button className="tut-btn tut-btn-refresh" onClick={() => fetchDataContent(selectedFile)}>🔄 Nạp Lại File</button>
-                     <button className="tut-btn tut-btn-save" onClick={saveDataConfig}>💾 Ghi Đè Data Config</button>
+                     <button className="tut-btn tut-btn-refresh" onClick={() => fetchDataBlockValues(selectedFile, selectedBlock)}>Nap lai Block</button>
+                     <button className="tut-btn tut-btn-save" onClick={openDataReviewDialog}>Luu Data (Review)</button>
                   </div>
                 </>
               )}
@@ -872,6 +936,56 @@ const TabTutorial = ({ addToast }) => {
             <div className="tut-review-actions">
               <button className="tut-btn tut-btn-refresh" onClick={closeReviewDialog}>Cancel</button>
               <button className="tut-btn tut-btn-save" onClick={confirmSaveCvarConfig}>Confirm Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {dataReviewDialog.open && (
+        <div className="tut-review-backdrop" onClick={closeDataReviewDialog}>
+          <div className="tut-review-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="tut-review-header">
+              <div>
+                <h3 className="tut-review-title">Review Data Block Changes</h3>
+                <div className="tut-review-subtitle">Xac nhan thay doi truoc khi patch block vao file data.</div>
+              </div>
+              <div className="tut-review-chip">
+                {selectedFile} / {selectedBlock} - {dataReviewDialog.changes.length} changes
+              </div>
+            </div>
+            <div className="tut-review-body">
+              {dataReviewDialog.changes.map((change, idx) => {
+                const oldLine = `"${change.key}"    "${change.oldValue === '' ? '(empty)' : change.oldValue}"`;
+                const newLine = `"${change.key}"    "${change.newValue === '' ? '(empty)' : change.newValue}"`;
+                const oldLn = idx + 1;
+                const newLn = idx + 1;
+
+                return (
+                  <div className="tut-review-diff" key={change.key} style={{ marginBottom: 12 }}>
+                    <div className="tut-review-file">
+                      <span>{selectedFile}</span>
+                      <span className="tut-review-file-badge">{selectedBlock}</span>
+                    </div>
+                    <div className="tut-review-lines">
+                      <div className="tut-review-line tut-review-line-old">
+                        <div className="tut-review-ln">{oldLn}</div>
+                        <div className="tut-review-ln"></div>
+                        <div className="tut-review-sign">-</div>
+                        <div className="tut-review-code">{oldLine}</div>
+                      </div>
+                      <div className="tut-review-line tut-review-line-new">
+                        <div className="tut-review-ln"></div>
+                        <div className="tut-review-ln">{newLn}</div>
+                        <div className="tut-review-sign">+</div>
+                        <div className="tut-review-code">{newLine}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="tut-review-actions">
+              <button className="tut-btn tut-btn-refresh" onClick={closeDataReviewDialog}>Cancel</button>
+              <button className="tut-btn tut-btn-save" onClick={confirmSaveDataConfig}>Confirm Save Data</button>
             </div>
           </div>
         </div>

@@ -946,17 +946,316 @@ function extractWorkshopIds(rawInputs) {
     .filter(Boolean);
 }
 
+const DATA_ROOT_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data');
+
+function isValidDataSegment(value, options = {}) {
+  const requireCfg = !!options.requireCfg;
+  if (typeof value !== 'string' || !value.trim()) return false;
+  if (value.includes('..') || value.includes('/') || value.includes('\\')) return false;
+  if (!/^[A-Za-z0-9._-]+$/.test(value)) return false;
+  if (requireCfg && !value.toLowerCase().endsWith('.cfg')) return false;
+  return true;
+}
+
+function resolveDataPluginDir(plugin) {
+  if (!isValidDataSegment(plugin)) return null;
+  const resolved = path.resolve(DATA_ROOT_DIR, plugin);
+  if (!resolved.startsWith(path.resolve(DATA_ROOT_DIR))) return null;
+  return resolved;
+}
+
+function resolveDataFilePath(plugin, fileName) {
+  if (!isValidDataSegment(plugin) || !isValidDataSegment(fileName, { requireCfg: true })) return null;
+  const pluginDir = resolveDataPluginDir(plugin);
+  if (!pluginDir) return null;
+  const resolved = path.resolve(pluginDir, fileName);
+  if (!resolved.startsWith(pluginDir)) return null;
+  return resolved;
+}
+
+function splitKvCodeAndComment(line) {
+  const text = String(line || '');
+  let inQuote = false;
+  for (let i = 0; i < text.length - 1; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (ch === '"' && text[i - 1] !== '\\') {
+      inQuote = !inQuote;
+    }
+    if (!inQuote && ch === '/' && next === '/') {
+      return {
+        code: text.substring(0, i),
+        comment: text.substring(i)
+      };
+    }
+  }
+  return { code: text, comment: '' };
+}
+
+function tokenizeKeyValuesLine(line) {
+  const { code } = splitKvCodeAndComment(line);
+  const tokens = [];
+  let i = 0;
+
+  while (i < code.length) {
+    const ch = code[i];
+
+    if (ch === '"') {
+      let j = i + 1;
+      let value = '';
+      while (j < code.length) {
+        const current = code[j];
+        if (current === '"' && code[j - 1] !== '\\') {
+          break;
+        }
+        value += current;
+        j += 1;
+      }
+      tokens.push({ type: 'string', value });
+      i = j + 1;
+      continue;
+    }
+
+    if (ch === '{') {
+      tokens.push({ type: 'open' });
+      i += 1;
+      continue;
+    }
+
+    if (ch === '}') {
+      tokens.push({ type: 'close' });
+      i += 1;
+      continue;
+    }
+
+    i += 1;
+  }
+
+  return tokens;
+}
+
+function analyzeKeyValuesContent(content) {
+  const lines = String(content || '').split(/\r?\n/);
+  const root = {
+    name: null,
+    openLine: -1,
+    closeLine: lines.length,
+    children: [],
+    parent: null
+  };
+  const stack = [root];
+  let pendingName = null;
+
+  lines.forEach((line, lineIndex) => {
+    const tokens = tokenizeKeyValuesLine(line);
+    tokens.forEach((token) => {
+      if (token.type === 'string') {
+        pendingName = token.value;
+        return;
+      }
+
+      if (token.type === 'open') {
+        const parent = stack[stack.length - 1];
+        const node = {
+          name: pendingName,
+          openLine: lineIndex,
+          closeLine: lines.length,
+          children: [],
+          parent
+        };
+        parent.children.push(node);
+        stack.push(node);
+        pendingName = null;
+        return;
+      }
+
+      if (token.type === 'close' && stack.length > 1) {
+        const node = stack.pop();
+        node.closeLine = lineIndex;
+        pendingName = null;
+      }
+    });
+  });
+
+  return { lines, root };
+}
+
+function findSettingsNode(root) {
+  const queue = [...(root.children || [])];
+  while (queue.length > 0) {
+    const node = queue.shift();
+    if (node && node.name === 'Settings') {
+      return node;
+    }
+    if (node && node.children && node.children.length > 0) {
+      queue.push(...node.children);
+    }
+  }
+  return null;
+}
+
+function parseBlockAssignments(lines, blockNode) {
+  if (!blockNode) return {};
+
+  const values = {};
+  const bodyStart = Math.max(0, blockNode.openLine + 1);
+  const bodyEnd = Math.min(lines.length - 1, blockNode.closeLine - 1);
+
+  for (let i = bodyStart; i <= bodyEnd; i++) {
+    const { code } = splitKvCodeAndComment(lines[i]);
+    const match = code.match(/^\s*"([^"]+)"\s+"([^"]*)"/);
+    if (!match) continue;
+    values[match[1]] = match[2];
+  }
+
+  return values;
+}
+
+function listDataBlocksFromContent(content) {
+  const { root } = analyzeKeyValuesContent(content);
+  const settingsNode = findSettingsNode(root);
+  if (!settingsNode) return [];
+
+  return settingsNode.children
+    .map((node) => (node && typeof node.name === 'string' ? node.name.trim() : ''))
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a === 'default') return -1;
+      if (b === 'default') return 1;
+      const aNum = Number(a);
+      const bNum = Number(b);
+      const aIsNum = Number.isFinite(aNum);
+      const bIsNum = Number.isFinite(bNum);
+      if (aIsNum && bIsNum) return aNum - bNum;
+      return a.localeCompare(b);
+    });
+}
+
+function getDataBlockValues(content, blockName) {
+  const targetBlock = String(blockName || '').trim();
+  const { lines, root } = analyzeKeyValuesContent(content);
+  const settingsNode = findSettingsNode(root);
+  if (!settingsNode) return null;
+
+  const blockNode = settingsNode.children.find((node) => node && node.name === targetBlock);
+  if (!blockNode) return null;
+  return parseBlockAssignments(lines, blockNode);
+}
+
+function patchKeyValuesBlock(content, blockName, changes) {
+  const targetBlock = String(blockName || '').trim();
+  const normalizedChanges = {};
+  Object.entries(changes || {}).forEach(([key, value]) => {
+    const safeKey = String(key || '').trim();
+    if (!safeKey || !/^[A-Za-z0-9_]+$/.test(safeKey)) return;
+    normalizedChanges[safeKey] = String(value === undefined || value === null ? '' : value).replace(/[\r\n]+/g, ' ').trim();
+  });
+
+  const changeKeys = Object.keys(normalizedChanges);
+  if (changeKeys.length === 0) {
+    return {
+      changed: false,
+      changedKeys: [],
+      oldValues: {},
+      newValues: {},
+      nextContent: String(content || '')
+    };
+  }
+
+  const { lines, root } = analyzeKeyValuesContent(content);
+  const settingsNode = findSettingsNode(root);
+  if (!settingsNode) {
+    throw new Error('Khong tim thay block "Settings" trong file data.');
+  }
+
+  const blockNode = settingsNode.children.find((node) => node && node.name === targetBlock);
+  if (!blockNode) {
+    throw new Error(`Khong tim thay block "${targetBlock}" trong Settings.`);
+  }
+
+  const oldValues = parseBlockAssignments(lines, blockNode);
+  const bodyStart = Math.max(0, blockNode.openLine + 1);
+  let bodyCloseLine = Math.min(lines.length - 1, blockNode.closeLine);
+  const keyLineMap = new Map();
+  let detectedIndent = null;
+
+  for (let i = bodyStart; i < bodyCloseLine; i++) {
+    const line = lines[i];
+    const { code } = splitKvCodeAndComment(line);
+    const match = code.match(/^(\s*)"([^"]+)"(\s+)"([^"]*)"(\s*)$/);
+    if (!match) continue;
+    if (!detectedIndent) detectedIndent = match[1] || '';
+    if (!keyLineMap.has(match[2])) {
+      keyLineMap.set(match[2], i);
+    }
+  }
+
+  const changedKeys = [];
+  const newValues = {};
+
+  changeKeys.forEach((key) => {
+    const oldValue = oldValues[key] !== undefined ? String(oldValues[key]) : '';
+    const nextValue = normalizedChanges[key];
+    if (oldValue === nextValue) return;
+
+    changedKeys.push(key);
+    newValues[key] = nextValue;
+
+    if (keyLineMap.has(key)) {
+      const lineIndex = keyLineMap.get(key);
+      const currentLine = lines[lineIndex];
+      const { code, comment } = splitKvCodeAndComment(currentLine);
+      const match = code.match(/^(\s*)"([^"]+)"(\s+)"([^"]*)"(\s*)$/);
+      if (match) {
+        lines[lineIndex] = `${match[1]}"${key}"${match[3]}"${nextValue}"${match[5]}${comment}`;
+      } else {
+        const indent = detectedIndent || '            ';
+        lines[lineIndex] = `${indent}"${key}"      "${nextValue}"${comment ? ` ${comment}` : ''}`;
+      }
+      return;
+    }
+
+    const indent = detectedIndent || (() => {
+      const openLine = lines[blockNode.openLine] || '';
+      return `${openLine.match(/^\s*/)[0]}    `;
+    })();
+    const newLine = `${indent}"${key}"      "${nextValue}"`;
+    lines.splice(bodyCloseLine, 0, newLine);
+    bodyCloseLine += 1;
+  });
+
+  if (changedKeys.length === 0) {
+    return {
+      changed: false,
+      changedKeys: [],
+      oldValues,
+      newValues: {},
+      nextContent: String(content || '')
+    };
+  }
+
+  return {
+    changed: true,
+    changedKeys,
+    oldValues,
+    newValues,
+    nextContent: `${lines.join('\n')}\n`
+  };
+}
+
 // --- API Routes ---
 
 // -- Data Config API Routes ---
 app.get('/api/data/files', (req, res) => {
   const { plugin } = req.query;
-  if (!plugin || plugin.includes('..')) return res.status(400).json({ error: 'Invalid plugin name' });
-  const targetDir = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data', plugin);
-  
+  const targetDir = resolveDataPluginDir(plugin);
+  if (!targetDir) return res.status(400).json({ error: 'Invalid plugin name' });
+
   if (!fs.existsSync(targetDir)) return res.json({ files: [] });
   try {
-    const files = fs.readdirSync(targetDir).filter(f => f.endsWith('.cfg'));
+    const files = fs.readdirSync(targetDir)
+      .filter((f) => isValidDataSegment(f, { requireCfg: true }) && fs.statSync(path.join(targetDir, f)).isFile())
+      .sort((a, b) => a.localeCompare(b));
     res.json({ files });
   } catch (e) {
     res.status(500).json({ error: e.message, files: [] });
@@ -965,11 +1264,11 @@ app.get('/api/data/files', (req, res) => {
 
 app.get('/api/data/read', (req, res) => {
   const { plugin, file } = req.query;
-  if (!plugin || plugin.includes('..') || !file || file.includes('..')) {
+  const targetPath = resolveDataFilePath(plugin, file);
+  if (!targetPath) {
     return res.status(400).json({ error: 'Invalid parameters' });
   }
-  const targetPath = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data', plugin, file);
-  
+
   if (!fs.existsSync(targetPath)) return res.status(404).json({ error: 'File not found' });
   try {
     const content = fs.readFileSync(targetPath, 'utf8');
@@ -979,21 +1278,121 @@ app.get('/api/data/read', (req, res) => {
   }
 });
 
-app.post('/api/data/write', (req, res) => {
-  const { plugin, file, content } = req.body;
-  if (!plugin || plugin.includes('..') || !file || file.includes('..') || typeof content !== 'string') {
+app.get('/api/data/blocks', (req, res) => {
+  const { plugin, file } = req.query;
+  const targetPath = resolveDataFilePath(plugin, file);
+  if (!targetPath) {
     return res.status(400).json({ error: 'Invalid parameters' });
   }
-  const targetPath = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data', plugin, file);
-  
+
   if (!fs.existsSync(targetPath)) return res.status(404).json({ error: 'File not found' });
   try {
-    // Create backup just in case
-    fs.copyFileSync(targetPath, targetPath + '.bak');
-    fs.writeFileSync(targetPath, content, 'utf8');
-    // Reload the plugin so it re-reads its data files on the live server
-    sendToGame(`sm plugins reload ${plugin}`, () => {});
-    res.json({ success: true });
+    const content = fs.readFileSync(targetPath, 'utf8');
+    const blocks = listDataBlocksFromContent(content);
+    res.json({ blocks });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/data/block-values', (req, res) => {
+  const { plugin, file, block } = req.query;
+  const targetPath = resolveDataFilePath(plugin, file);
+  if (!targetPath || typeof block !== 'string' || !block.trim()) {
+    return res.status(400).json({ error: 'Invalid parameters' });
+  }
+
+  if (!fs.existsSync(targetPath)) return res.status(404).json({ error: 'File not found' });
+  try {
+    const content = fs.readFileSync(targetPath, 'utf8');
+    const values = getDataBlockValues(content, String(block).trim());
+    if (!values) {
+      return res.status(404).json({ error: `Block ${block} not found` });
+    }
+    res.json({ values });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.patch('/api/data/patch-block', (req, res) => {
+  const { plugin, file, block, changes, reload } = req.body || {};
+  const targetPath = resolveDataFilePath(plugin, file);
+  if (!targetPath || typeof block !== 'string' || !block.trim() || !changes || typeof changes !== 'object' || Array.isArray(changes)) {
+    return res.status(400).json({ error: 'Invalid parameters' });
+  }
+
+  if (!fs.existsSync(targetPath)) return res.status(404).json({ error: 'File not found' });
+
+  try {
+    const content = fs.readFileSync(targetPath, 'utf8');
+    const patchResult = patchKeyValuesBlock(content, String(block).trim(), changes);
+
+    if (!patchResult.changed) {
+      return res.json({
+        success: true,
+        changed: false,
+        changedKeys: [],
+        reloaded: false,
+        message: 'Khong co thay doi nao duoc ap dung.'
+      });
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${targetPath}.${timestamp}.bak`;
+    fs.copyFileSync(targetPath, backupPath);
+    fs.writeFileSync(targetPath, patchResult.nextContent, 'utf8');
+
+    const shouldReload = reload !== false;
+    if (!shouldReload) {
+      return res.json({
+        success: true,
+        changed: true,
+        changedKeys: patchResult.changedKeys,
+        oldValues: patchResult.oldValues,
+        newValues: patchResult.newValues,
+        backupPath: path.basename(backupPath),
+        reloaded: false
+      });
+    }
+
+    isGameScreenRunning((running) => {
+      if (!running) {
+        return res.json({
+          success: true,
+          changed: true,
+          changedKeys: patchResult.changedKeys,
+          oldValues: patchResult.oldValues,
+          newValues: patchResult.newValues,
+          backupPath: path.basename(backupPath),
+          reloaded: false,
+          reloadSkipped: true,
+          message: 'Game server khong chay, da bo qua reload plugin.'
+        });
+      }
+
+      sendToGame(`sm plugins reload ${plugin}`, (reloadResult) => {
+        if (reloadResult && reloadResult.error) {
+          return res.status(500).json({
+            success: false,
+            error: reloadResult.error,
+            changed: true,
+            changedKeys: patchResult.changedKeys,
+            backupPath: path.basename(backupPath)
+          });
+        }
+
+        return res.json({
+          success: true,
+          changed: true,
+          changedKeys: patchResult.changedKeys,
+          oldValues: patchResult.oldValues,
+          newValues: patchResult.newValues,
+          backupPath: path.basename(backupPath),
+          reloaded: true
+        });
+      });
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
