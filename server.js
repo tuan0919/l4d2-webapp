@@ -947,6 +947,40 @@ function extractWorkshopIds(rawInputs) {
 }
 
 const DATA_ROOT_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data');
+const PLUGINS_ROOT_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'plugins');
+
+function findPluginRelativePath(pluginName) {
+  const baseName = String(pluginName || '').replace(/\.smx$/i, '').trim();
+  if (!baseName) return null;
+
+  const targetFile = `${baseName}.smx`;
+  const results = [];
+
+  function walk(dir, relPrefix) {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const relPath = relPrefix ? `${relPrefix}/${entry.name}` : entry.name;
+      const absPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        // Limit depth to avoid runaway recursion
+        if (relPath.split('/').length <= 4) {
+          walk(absPath, relPath);
+        }
+        continue;
+      }
+      if (entry.isFile() && entry.name.toLowerCase() === targetFile.toLowerCase()) {
+        results.push(relPath.replace(/\\/g, '/'));
+      }
+    }
+  }
+
+  walk(PLUGINS_ROOT_DIR, '');
+  if (results.length === 0) return null;
+  // Prefer file directly under plugins/ if present
+  const direct = results.find((p) => !p.includes('/'));
+  return direct || results[0];
+}
 
 function isValidDataSegment(value, options = {}) {
   const requireCfg = !!options.requireCfg;
@@ -1371,14 +1405,19 @@ app.patch('/api/data/patch-block', (req, res) => {
         });
       }
 
-      sendToGame(`sm plugins load ${plugin}`, (reloadResult) => {
+      // Attempt to load/reload the plugin using its resolved path (if we can find it)
+      const pluginRelPath = findPluginRelativePath(plugin) || plugin;
+      const loadCmd = pluginRelPath.includes('/') ? `sm plugins load ${pluginRelPath}` : `sm plugins load ${plugin}`;
+
+      sendToGame(loadCmd, (reloadResult) => {
         if (reloadResult && reloadResult.error) {
           return res.status(500).json({
             success: false,
             error: reloadResult.error,
             changed: true,
             changedKeys: patchResult.changedKeys,
-            backupPath: path.basename(backupPath)
+            backupPath: path.basename(backupPath),
+            pluginPathTried: pluginRelPath
           });
         }
 
@@ -1389,7 +1428,8 @@ app.patch('/api/data/patch-block', (req, res) => {
           oldValues: patchResult.oldValues,
           newValues: patchResult.newValues,
           backupPath: path.basename(backupPath),
-          reloaded: true
+          reloaded: true,
+          pluginPathUsed: pluginRelPath
         });
       });
     });

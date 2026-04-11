@@ -583,15 +583,17 @@ const TabTutorial = ({ addToast }) => {
       if (res.ok) {
         if (data.changed) {
           setServerDataValues((prev) => ({ ...prev, ...dataReviewDialog.payload.changes }));
-           const reloadText = data.reloaded ? 'Plugin đã được reload.' : 'Không reload plugin.';
-           addToast(`Đã lưu ${data.changedKeys?.length || 0} key Data (${selectedBlock}). ${reloadText}`, 'success');
+          const reloadText = data.reloaded ? 'Plugin đã được load/reload.' : 'Không reload plugin.';
+          const pathInfo = data.pluginPathUsed ? ` (đã dùng đường dẫn ${data.pluginPathUsed})` : '';
+          addToast(`Đã lưu ${data.changedKeys?.length || 0} key Data (${selectedBlock}). ${reloadText}${pathInfo}`, 'success');
         } else {
           addToast(data.message || 'Không có thay đổi nào được áp dụng.', 'info');
         }
         closeDataReviewDialog();
         fetchDataBlockValues(selectedFile, selectedBlock);
       } else {
-         addToast(data.error || 'Lỗi khi lưu Data config.', 'error');
+         const pathInfo = data.pluginPathTried ? ` (đã thử ${data.pluginPathTried})` : '';
+         addToast((data.error || 'Lỗi khi lưu Data config.') + pathInfo, 'error');
       }
     } catch {
       addToast('Lỗi khi ghi Data', 'error');
