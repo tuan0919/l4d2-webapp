@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import cvarFileMap from './tutorialCvarFileMap.json';
+import LoadingOverlay from './tutorial/LoadingOverlay';
+import CvarField from './tutorial/CvarField';
+import DataField from './tutorial/DataField';
+import CvarReviewDialog from './tutorial/CvarReviewDialog';
+import DataReviewDialog from './tutorial/DataReviewDialog';
 
 // Custom CSS for premium looks embedded in the component
 const styles = `
@@ -49,6 +54,14 @@ const styles = `
   .tut-tab-btn { padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--muted); transition: all 0.2s; }
   .tut-tab-btn.active { color: var(--text); background: rgba(255,255,255,0.05); border-color: var(--border); }
   .tut-tab-btn:hover:not(.active) { color: #fff; }
+
+  .tut-content-area { position: relative; min-height: 240px; }
+  .tut-loading-overlay { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(5, 8, 15, 0.62); backdrop-filter: blur(2px); border-radius: 14px; }
+  .tut-loading-card { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: linear-gradient(180deg, rgba(20,26,40,0.95) 0%, rgba(11,15,25,0.96) 100%); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+  .tut-loading-spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(168,180,200,0.35); border-top-color: var(--blue); border-right-color: var(--accent); animation: tut-spin 0.9s linear infinite; }
+  .tut-loading-text { color: #dbe7f7; font-size: 12px; letter-spacing: 0.2px; }
+  .tut-loading-subtext { color: #98acc5; font-size: 11px; margin-top: 2px; }
+  @keyframes tut-spin { to { transform: rotate(360deg); } }
 
   .tut-toolbar { display: flex; gap: 12px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 16px; align-items: center; }
   .tut-toolbar-label { font-size: 13px; font-weight: 600; color: #a8b4c8; margin-right: 8px; }
@@ -364,7 +377,12 @@ const TabTutorial = ({ addToast }) => {
   const [activeTab, setActiveTab] = useState('multislots');
   const [values, setValues] = useState({});
   const [serverValues, setServerValues] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState({
+    active: false,
+    title: 'Đang tải dữ liệu...',
+    description: 'Vui lòng đợi trong giây lát.'
+  });
+  const loadingCountRef = useRef(0);
   const [reviewDialog, setReviewDialog] = useState({ open: false, sectionLabel: '', changes: [], payload: {} });
 
   // Cvar view panel open state per sub-tab
@@ -381,6 +399,27 @@ const TabTutorial = ({ addToast }) => {
   const [serverDataValues, setServerDataValues] = useState({});
   const [dataReloadOnSave, setDataReloadOnSave] = useState(true);
   const [dataReviewDialog, setDataReviewDialog] = useState({ open: false, changes: [], payload: null });
+
+  const beginLoading = (title, description) => {
+    loadingCountRef.current += 1;
+    setLoadingState({ active: true, title, description });
+  };
+
+  const endLoading = () => {
+    loadingCountRef.current = Math.max(loadingCountRef.current - 1, 0);
+    if (loadingCountRef.current === 0) {
+      setLoadingState((prev) => ({ ...prev, active: false }));
+    }
+  };
+
+  const withLoading = async (context, action) => {
+    beginLoading(context.title, context.description);
+    try {
+      return await action();
+    } finally {
+      endLoading();
+    }
+  };
 
   useEffect(() => {
     fetchCvars();
@@ -406,21 +445,28 @@ const TabTutorial = ({ addToast }) => {
   }, [activeTab, selectedFile, selectedBlock]);
 
   const fetchCvars = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/cvars');
-      const data = await res.json();
-      const currentValues = {};
-      if (data.cvars) {
-        data.cvars.forEach(g => {
-           g.cvars.forEach(item => {
-             currentValues[item.name] = item.value;
-           });
-        });
+    return withLoading(
+      {
+        title: 'Đang tải CVAR...',
+        description: 'Đang đồng bộ giá trị mới nhất từ máy chủ.'
+      },
+      async () => {
+        try {
+          const res = await fetch('/api/cvars');
+          const data = await res.json();
+          const currentValues = {};
+          if (data.cvars) {
+            data.cvars.forEach(g => {
+               g.cvars.forEach(item => {
+                 currentValues[item.name] = item.value;
+               });
+            });
+          }
+          setValues(prev => ({ ...prev, ...currentValues }));
+          setServerValues(prev => ({ ...prev, ...currentValues }));
+        } catch { }
       }
-      setValues(prev => ({ ...prev, ...currentValues }));
-      setServerValues(prev => ({ ...prev, ...currentValues }));
-    } catch { } finally { setLoading(false); }
+    );
   };
 
   const fetchDataFiles = async () => {
@@ -442,39 +488,53 @@ const TabTutorial = ({ addToast }) => {
   };
 
   const fetchDataBlocks = async (file) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/data/blocks?plugin=l4dinfectedbots&file=${encodeURIComponent(file)}`);
-      const data = await res.json();
-      const blocks = Array.isArray(data.blocks) ? data.blocks : [];
-      setAvailableBlocks(blocks);
+    return withLoading(
+      {
+        title: 'Đang tải danh sách block...',
+        description: 'Đang đọc các mốc người chơi trong file dữ liệu.'
+      },
+      async () => {
+        try {
+          const res = await fetch(`/api/data/blocks?plugin=l4dinfectedbots&file=${encodeURIComponent(file)}`);
+          const data = await res.json();
+          const blocks = Array.isArray(data.blocks) ? data.blocks : [];
+          setAvailableBlocks(blocks);
 
-      if (blocks.length === 0) {
-        setSelectedBlock('default');
-        setDataValues({});
-        setServerDataValues({});
-      } else if (!blocks.includes(selectedBlock)) {
-        setSelectedBlock(blocks[0]);
+          if (blocks.length === 0) {
+            setSelectedBlock('default');
+            setDataValues({});
+            setServerDataValues({});
+          } else if (!blocks.includes(selectedBlock)) {
+            setSelectedBlock(blocks[0]);
+          }
+        } catch {}
       }
-    } catch {} finally { setLoading(false); }
+    );
   };
 
   const fetchDataBlockValues = async (file, block) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/data/block-values?plugin=l4dinfectedbots&file=${encodeURIComponent(file)}&block=${encodeURIComponent(block)}`);
-      const data = await res.json();
-      if (res.ok && data.values && typeof data.values === 'object') {
-        setDataValues(data.values);
-        setServerDataValues(data.values);
-      } else {
-        setDataValues({});
-        setServerDataValues({});
+    return withLoading(
+      {
+        title: 'Đang tải block dữ liệu...',
+        description: `Đang đọc cấu hình cho block "${block}".`
+      },
+      async () => {
+        try {
+          const res = await fetch(`/api/data/block-values?plugin=l4dinfectedbots&file=${encodeURIComponent(file)}&block=${encodeURIComponent(block)}`);
+          const data = await res.json();
+          if (res.ok && data.values && typeof data.values === 'object') {
+            setDataValues(data.values);
+            setServerDataValues(data.values);
+          } else {
+            setDataValues({});
+            setServerDataValues({});
+          }
+        } catch {
+          setDataValues({});
+          setServerDataValues({});
+        }
       }
-    } catch {
-      setDataValues({});
-      setServerDataValues({});
-    } finally { setLoading(false); }
+    );
   };
 
   // Shared generic handlers
@@ -521,18 +581,25 @@ const TabTutorial = ({ addToast }) => {
   };
 
   const confirmSaveCvarConfig = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch('/api/cvars/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cvars: reviewDialog.payload }) });
-      if (res.ok) {
-        setServerValues(prev => ({ ...prev, ...reviewDialog.payload }));
-        addToast(`Đã lưu ${reviewDialog.changes.length} thay đổi CVAR.`, 'success');
-        closeReviewDialog();
-      } else {
-        addToast('Lỗi khi lưu CVARs.', 'error');
+    return withLoading(
+      {
+        title: 'Đang lưu CVAR...',
+        description: 'Đang ghi thay đổi vào file cấu hình máy chủ.'
+      },
+      async () => {
+        try {
+          const res = await fetch('/api/cvars/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cvars: reviewDialog.payload }) });
+          if (res.ok) {
+            setServerValues(prev => ({ ...prev, ...reviewDialog.payload }));
+            addToast(`Đã lưu ${reviewDialog.changes.length} thay đổi CVAR.`, 'success');
+            closeReviewDialog();
+          } else {
+            addToast('Lỗi khi lưu CVARs.', 'error');
+          }
+          await fetchCvars();
+        } catch { addToast('Lỗi khi lưu CVARs.', 'error'); }
       }
-      fetchCvars();
-    } catch { addToast('Lỗi khi lưu CVARs.', 'error'); } finally { setLoading(false); }
+    );
   };
 
   const openDataReviewDialog = () => {
@@ -573,85 +640,61 @@ const TabTutorial = ({ addToast }) => {
 
   const confirmSaveDataConfig = async () => {
     if (!dataReviewDialog.payload) return;
-    try {
-      setLoading(true);
-      const res = await fetch('/api/data/patch-block', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataReviewDialog.payload)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        if (data.changed) {
-          setServerDataValues((prev) => ({ ...prev, ...dataReviewDialog.payload.changes }));
-          const reloadText = data.reloaded ? 'Plugin đã được load/reload.' : 'Không reload plugin.';
-          const pathInfo = data.pluginPathUsed ? ` (đã dùng đường dẫn ${data.pluginPathUsed})` : '';
-          addToast(`Đã lưu ${data.changedKeys?.length || 0} key Data (${selectedBlock}). ${reloadText}${pathInfo}`, 'success');
-        } else {
-          addToast(data.message || 'Không có thay đổi nào được áp dụng.', 'info');
+    return withLoading(
+      {
+        title: 'Đang lưu dữ liệu block...',
+        description: `Đang patch block "${selectedBlock}" vào file ${selectedFile}.`
+      },
+      async () => {
+        try {
+          const res = await fetch('/api/data/patch-block', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dataReviewDialog.payload)
+          });
+          const data = await res.json();
+          if (res.ok) {
+            if (data.changed) {
+              setServerDataValues((prev) => ({ ...prev, ...dataReviewDialog.payload.changes }));
+              const reloadText = data.reloaded ? 'Plugin đã được load/reload.' : 'Không reload plugin.';
+              const pathInfo = data.pluginPathUsed ? ` (đã dùng đường dẫn ${data.pluginPathUsed})` : '';
+              addToast(`Đã lưu ${data.changedKeys?.length || 0} key Data (${selectedBlock}). ${reloadText}${pathInfo}`, 'success');
+            } else {
+              addToast(data.message || 'Không có thay đổi nào được áp dụng.', 'info');
+            }
+            closeDataReviewDialog();
+            await fetchDataBlockValues(selectedFile, selectedBlock);
+          } else {
+             const pathInfo = data.pluginPathTried ? ` (đã thử ${data.pluginPathTried})` : '';
+             addToast((data.error || 'Lỗi khi lưu Data config.') + pathInfo, 'error');
+          }
+        } catch {
+          addToast('Lỗi khi ghi Data', 'error');
         }
-        closeDataReviewDialog();
-        fetchDataBlockValues(selectedFile, selectedBlock);
-      } else {
-         const pathInfo = data.pluginPathTried ? ` (đã thử ${data.pluginPathTried})` : '';
-         addToast((data.error || 'Lỗi khi lưu Data config.') + pathInfo, 'error');
       }
-    } catch {
-      addToast('Lỗi khi ghi Data', 'error');
-    } finally { setLoading(false); }
+    );
   };
 
   const renderCvarField = (item) => {
     const val = values[item.cvar] !== undefined ? values[item.cvar] : '';
     const sourcePath = getCvarSourcePath(item.cvar);
     return (
-      <div className="tut-item" key={item.cvar}>
-        <div className="tut-label">
-           {item.label}
-           {item.type === 'toggle' && (
-             <label className="tut-switch">
-               <input type="checkbox" checked={String(val) === '1'} onChange={e => handleUpdate(item.cvar, e.target.checked ? '1' : '0')} />
-               <span className="tut-switch-slider"></span>
-             </label>
-            )}
-        </div>
-        <div className="tut-desc">{item.desc}</div>
-        {sourcePath && <div className="tut-desc" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'var(--blue)' }}>{sourcePath}</div>}
-        {item.type === 'number' && <input type="number" className="tut-input" value={val} onChange={e => handleUpdate(item.cvar, e.target.value)} style={{ marginTop: 8 }} />}
-        {item.type === 'select' && (
-           <select className="tut-input" value={val} onChange={e => handleUpdate(item.cvar, e.target.value)} style={{ marginTop: 8 }}>
-              {item.options.map(o => <option key={o.v} value={o.v}>{o.n}</option>)}
-           </select>
-        )}
-        {item.type === 'radio' && (
-           <div className="tut-radio-group" style={{ marginTop: 8 }}>
-             {item.options.map(o => <label className="tut-radio" key={o.v}><input type="radio" value={o.v} checked={String(val) === String(o.v)} onChange={e => handleUpdate(item.cvar, e.target.value)} />{o.n}</label>)}
-           </div>
-        )}
-        {item.type === 'multi-checkbox' && (
-           <div className="tut-checkbox-group" style={{ marginTop: 8 }}>
-             {item.options.map(o => <label className="tut-checkbox" key={o.v}><input type="checkbox" checked={isMultiCheckboxChecked(item.cvar, o.v)} onChange={e => handleMultiCheckbox(item.cvar, o.v, e.target.checked)} />{o.n}</label>)}
-           </div>
-        )}
-      </div>
+      <CvarField
+        key={item.cvar}
+        item={item}
+        value={val}
+        sourcePath={sourcePath}
+        onUpdate={handleUpdate}
+        onMultiCheckbox={handleMultiCheckbox}
+        isMultiCheckboxChecked={isMultiCheckboxChecked}
+      />
     );
   };
 
   const renderDataField = (item) => {
     const val = dataValues[item.key] !== undefined ? dataValues[item.key] : '';
     return (
-      <div className="tut-item" key={item.key}>
-        <div className="tut-label">{item.label}</div>
-        <div className="tut-desc">{item.desc}</div>
-        {item.type === 'toggle' ? (
-          <label className="tut-switch" style={{ marginTop: 8 }}>
-            <input type="checkbox" checked={String(val) === '1'} onChange={e => handleDataUpdate(item.key, e.target.checked ? '1' : '0')} />
-            <span className="tut-switch-slider"></span>
-          </label>
-        ) : (
-          <input type="number" step="any" className="tut-input" value={val} onChange={e => handleDataUpdate(item.key, e.target.value)} style={{ marginTop: 8 }} />
-        )}
-      </div>
+      <DataField key={item.key} item={item} value={val} onUpdate={handleDataUpdate} />
     );
   };
 
@@ -667,6 +710,13 @@ const TabTutorial = ({ addToast }) => {
           <button className={`tut-tab-btn ${activeTab === 'eliteReward' ? 'active' : ''}`} onClick={() => setActiveTab('eliteReward')}>Elite SI Reward</button>
           <button className={`tut-tab-btn ${activeTab === 'notifier' ? 'active' : ''}`} onClick={() => setActiveTab('notifier')}>Notifier (Chat)</button>
         </div>
+
+        <div className="tut-content-area">
+          <LoadingOverlay
+            active={loadingState.active}
+            title={loadingState.title}
+            description={loadingState.description}
+          />
 
         {activeTab === 'multislots' && (
           <div className="tut-card">
@@ -742,7 +792,7 @@ const TabTutorial = ({ addToast }) => {
                  </label>
               </div>
 
-              {!loading && availableBlocks.length === 0 && <p style={{ color: 'var(--muted)' }}>Không tìm thấy block nào trong file data.</p>}
+              {!loadingState.active && availableBlocks.length === 0 && <p style={{ color: 'var(--muted)' }}>Không tìm thấy block nào trong file data.</p>}
               
               {availableBlocks.length > 0 && (
                 <>
@@ -751,8 +801,8 @@ const TabTutorial = ({ addToast }) => {
                      {InfectedBotsDataConfig.map(renderDataField)}
                   </div>
                   <div className="tut-actions">
-                     <button className="tut-btn tut-btn-refresh" onClick={() => fetchDataBlockValues(selectedFile, selectedBlock)}>Nap lai Block</button>
-                     <button className="tut-btn tut-btn-save" onClick={openDataReviewDialog}>Luu Data (Review)</button>
+                     <button className="tut-btn tut-btn-refresh" onClick={() => fetchDataBlockValues(selectedFile, selectedBlock)}>Nạp lại block</button>
+                     <button className="tut-btn tut-btn-save" onClick={openDataReviewDialog}>Lưu dữ liệu (review)</button>
                   </div>
                 </>
               )}
@@ -805,7 +855,7 @@ const TabTutorial = ({ addToast }) => {
           <div className="tut-card">
             <div className="tut-header">
                <h2>Elite SI Reward</h2>
-               <p>Tinh chỉnh reward theo từng SI, scale theo độ khó và cấu hình subtype elite. Smoker/Spitter elite có thể được roll sang nhánh `AbilityMovement`, Charger có thể được roll sang `ChargerAction`, còn các elite còn lại giữ nhánh `HardSI`.</p>
+               <p>Điều chỉnh reward theo từng SI, scale theo độ khó và cấu hình subtype elite. Smoker/Spitter elite có thể được roll sang nhánh `AbilityMovement`, Charger có thể được roll sang `ChargerAction`, còn các elite còn lại giữ nhánh `HardSI`.</p>
             </div>
 
             <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
@@ -893,106 +943,17 @@ const TabTutorial = ({ addToast }) => {
             </div>
           </div>
         )}
+        </div>
 
       </div>
-      {reviewDialog.open && (
-        <div className="tut-review-backdrop" onClick={closeReviewDialog}>
-          <div className="tut-review-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="tut-review-header">
-              <div>
-                <h3 className="tut-review-title">Review Changes Before Save</h3>
-                <div className="tut-review-subtitle">Xac nhan thay doi CVAR truoc khi ghi vao file config.</div>
-              </div>
-              <div className="tut-review-chip">{reviewDialog.sectionLabel} - {reviewDialog.changes.length} changes</div>
-            </div>
-            <div className="tut-review-body">
-              {reviewDialog.changes.map((change, idx) => {
-                const oldLine = `sm_cvar ${change.cvar} "${change.oldValue === '' ? '(empty)' : change.oldValue}"`;
-                const newLine = `sm_cvar ${change.cvar} "${change.newValue === '' ? '(empty)' : change.newValue}"`;
-                const oldLn = idx + 1;
-                const newLn = idx + 1;
-
-                return (
-                  <div className="tut-review-diff" key={change.cvar} style={{ marginBottom: 12 }}>
-                    <div className="tut-review-file">
-                      <span>{change.sourcePath || '(unknown file)'}</span>
-                      <span className="tut-review-file-badge">{change.cvar}</span>
-                    </div>
-                    <div className="tut-review-lines">
-                      <div className="tut-review-line tut-review-line-old">
-                        <div className="tut-review-ln">{oldLn}</div>
-                        <div className="tut-review-ln"></div>
-                        <div className="tut-review-sign">-</div>
-                        <div className="tut-review-code">{oldLine}</div>
-                      </div>
-                      <div className="tut-review-line tut-review-line-new">
-                        <div className="tut-review-ln"></div>
-                        <div className="tut-review-ln">{newLn}</div>
-                        <div className="tut-review-sign">+</div>
-                        <div className="tut-review-code">{newLine}</div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="tut-review-actions">
-              <button className="tut-btn tut-btn-refresh" onClick={closeReviewDialog}>Cancel</button>
-              <button className="tut-btn tut-btn-save" onClick={confirmSaveCvarConfig}>Confirm Save</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {dataReviewDialog.open && (
-        <div className="tut-review-backdrop" onClick={closeDataReviewDialog}>
-          <div className="tut-review-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="tut-review-header">
-              <div>
-                <h3 className="tut-review-title">Review Data Block Changes</h3>
-                <div className="tut-review-subtitle">Xac nhan thay doi truoc khi patch block vao file data.</div>
-              </div>
-              <div className="tut-review-chip">
-                {selectedFile} / {selectedBlock} - {dataReviewDialog.changes.length} changes
-              </div>
-            </div>
-            <div className="tut-review-body">
-              {dataReviewDialog.changes.map((change, idx) => {
-                const oldLine = `"${change.key}"    "${change.oldValue === '' ? '(empty)' : change.oldValue}"`;
-                const newLine = `"${change.key}"    "${change.newValue === '' ? '(empty)' : change.newValue}"`;
-                const oldLn = idx + 1;
-                const newLn = idx + 1;
-
-                return (
-                  <div className="tut-review-diff" key={change.key} style={{ marginBottom: 12 }}>
-                    <div className="tut-review-file">
-                      <span>{selectedFile}</span>
-                      <span className="tut-review-file-badge">{selectedBlock}</span>
-                    </div>
-                    <div className="tut-review-lines">
-                      <div className="tut-review-line tut-review-line-old">
-                        <div className="tut-review-ln">{oldLn}</div>
-                        <div className="tut-review-ln"></div>
-                        <div className="tut-review-sign">-</div>
-                        <div className="tut-review-code">{oldLine}</div>
-                      </div>
-                      <div className="tut-review-line tut-review-line-new">
-                        <div className="tut-review-ln"></div>
-                        <div className="tut-review-ln">{newLn}</div>
-                        <div className="tut-review-sign">+</div>
-                        <div className="tut-review-code">{newLine}</div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="tut-review-actions">
-              <button className="tut-btn tut-btn-refresh" onClick={closeDataReviewDialog}>Cancel</button>
-              <button className="tut-btn tut-btn-save" onClick={confirmSaveDataConfig}>Confirm Save Data</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CvarReviewDialog reviewDialog={reviewDialog} onClose={closeReviewDialog} onConfirm={confirmSaveCvarConfig} />
+      <DataReviewDialog
+        dataReviewDialog={dataReviewDialog}
+        selectedFile={selectedFile}
+        selectedBlock={selectedBlock}
+        onClose={closeDataReviewDialog}
+        onConfirm={confirmSaveDataConfig}
+      />
     </div>
   );
 };
