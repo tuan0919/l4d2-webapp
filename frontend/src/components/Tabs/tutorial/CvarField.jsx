@@ -1,5 +1,40 @@
 import React from 'react';
 
+const normalizeCsvToken = (token) => String(token || '').trim().toLowerCase();
+
+const splitCsvValue = (rawValue) => String(rawValue || '')
+  .split(',')
+  .map((token) => token.trim())
+  .filter(Boolean);
+
+const buildCsvValue = (rawValue, optionValue, checked, options) => {
+  const optionMap = new Map(options.map((option) => [normalizeCsvToken(option.v), String(option.v)]));
+  const recognized = new Set();
+  const extras = [];
+
+  splitCsvValue(rawValue).forEach((token) => {
+    const key = normalizeCsvToken(token);
+    if (optionMap.has(key)) {
+      recognized.add(key);
+    } else {
+      extras.push(token);
+    }
+  });
+
+  const targetKey = normalizeCsvToken(optionValue);
+  if (checked) {
+    recognized.add(targetKey);
+  } else {
+    recognized.delete(targetKey);
+  }
+
+  const ordered = options
+    .filter((option) => recognized.has(normalizeCsvToken(option.v)))
+    .map((option) => String(option.v));
+
+  return [...ordered, ...extras].join(',');
+};
+
 const CvarField = ({
   item,
   value,
@@ -9,6 +44,9 @@ const CvarField = ({
   isMultiCheckboxChecked
 }) => {
   if (!item) return null;
+  const selectedCsv = item.type === 'csv-checkbox'
+    ? new Set(splitCsvValue(value).map(normalizeCsvToken))
+    : null;
 
   return (
     <div className="tut-item" key={item.cvar}>
@@ -90,6 +128,24 @@ const CvarField = ({
                 type="checkbox"
                 checked={isMultiCheckboxChecked(item.cvar, option.v)}
                 onChange={(e) => onMultiCheckbox(item.cvar, option.v, e.target.checked)}
+              />
+              {option.n}
+            </label>
+          ))}
+        </div>
+      )}
+
+      {item.type === 'csv-checkbox' && (
+        <div className="tut-checkbox-group" style={{ marginTop: 8 }}>
+          {item.options.map((option) => (
+            <label className="tut-checkbox" key={option.v}>
+              <input
+                type="checkbox"
+                checked={selectedCsv?.has(normalizeCsvToken(option.v))}
+                onChange={(e) => onUpdate(
+                  item.cvar,
+                  buildCsvValue(value, option.v, e.target.checked, item.options)
+                )}
               />
               {option.n}
             </label>

@@ -243,10 +243,23 @@ const NotifierExplosionConfig = [
   { cvar: 'l4d_explosion_announcer_fuelbarrel', type: 'toggle', label: 'Fuel Barrel', desc: 'Thông báo nổ thùng dầu lớn.' }
 ];
 
+const IncappedModesOptions = [
+  { v: 'coop', n: 'Coop' },
+  { v: 'realism', n: 'Realism' },
+  { v: 'versus', n: 'Versus' },
+  { v: 'scavenge', n: 'Scavenge' },
+  { v: 'survival', n: 'Survival' }
+];
+
+const IncappedRestrictedWeaponOptions = WEAPONS.map((weapon) => ({
+  v: weapon.id,
+  n: weapon.name
+}));
+
 const IncappedWeaponsConfig = [
   { cvar: 'l4d_incapped_weapons_allow', type: 'toggle', label: 'Enable Plugin', desc: '0=Off, 1=On.' },
-  { cvar: 'l4d_incapped_weapons_modes', type: 'text', label: 'Modes On', desc: 'Danh sách mode bật plugin, phân tách bằng dấu phẩy. Để trống = tất cả.' },
-  { cvar: 'l4d_incapped_weapons_modes_off', type: 'text', label: 'Modes Off', desc: 'Danh sách mode tắt plugin, phân tách bằng dấu phẩy. Để trống = không mode nào bị tắt.' },
+  { cvar: 'l4d_incapped_weapons_modes', type: 'csv-checkbox', label: 'Modes On', desc: 'Chọn mode bật plugin. Bỏ trống = tất cả mode.', options: IncappedModesOptions },
+  { cvar: 'l4d_incapped_weapons_modes_off', type: 'csv-checkbox', label: 'Modes Off', desc: 'Chọn mode tắt plugin. Bỏ trống = không mode nào bị tắt.', options: IncappedModesOptions },
   { cvar: 'l4d_incapped_weapons_modes_tog', type: 'number', label: 'Modes Toggle Mask', desc: 'Bitmask mode: 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge.' },
   { cvar: 'l4d_incapped_weapons_delay_adren', type: 'number', label: 'Adren Revive Delay (s)', desc: 'Thời gian chờ self-revive sau khi dùng adrenaline (0=Off).' },
   { cvar: 'l4d_incapped_weapons_delay_pills', type: 'number', label: 'Pills Revive Delay (s)', desc: 'Thời gian chờ self-revive sau khi dùng pills (0=Off).' },
@@ -259,7 +272,7 @@ const IncappedWeaponsConfig = [
   { cvar: 'l4d_incapped_weapons_health', type: 'number', label: 'Revive Main Health', desc: 'Máu thật sau self-revive.' },
   { cvar: 'l4d_incapped_weapons_melee', type: 'toggle', label: 'Melee Friendly Fire', desc: 'L4D2: Cho phép melee từ survivor incapped gây damage lên survivor khác.' },
   { cvar: 'l4d_incapped_weapons_pistol', type: 'toggle', label: 'Give Pistol On Incap', desc: 'L4D2: 0=không cấp pistol, 1=cấp pistol mặc định game.' },
-  { cvar: 'l4d_incapped_weapons_restrict', type: 'text', label: 'Restricted Weapon IDs', desc: 'Danh sách Weapon ID bị chặn khi incapped (CSV).' },
+  { cvar: 'l4d_incapped_weapons_restrict', type: 'csv-checkbox', label: 'Restricted Weapon IDs', desc: 'Tick để chặn weapon khi đang incapped.', options: IncappedRestrictedWeaponOptions },
   { cvar: 'l4d_incapped_weapons_revive', type: 'radio', label: 'Revive Animation Mode', desc: 'Cơ chế animation khi self-revive.', options: [{ v: '0', n: 'Off' }, { v: '1', n: 'Interruptible' }, { v: '2', n: 'Restart On Damage' }, { v: '3', n: 'No Interrupt' }, { v: '4', n: 'Godmode' }] },
   { cvar: 'l4d_incapped_weapons_throw', type: 'toggle', label: 'Allow Throw Animation', desc: '0=Chặn đứng dậy khi ném lựu đạn, 1=Cho phép animation ném.' }
 ];
