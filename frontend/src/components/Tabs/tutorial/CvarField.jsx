@@ -43,6 +43,16 @@ const CvarField = ({
         />
       )}
 
+      {item.type === 'text' && (
+        <input
+          type="text"
+          className="tut-input"
+          value={value}
+          onChange={(e) => onUpdate(item.cvar, e.target.value)}
+          style={{ marginTop: 8 }}
+        />
+      )}
+
       {item.type === 'select' && (
         <select
           className="tut-input"

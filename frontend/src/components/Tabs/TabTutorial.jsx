@@ -243,6 +243,27 @@ const NotifierExplosionConfig = [
   { cvar: 'l4d_explosion_announcer_fuelbarrel', type: 'toggle', label: 'Fuel Barrel', desc: 'Thông báo nổ thùng dầu lớn.' }
 ];
 
+const IncappedWeaponsConfig = [
+  { cvar: 'l4d_incapped_weapons_allow', type: 'toggle', label: 'Enable Plugin', desc: '0=Off, 1=On.' },
+  { cvar: 'l4d_incapped_weapons_modes', type: 'text', label: 'Modes On', desc: 'Danh sách mode bật plugin, phân tách bằng dấu phẩy. Để trống = tất cả.' },
+  { cvar: 'l4d_incapped_weapons_modes_off', type: 'text', label: 'Modes Off', desc: 'Danh sách mode tắt plugin, phân tách bằng dấu phẩy. Để trống = không mode nào bị tắt.' },
+  { cvar: 'l4d_incapped_weapons_modes_tog', type: 'number', label: 'Modes Toggle Mask', desc: 'Bitmask mode: 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge.' },
+  { cvar: 'l4d_incapped_weapons_delay_adren', type: 'number', label: 'Adren Revive Delay (s)', desc: 'Thời gian chờ self-revive sau khi dùng adrenaline (0=Off).' },
+  { cvar: 'l4d_incapped_weapons_delay_pills', type: 'number', label: 'Pills Revive Delay (s)', desc: 'Thời gian chờ self-revive sau khi dùng pills (0=Off).' },
+  { cvar: 'l4d_incapped_weapons_delay_text', type: 'radio', label: 'Delay Text', desc: 'Hiển thị countdown khi revive delay.', options: [{ v: '0', n: 'Off' }, { v: '1', n: 'Chat' }, { v: '2', n: 'Hint' }] },
+  { cvar: 'l4d_incapped_weapons_friendly', type: 'number', label: 'Friendly Fire Scale', desc: 'Hệ số damage lên survivor khác khi đang incapped.' },
+  { cvar: 'l4d_incapped_weapons_heal_adren', type: 'number', label: 'Adren Heal Amount', desc: '-1=Revive, 0=Off, số dương = hồi máu khi incapped.' },
+  { cvar: 'l4d_incapped_weapons_heal_pills', type: 'number', label: 'Pills Heal Amount', desc: '-1=Revive, 0=Off, số dương = hồi máu khi incapped.' },
+  { cvar: 'l4d_incapped_weapons_heal_revive', type: 'radio', label: 'Revive Into B&W', desc: 'Áp trạng thái đen trắng khi revive bằng item.', options: [{ v: '0', n: 'Off' }, { v: '1', n: 'Pills' }, { v: '2', n: 'Adren' }, { v: '3', n: 'Both' }] },
+  { cvar: 'l4d_incapped_weapons_heal_text', type: 'radio', label: 'Heal Hint Text', desc: 'Gợi ý có thể dùng pills/adrenaline khi đang incapped.', options: [{ v: '0', n: 'Off' }, { v: '1', n: 'Chat' }, { v: '2', n: 'Hint' }] },
+  { cvar: 'l4d_incapped_weapons_health', type: 'number', label: 'Revive Main Health', desc: 'Máu thật sau self-revive.' },
+  { cvar: 'l4d_incapped_weapons_melee', type: 'toggle', label: 'Melee Friendly Fire', desc: 'L4D2: Cho phép melee từ survivor incapped gây damage lên survivor khác.' },
+  { cvar: 'l4d_incapped_weapons_pistol', type: 'toggle', label: 'Give Pistol On Incap', desc: 'L4D2: 0=không cấp pistol, 1=cấp pistol mặc định game.' },
+  { cvar: 'l4d_incapped_weapons_restrict', type: 'text', label: 'Restricted Weapon IDs', desc: 'Danh sách Weapon ID bị chặn khi incapped (CSV).' },
+  { cvar: 'l4d_incapped_weapons_revive', type: 'radio', label: 'Revive Animation Mode', desc: 'Cơ chế animation khi self-revive.', options: [{ v: '0', n: 'Off' }, { v: '1', n: 'Interruptible' }, { v: '2', n: 'Restart On Damage' }, { v: '3', n: 'No Interrupt' }, { v: '4', n: 'Godmode' }] },
+  { cvar: 'l4d_incapped_weapons_throw', type: 'toggle', label: 'Allow Throw Animation', desc: '0=Chặn đứng dậy khi ném lựu đạn, 1=Cho phép animation ném.' }
+];
+
 const EliteSIRewardConfig = [
   { cvar: 'l4d_hp_rewards_si', type: 'toggle', label: 'Bật thưởng Elite SI', desc: 'Bật/tắt thưởng khi hạ Elite Special Infected.' },
   { cvar: 'l4d_hp_rewards_tank', type: 'toggle', label: 'Bật thưởng Tank', desc: 'Bật/tắt thưởng khi hạ Tank.' },
@@ -706,6 +727,7 @@ const TabTutorial = ({ addToast }) => {
         <div className="tut-tabs-nav">
           <button className={`tut-tab-btn ${activeTab === 'multislots' ? 'active' : ''}`} onClick={() => setActiveTab('multislots')}>MultiSlots</button>
           <button className={`tut-tab-btn ${activeTab === 'infectedbots' ? 'active' : ''}`} onClick={() => setActiveTab('infectedbots')}>InfectedBots</button>
+          <button className={`tut-tab-btn ${activeTab === 'incappedWeapons' ? 'active' : ''}`} onClick={() => setActiveTab('incappedWeapons')}>Incapped Weapons</button>
           <button className={`tut-tab-btn ${activeTab === 'gundamage' ? 'active' : ''}`} onClick={() => setActiveTab('gundamage')}>Gun Damage</button>
           <button className={`tut-tab-btn ${activeTab === 'eliteReward' ? 'active' : ''}`} onClick={() => setActiveTab('eliteReward')}>Elite SI Reward</button>
           <button className={`tut-tab-btn ${activeTab === 'notifier' ? 'active' : ''}`} onClick={() => setActiveTab('notifier')}>Notifier (Chat)</button>
@@ -847,6 +869,46 @@ const TabTutorial = ({ addToast }) => {
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
                <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(GunDamageConfig, 'Gun Damage')}>Save (Write to CFG)</button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'incappedWeapons' && (
+          <div className="tut-card">
+            <div className="tut-header">
+               <h2>Incapped Weapons</h2>
+               <p>Cấu hình dùng vũ khí khi ngã gục, self-revive bằng pills/adrenaline và các giới hạn đi kèm.</p>
+            </div>
+
+            <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
+               <button className={`tut-btn-cvar-view${cvarViewOpen.incappedWeapons ? ' active' : ''}`} onClick={() => toggleCvarView('incappedWeapons')}>
+                 {cvarViewOpen.incappedWeapons ? 'Close Cvar View' : 'View as Cvar'}
+               </button>
+               <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Cvars</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(IncappedWeaponsConfig, 'Incapped Weapons')}>Save All</button>
+            </div>
+
+            {cvarViewOpen.incappedWeapons && (
+               <CvarViewPanel configList={IncappedWeaponsConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Incapped Weapons" getSourcePath={getCvarSourcePath} />
+            )}
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>General</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+              {IncappedWeaponsConfig.slice(0, 4).map(renderCvarField)}
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Self Revive & Healing</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+              {IncappedWeaponsConfig.slice(4, 13).map(renderCvarField)}
+            </div>
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Weapon Rules & Animation</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+              {IncappedWeaponsConfig.slice(13).map(renderCvarField)}
+            </div>
+
+            <div className="tut-actions" style={{ marginTop: 32 }}>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(IncappedWeaponsConfig, 'Incapped Weapons')}>Save All (Incapped Weapons)</button>
             </div>
           </div>
         )}
