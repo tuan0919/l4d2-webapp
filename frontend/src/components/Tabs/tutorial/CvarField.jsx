@@ -7,21 +7,52 @@ const splitCsvValue = (rawValue) => String(rawValue || '')
   .map((token) => token.trim())
   .filter(Boolean);
 
-const buildCsvValue = (rawValue, optionValue, checked, options) => {
-  const optionMap = new Map(options.map((option) => [normalizeCsvToken(option.v), String(option.v)]));
+const buildCsvAliasMap = (options) => {
+  const aliasMap = new Map();
+
+  options.forEach((option) => {
+    const canonical = String(option.v);
+    const keys = [option.v, ...(Array.isArray(option.aliases) ? option.aliases : [])];
+    keys.forEach((key) => {
+      const normalized = normalizeCsvToken(key);
+      if (normalized) {
+        aliasMap.set(normalized, canonical);
+      }
+    });
+  });
+
+  return aliasMap;
+};
+
+const parseCsvSelection = (rawValue, options) => {
+  const aliasMap = buildCsvAliasMap(options);
+  const selected = new Set();
+
+  splitCsvValue(rawValue).forEach((token) => {
+    const canonical = aliasMap.get(normalizeCsvToken(token));
+    if (canonical) {
+      selected.add(canonical);
+    }
+  });
+
+  return selected;
+};
+
+const buildCsvValue = (rawValue, optionValue, checked, options, preserveUnknownCsv = false) => {
+  const aliasMap = buildCsvAliasMap(options);
   const recognized = new Set();
   const extras = [];
 
   splitCsvValue(rawValue).forEach((token) => {
-    const key = normalizeCsvToken(token);
-    if (optionMap.has(key)) {
-      recognized.add(key);
-    } else {
+    const canonical = aliasMap.get(normalizeCsvToken(token));
+    if (canonical) {
+      recognized.add(canonical);
+    } else if (preserveUnknownCsv) {
       extras.push(token);
     }
   });
 
-  const targetKey = normalizeCsvToken(optionValue);
+  const targetKey = aliasMap.get(normalizeCsvToken(optionValue)) || String(optionValue);
   if (checked) {
     recognized.add(targetKey);
   } else {
@@ -29,7 +60,7 @@ const buildCsvValue = (rawValue, optionValue, checked, options) => {
   }
 
   const ordered = options
-    .filter((option) => recognized.has(normalizeCsvToken(option.v)))
+    .filter((option) => recognized.has(String(option.v)))
     .map((option) => String(option.v));
 
   return [...ordered, ...extras].join(',');
@@ -45,7 +76,7 @@ const CvarField = ({
 }) => {
   if (!item) return null;
   const selectedCsv = item.type === 'csv-checkbox'
-    ? new Set(splitCsvValue(value).map(normalizeCsvToken))
+    ? parseCsvSelection(value, item.options)
     : null;
 
   return (
@@ -141,10 +172,10 @@ const CvarField = ({
             <label className="tut-checkbox" key={option.v}>
               <input
                 type="checkbox"
-                checked={selectedCsv?.has(normalizeCsvToken(option.v))}
+                checked={Boolean(selectedCsv && selectedCsv.has(String(option.v)))}
                 onChange={(e) => onUpdate(
                   item.cvar,
-                  buildCsvValue(value, option.v, e.target.checked, item.options)
+                  buildCsvValue(value, option.v, e.target.checked, item.options, item.preserveUnknownCsv)
                 )}
               />
               {option.n}
