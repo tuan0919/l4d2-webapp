@@ -304,38 +304,43 @@ const IncappedWeaponsConfig = [
 ];
 
 const EliteSIRewardConfig = [
-  { cvar: 'l4d_hp_rewards_si', type: 'toggle', label: 'Bật thưởng Elite SI', desc: 'Bật/tắt thưởng khi hạ Elite Special Infected.' },
-  { cvar: 'l4d_hp_rewards_tank', type: 'toggle', label: 'Bật thưởng Tank', desc: 'Bật/tắt thưởng khi hạ Tank.' },
-  { cvar: 'l4d_hp_rewards_witch', type: 'toggle', label: 'Bật thưởng Witch', desc: 'Bật/tắt thưởng khi hạ Witch.' },
-  { cvar: 'l4d_hp_rewards_max', type: 'number', label: 'Giới hạn HP tối đa', desc: 'Ngưỡng HP thật + HP tạm sau khi cộng thưởng.' },
+  { cvar: 'l4d2_elite_si_core_enable', type: 'toggle', label: 'Bật hệ Elite Core', desc: 'Bật/tắt hệ gán Elite SI và subtype.' },
+  { cvar: 'l4d2_elite_reward_enable', type: 'toggle', label: 'Bật hệ Reward', desc: 'Bật/tắt toàn bộ hệ thưởng Temp HP.' },
 
-  { cvar: 'l4d_hp_rewards_smoker', type: 'number', label: 'Smoker Reward', desc: 'HP thưởng khi hạ Elite Smoker.' },
-  { cvar: 'l4d_hp_rewards_boomer', type: 'number', label: 'Boomer Reward', desc: 'HP thưởng khi hạ Elite Boomer.' },
-  { cvar: 'l4d_hp_rewards_hunter', type: 'number', label: 'Hunter Reward', desc: 'HP thưởng khi hạ Elite Hunter.' },
-  { cvar: 'l4d_hp_rewards_spitter', type: 'number', label: 'Spitter Reward', desc: 'HP thưởng khi hạ Elite Spitter.' },
-  { cvar: 'l4d_hp_rewards_jockey', type: 'number', label: 'Jockey Reward', desc: 'HP thưởng khi hạ Elite Jockey.' },
-  { cvar: 'l4d_hp_rewards_charger', type: 'number', label: 'Charger Reward', desc: 'HP thưởng khi hạ Elite Charger.' },
+  { cvar: 'l4d2_elite_reward_si_enable', type: 'toggle', label: 'Bật thưởng Elite SI', desc: 'Bật/tắt thưởng khi hạ Elite Special Infected.' },
+  { cvar: 'l4d2_elite_reward_tank_enable', type: 'toggle', label: 'Bật thưởng Tank', desc: 'Bật/tắt thưởng khi hạ Tank.' },
+  { cvar: 'l4d2_elite_reward_witch_enable', type: 'toggle', label: 'Bật thưởng Witch', desc: 'Bật/tắt thưởng khi hạ Witch.' },
+  { cvar: 'l4d2_elite_reward_temp_hp_limit', type: 'number', label: 'Giới hạn HP tối đa', desc: 'Ngưỡng HP thật + HP tạm sau khi cộng thưởng.' },
 
-  { cvar: 'l4d_hp_rewards_headshot_bonus', type: 'toggle', label: 'Headshot Bonus', desc: 'Nhân thưởng nếu kết liễu bằng headshot.' },
-  { cvar: 'l4d_hp_rewards_headshot_mult', type: 'number', label: 'Headshot Multiplier', desc: 'Hệ số nhân thưởng khi headshot (ví dụ 2.0).' },
+  { cvar: 'l4d2_elite_reward_smoker', type: 'number', label: 'Smoker Reward', desc: 'HP thưởng khi hạ Elite Smoker.' },
+  { cvar: 'l4d2_elite_reward_boomer', type: 'number', label: 'Boomer Reward', desc: 'HP thưởng khi hạ Elite Boomer.' },
+  { cvar: 'l4d2_elite_reward_hunter', type: 'number', label: 'Hunter Reward', desc: 'HP thưởng khi hạ Elite Hunter.' },
+  { cvar: 'l4d2_elite_reward_spitter', type: 'number', label: 'Spitter Reward', desc: 'HP thưởng khi hạ Elite Spitter.' },
+  { cvar: 'l4d2_elite_reward_jockey', type: 'number', label: 'Jockey Reward', desc: 'HP thưởng khi hạ Elite Jockey.' },
+  { cvar: 'l4d2_elite_reward_charger', type: 'number', label: 'Charger Reward', desc: 'HP thưởng khi hạ Elite Charger.' },
 
-  { cvar: 'l4d_hp_rewards_scale_difficulty', type: 'toggle', label: 'Scale theo độ khó', desc: 'Bật nhân thưởng theo z_difficulty hiện tại.' },
-  { cvar: 'l4d_hp_rewards_diff_easy', type: 'number', label: 'Easy Multiplier', desc: 'Hệ số thưởng khi độ khó easy.' },
-  { cvar: 'l4d_hp_rewards_diff_normal', type: 'number', label: 'Normal Multiplier', desc: 'Hệ số thưởng khi độ khó normal.' },
-  { cvar: 'l4d_hp_rewards_diff_hard', type: 'number', label: 'Hard/Advanced Multiplier', desc: 'Hệ số thưởng khi độ khó hard/advanced.' },
-  { cvar: 'l4d_hp_rewards_diff_expert', type: 'number', label: 'Expert Multiplier', desc: 'Hệ số thưởng khi độ khó impossible/expert.' },
+  { cvar: 'l4d2_elite_reward_headshot_bonus_enable', type: 'toggle', label: 'Headshot Bonus', desc: 'Nhân thưởng nếu kết liễu bằng headshot.' },
+  { cvar: 'l4d2_elite_reward_headshot_bonus_multiplier', type: 'number', label: 'Headshot Multiplier', desc: 'Hệ số nhân thưởng khi headshot (ví dụ 2.0).' },
 
-  { cvar: 'l4d_hp_rewards_tank_mode', type: 'radio', label: 'Tank Reward Mode', desc: 'Cách phát thưởng khi hạ Tank.', options: [{ v: '0', n: 'Chỉ attacker' }, { v: '1', n: 'Toàn team sống' }] },
-  { cvar: 'l4d_hp_rewards_tank_amount', type: 'number', label: 'Tank Reward Amount', desc: 'Lượng thưởng cơ bản khi hạ Tank.' },
-  { cvar: 'l4d_hp_rewards_witch_mode', type: 'radio', label: 'Witch Reward Mode', desc: 'Cách phát thưởng khi hạ Witch.', options: [{ v: '0', n: 'Chỉ attacker' }, { v: '1', n: 'Toàn team sống' }] },
-  { cvar: 'l4d_hp_rewards_witch_amount', type: 'number', label: 'Witch Reward Amount', desc: 'Lượng thưởng cơ bản khi hạ Witch.' },
+  { cvar: 'l4d2_elite_reward_scale_by_difficulty', type: 'toggle', label: 'Scale theo độ khó', desc: 'Bật nhân thưởng theo z_difficulty hiện tại.' },
+  { cvar: 'l4d2_elite_reward_diff_easy', type: 'number', label: 'Easy Multiplier', desc: 'Hệ số thưởng khi độ khó easy.' },
+  { cvar: 'l4d2_elite_reward_diff_normal', type: 'number', label: 'Normal Multiplier', desc: 'Hệ số thưởng khi độ khó normal.' },
+  { cvar: 'l4d2_elite_reward_diff_hard', type: 'number', label: 'Hard/Advanced Multiplier', desc: 'Hệ số thưởng khi độ khó hard/advanced.' },
+  { cvar: 'l4d2_elite_reward_diff_expert', type: 'number', label: 'Expert Multiplier', desc: 'Hệ số thưởng khi độ khó impossible/expert.' },
 
-  { cvar: 'l4d_hp_rewards_elite_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI thường trở thành Elite. Roll này áp cho SI thường, không phải Tank.' },
-  { cvar: 'l4d_hp_rewards_elite_hp_mult', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
-  { cvar: 'l4d_hp_rewards_elite_fire', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ Elite tự cháy mới kháng damage lửa.' },
-  { cvar: 'l4d_hp_rewards_elite_ability_movement_chance_smoker', type: 'number', label: 'Smoker AbilityMovement Chance (%)', desc: 'Nếu Smoker đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
-  { cvar: 'l4d_hp_rewards_elite_ability_movement_chance_spitter', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
-  { cvar: 'l4d_hp_rewards_elite_charger_action_chance', type: 'number', label: 'ChargerSteering Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerSteering (bot control) thay vì HardSI. Lưu ý: cvar key hiện vẫn giữ dạng legacy.' }
+  { cvar: 'l4d2_elite_reward_tank_mode', type: 'radio', label: 'Tank Reward Mode', desc: 'Cách phát thưởng khi hạ Tank.', options: [{ v: '0', n: 'Chỉ attacker' }, { v: '1', n: 'Toàn team sống' }] },
+  { cvar: 'l4d2_elite_reward_tank_amount', type: 'number', label: 'Tank Reward Amount', desc: 'Lượng thưởng cơ bản khi hạ Tank.' },
+  { cvar: 'l4d2_elite_reward_witch_mode', type: 'radio', label: 'Witch Reward Mode', desc: 'Cách phát thưởng khi hạ Witch.', options: [{ v: '0', n: 'Chỉ attacker' }, { v: '1', n: 'Toàn team sống' }] },
+  { cvar: 'l4d2_elite_reward_witch_amount', type: 'number', label: 'Witch Reward Amount', desc: 'Lượng thưởng cơ bản khi hạ Witch.' },
+  { cvar: 'l4d2_elite_reward_show_hint', type: 'toggle', label: 'Hiện Hint Reward', desc: 'Bật/tắt instructor hint khi nhận thưởng.' },
+
+  { cvar: 'l4d2_elite_si_core_spawn_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI thường trở thành Elite. Roll này áp cho SI thường, không phải Tank.' },
+  { cvar: 'l4d2_elite_si_core_hp_multiplier', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
+  { cvar: 'l4d2_elite_si_core_fire_ignite_chance', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ Elite tự cháy mới kháng damage lửa.' },
+  { cvar: 'l4d2_elite_si_core_smoker_ability_subtype_chance', type: 'number', label: 'Smoker AbilityMovement Chance (%)', desc: 'Nếu Smoker đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
+  { cvar: 'l4d2_elite_si_core_spitter_ability_subtype_chance', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
+  { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'ChargerSteering Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerSteering thay vì nhánh khác.' },
+  { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction.' }
 ];
 
 const getCvarSourcePath = (cvar) => cvarFileMap[cvar] || '';
