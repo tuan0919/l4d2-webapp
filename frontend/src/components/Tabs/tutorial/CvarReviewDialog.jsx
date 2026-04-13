@@ -16,8 +16,8 @@ const CvarReviewDialog = ({ reviewDialog, onClose, onConfirm }) => {
 
         <div className="tut-review-body">
           {reviewDialog.changes.map((change, idx) => {
-            const oldLine = `sm_cvar ${change.cvar} "${change.oldValue === '' ? '(empty)' : change.oldValue}"`;
-            const newLine = `sm_cvar ${change.cvar} "${change.newValue === '' ? '(empty)' : change.newValue}"`;
+            const oldLine = `sm_cvar ${change.cvar} "${change.oldValue}"`;
+            const newLine = `sm_cvar ${change.cvar} "${change.newValue}"`;
             const oldLn = idx + 1;
             const newLn = idx + 1;
 

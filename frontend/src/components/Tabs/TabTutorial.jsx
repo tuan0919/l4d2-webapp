@@ -215,6 +215,23 @@ const RedAnnounceConfig = [
   { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite SI Tag (chat)', desc: 'Hiện tag Elite trong thông báo survivor kill SI của chat đỏ.' }
 ];
 
+const CvarDefaultValues = {
+  l4d2_redannounce_enable: '1'
+};
+
+const getNormalizedCvarValue = (cvar, rawValue) => {
+  const text = rawValue === undefined || rawValue === null ? '' : String(rawValue).trim();
+  if (text !== '') {
+    return text;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(CvarDefaultValues, cvar)) {
+    return CvarDefaultValues[cvar];
+  }
+
+  return '';
+};
+
 const NotifierEventConfig = [
   { cvar: 'tuan_notify_member_evt_enable', type: 'toggle', label: 'Bật Events member', desc: 'Bật/tắt module thông báo sự kiện phụ.' },
   { cvar: 'tuan_notify_member_evt_notify_healed_other', type: 'toggle', label: 'Heal Other', desc: 'Thông báo khi cứu thương người B&W.' },
@@ -355,7 +372,7 @@ const CvarViewPanel = ({ configList, values, onApply, addToast, label, getSource
       }
 
       configList.filter((item) => getSourcePath(item.cvar) === sourcePath).forEach((item) => {
-        const val = values[item.cvar] !== undefined ? String(values[item.cvar]) : '';
+        const val = getNormalizedCvarValue(item.cvar, values[item.cvar]);
         if (item.desc) lines.push(`// ${item.desc}`);
         lines.push(`sm_cvar ${item.cvar} "${val}"`);
       });
@@ -517,7 +534,7 @@ const TabTutorial = ({ addToast }) => {
           if (data.cvars) {
             data.cvars.forEach(g => {
                g.cvars.forEach(item => {
-                 currentValues[item.name] = item.value;
+                 currentValues[item.name] = getNormalizedCvarValue(item.name, item.value);
                });
             });
           }
@@ -613,8 +630,8 @@ const TabTutorial = ({ addToast }) => {
 
     configList.forEach(item => {
       const cvar = item.cvar;
-      const nextValue = values[cvar] !== undefined ? String(values[cvar]) : '';
-      const prevValue = serverValues[cvar] !== undefined ? String(serverValues[cvar]) : '';
+      const nextValue = getNormalizedCvarValue(cvar, values[cvar]);
+      const prevValue = getNormalizedCvarValue(cvar, serverValues[cvar]);
       payload[cvar] = nextValue;
 
       if (nextValue !== prevValue) {
