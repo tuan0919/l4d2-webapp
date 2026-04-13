@@ -69,7 +69,7 @@ const WEBAPP_DIR = __dirname;
 const CONSOLE_LOG = path.join(L4D2_DIR, 'left4dead2', 'console.log');
 const SOURCEMOD_LOG_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'logs');
 const CFG_DIR = path.join(L4D2_DIR, 'left4dead2', 'cfg');
-const GAMEDATA_ROOT_DIR = CFG_DIR;
+const GAMEDATA_ROOT_DIR = path.join(L4D2_DIR, 'l4d2-sourcemod', 'addons', 'sourcemod', 'data');
 const SERVER_CFG_PATH = path.join(CFG_DIR, 'server.cfg');
 const WEBAPP_CFG_DIR = path.join(CFG_DIR, 'webapp');
 const WEBAPP_OVERRIDE_LOADER_NAME = 'overrides_loader.cfg';
@@ -639,7 +639,7 @@ function resolveGameDataPath(relativePath, options = {}) {
   }
 
   return {
-    rootLabel: 'left4dead2/cfg',
+    rootLabel: 'l4d2-sourcemod/addons/sourcemod/data',
     relativePath: normalizedRelativePath,
     absolutePath
   };
