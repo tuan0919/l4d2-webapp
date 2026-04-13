@@ -795,6 +795,180 @@ select option { background: var(--surface2); }
 }
 
 /* ══════════════════════════════════════
+   GameData Tab
+   ══════════════════════════════════════ */
+.gamedata-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 16px;
+  padding: 16px;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.gamedata-browser,
+.gamedata-editor-panel {
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.gamedata-browser-header,
+.gamedata-editor-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.gamedata-browser-header h2,
+.gamedata-editor-header h2 {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.gamedata-browser-header p,
+.gamedata-editor-header p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.gamedata-browser-header code,
+.gamedata-editor-header code {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--blue);
+}
+.gamedata-breadcrumbs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.gamedata-crumb {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.gamedata-crumb:hover { color: var(--text); border-color: var(--accent); }
+.gamedata-crumb.active {
+  color: var(--accent);
+  border-color: rgba(232,83,42,0.35);
+  background: rgba(232,83,42,0.08);
+}
+.gamedata-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+.gamedata-entry {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.gamedata-entry:hover {
+  background: rgba(255,255,255,0.025);
+  border-color: var(--border);
+}
+.gamedata-entry.active {
+  background: rgba(91,200,245,0.08);
+  border-color: rgba(91,200,245,0.3);
+}
+.gamedata-entry-parent {
+  margin-bottom: 8px;
+  border-style: dashed;
+  border-color: var(--border);
+}
+.gamedata-entry-icon {
+  width: 42px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--blue);
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+.gamedata-entry-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.gamedata-entry-main strong {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gamedata-entry-main small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.gamedata-editor-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.gamedata-editor-meta {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.gamedata-editor {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  background: #090b10;
+  color: #a8c0e0;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+.gamedata-empty-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ══════════════════════════════════════
    Empty / Loading States
    ══════════════════════════════════════ */
 .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
@@ -841,6 +1015,11 @@ select option { background: var(--surface2); }
    Responsive
    ══════════════════════════════════════ */
 @media (max-width: 1100px) {
+  .gamedata-layout {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
   .dev-grid {
     grid-template-columns: 1fr;
     overflow-y: auto;

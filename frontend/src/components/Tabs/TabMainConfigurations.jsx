@@ -761,7 +761,7 @@ const TabMainConfigurations = ({ addToast }) => {
   };
 
   const renderCvarField = (item) => {
-    const val = values[item.cvar] !== undefined ? values[item.cvar] : '';
+    const val = getNormalizedCvarValue(item.cvar, values[item.cvar]);
     const sourcePath = getCvarSourcePath(item.cvar);
     return (
       <MainConfigCvarField

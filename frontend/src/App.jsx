@@ -7,6 +7,7 @@ import TabCvars from './components/Tabs/TabCvars';
 import TabAddons from './components/Tabs/TabAddons';
 import TabDeveloper from './components/Tabs/TabDeveloper';
 import TabMainConfigurations from './components/Tabs/TabMainConfigurations';
+import TabGameData from './components/Tabs/TabGameData';
 import ToastContainer from './components/Common/ToastContainer';
 
 const App = () => {
@@ -67,6 +68,7 @@ const App = () => {
               badge={pluginCount === null ? '—' : pluginCount}
             />
             <TabBtn id="cvars" label="Cvars" icon="⚙️" active={activeTab} onClick={setActiveTab} />
+            <TabBtn id="gamedata" label="GameData" icon="🗂️" active={activeTab} onClick={setActiveTab} />
             <TabBtn id="addons" label="Custom Maps" icon="📦" active={activeTab} onClick={setActiveTab} />
             <TabBtn id="main-configurations" label="Main Configurations" icon="📖" active={activeTab} onClick={setActiveTab} />
             <TabBtn id="developer" label="Developer" icon="🛠️" active={activeTab} onClick={setActiveTab} />
@@ -76,6 +78,7 @@ const App = () => {
             {activeTab === 'console' && <TabConsole addToast={addToast} />}
             {activeTab === 'plugins' && <TabPlugins setPluginCount={setPluginCount} />}
             {activeTab === 'cvars' && <TabCvars addToast={addToast} />}
+            {activeTab === 'gamedata' && <TabGameData addToast={addToast} />}
             {activeTab === 'addons' && <TabAddons addToast={addToast} />}
             {activeTab === 'main-configurations' && <TabMainConfigurations addToast={addToast} />}
             {activeTab === 'developer' && <TabDeveloper addToast={addToast} />}
