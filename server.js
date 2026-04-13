@@ -69,7 +69,7 @@ const WEBAPP_DIR = __dirname;
 const CONSOLE_LOG = path.join(L4D2_DIR, 'left4dead2', 'console.log');
 const SOURCEMOD_LOG_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'logs');
 const CFG_DIR = path.join(L4D2_DIR, 'left4dead2', 'cfg');
-const GAMEDATA_ROOT_DIR = path.join(L4D2_DIR, 'l4d2-sourcemod', 'addons', 'sourcemod', 'data');
+const GAMEDATA_ROOT_RELATIVE_SEGMENTS = ['addons', 'sourcemod', 'data'];
 const SERVER_CFG_PATH = path.join(CFG_DIR, 'server.cfg');
 const WEBAPP_CFG_DIR = path.join(CFG_DIR, 'webapp');
 const WEBAPP_OVERRIDE_LOADER_NAME = 'overrides_loader.cfg';
@@ -615,6 +615,33 @@ function toDeveloperTarget(rootKey, relativePath) {
   return `${rootKey}:${normalizeRelativePath(relativePath)}`;
 }
 
+function getGameDataRootCandidates() {
+  const candidates = [
+    path.join(L4D2_DIR, 'l4d2-sourcemod', ...GAMEDATA_ROOT_RELATIVE_SEGMENTS),
+    path.resolve(WEBAPP_DIR, '..', 'l4d2-sourcemod', ...GAMEDATA_ROOT_RELATIVE_SEGMENTS),
+    path.resolve(process.cwd(), 'l4d2-sourcemod', ...GAMEDATA_ROOT_RELATIVE_SEGMENTS)
+  ];
+
+  return [...new Set(candidates.map((candidate) => path.resolve(candidate)))];
+}
+
+function getGameDataRootDir() {
+  const candidates = getGameDataRootCandidates();
+  const existing = candidates.find((candidate) => {
+    try {
+      return fs.existsSync(candidate) && fs.statSync(candidate).isDirectory();
+    } catch (e) {
+      return false;
+    }
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  throw new Error(`GameData root not found. Checked: ${candidates.join(' | ')}`);
+}
+
 function resolveGameDataPath(relativePath, options = {}) {
   const { allowRoot = false, requireCfgFile = false } = options;
   const normalizedRelativePath = normalizeRelativePath(relativePath).replace(/\/+$/, '');
@@ -623,9 +650,9 @@ function resolveGameDataPath(relativePath, options = {}) {
     throw new Error('Invalid GameData path');
   }
 
-  const allowedRoot = path.resolve(GAMEDATA_ROOT_DIR);
+  const allowedRoot = getGameDataRootDir();
   const absolutePath = normalizedRelativePath
-    ? path.resolve(GAMEDATA_ROOT_DIR, normalizedRelativePath)
+    ? path.resolve(allowedRoot, normalizedRelativePath)
     : allowedRoot;
 
   if (absolutePath !== allowedRoot && !absolutePath.startsWith(`${allowedRoot}${path.sep}`)) {
@@ -647,6 +674,7 @@ function resolveGameDataPath(relativePath, options = {}) {
 
 function listGameDataDirectory(relativePath) {
   const { rootLabel, relativePath: normalizedCurrent, absolutePath } = resolveGameDataPath(relativePath, { allowRoot: true });
+  const allowedRoot = getGameDataRootDir();
 
   if (!fs.existsSync(absolutePath)) {
     throw new Error('Directory not found');
@@ -664,7 +692,7 @@ function listGameDataDirectory(relativePath) {
     .map((entry) => {
       const entryAbsolutePath = path.join(absolutePath, entry.name);
       const entryStats = fs.statSync(entryAbsolutePath);
-      const entryRelativePath = path.relative(GAMEDATA_ROOT_DIR, entryAbsolutePath).replace(/\\/g, '/');
+      const entryRelativePath = path.relative(allowedRoot, entryAbsolutePath).replace(/\\/g, '/');
       const isDirectory = entry.isDirectory();
       const extension = isDirectory ? '' : path.extname(entry.name).toLowerCase();
 

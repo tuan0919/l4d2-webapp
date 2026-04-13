@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const ROOT_LABEL = 'l4d2-sourcemod/addons/sourcemod/data';
+const EXPLORER_WINDOW_ID = 'explorer';
+const TASKBAR_HEIGHT = 58;
 
 const formatBytes = (bytes) => {
   const size = Number(bytes || 0);
@@ -18,18 +20,46 @@ const formatTime = (value) => {
 
 const getParentPath = (value) => value.split('/').filter(Boolean).slice(0, -1).join('/');
 
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const createWindowState = (id, file, zIndex) => ({
+  id,
+  type: 'editor',
+  title: file.name,
+  filePath: file.relativePath,
+  rootLabel: file.rootLabel || ROOT_LABEL,
+  content: file.content || '',
+  draft: file.content || '',
+  modified: file.modified,
+  size: file.size,
+  minimized: false,
+  maximized: false,
+  zIndex,
+  x: 120 + (zIndex % 4) * 28,
+  y: 90 + (zIndex % 4) * 24,
+  width: 720,
+  height: 520
+});
+
 const TabGameData = ({ addToast }) => {
+  const desktopRef = useRef(null);
+  const dragRef = useRef(null);
+
+  const [note, setNote] = useState('Loading GameData...');
   const [currentPath, setCurrentPath] = useState('');
   const [entries, setEntries] = useState([]);
   const [selectedEntryPath, setSelectedEntryPath] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [editorValue, setEditorValue] = useState('');
-  const [note, setNote] = useState('Loading GameData...');
   const [loadingList, setLoadingList] = useState(false);
   const [loadingFile, setLoadingFile] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [savingWindowId, setSavingWindowId] = useState('');
+  const [windows, setWindows] = useState([]);
+  const [activeWindowId, setActiveWindowId] = useState(EXPLORER_WINDOW_ID);
+  const [nextZIndex, setNextZIndex] = useState(3);
 
-  const isDirty = !!selectedFile && editorValue !== selectedFile.content;
+  const selectedEntry = useMemo(
+    () => entries.find((entry) => entry.relativePath === selectedEntryPath) || null,
+    [entries, selectedEntryPath]
+  );
 
   const breadcrumbs = useMemo(() => {
     const parts = currentPath ? currentPath.split('/').filter(Boolean) : [];
@@ -42,14 +72,25 @@ const TabGameData = ({ addToast }) => {
     ];
   }, [currentPath]);
 
-  const selectedEntry = useMemo(
-    () => entries.find((entry) => entry.relativePath === selectedEntryPath) || null,
-    [entries, selectedEntryPath]
-  );
+  const windowsById = useMemo(() => {
+    const map = new Map();
+    windows.forEach((win) => map.set(win.id, win));
+    return map;
+  }, [windows]);
 
-  const confirmDiscard = () => {
-    if (!isDirty) return true;
-    return window.confirm('You have unsaved changes. Discard them?');
+  const anyDirtyWindow = windows.some((win) => win.draft !== win.content);
+
+  const confirmDiscard = (message = 'You have unsaved changes. Discard them?') => {
+    if (!anyDirtyWindow) return true;
+    return window.confirm(message);
+  };
+
+  const bumpWindow = (windowId) => {
+    if (!windowId) return;
+    const z = nextZIndex + 1;
+    setNextZIndex(z);
+    setActiveWindowId(windowId);
+    setWindows((prev) => prev.map((win) => (win.id === windowId ? { ...win, zIndex: z } : win)));
   };
 
   const loadDirectory = async (nextPath = currentPath) => {
@@ -88,9 +129,39 @@ const TabGameData = ({ addToast }) => {
         throw new Error(data.error || 'Failed to load file');
       }
 
-      setSelectedFile(data);
-      setEditorValue(data.content || '');
-      setSelectedEntryPath(relativePath);
+      const existing = windows.find((win) => win.filePath === data.relativePath);
+      if (existing) {
+        setWindows((prev) => prev.map((win) => (
+          win.id === existing.id
+            ? {
+                ...win,
+                title: data.relativePath.split('/').pop(),
+                rootLabel: data.rootLabel || ROOT_LABEL,
+                content: data.content || '',
+                draft: win.draft === win.content ? (data.content || '') : win.draft,
+                modified: data.modified,
+                size: data.size,
+                minimized: false
+              }
+            : win
+        )));
+        bumpWindow(existing.id);
+        addToast(`Focused ${data.relativePath}`, 'info');
+        return;
+      }
+
+      const windowId = `editor:${data.relativePath}`;
+      const z = nextZIndex + 1;
+      setNextZIndex(z);
+      setWindows((prev) => [...prev, createWindowState(windowId, {
+        name: data.relativePath.split('/').pop(),
+        relativePath: data.relativePath,
+        rootLabel: data.rootLabel,
+        content: data.content,
+        modified: data.modified,
+        size: data.size
+      }, z)]);
+      setActiveWindowId(windowId);
       addToast(`Opened ${data.relativePath}`, 'info');
     } catch (error) {
       addToast(error.message || 'Failed to load file', 'error');
@@ -103,10 +174,35 @@ const TabGameData = ({ addToast }) => {
     loadDirectory('');
   }, []);
 
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      const drag = dragRef.current;
+      const desktop = desktopRef.current;
+      if (!drag || !desktop) return;
+
+      const bounds = desktop.getBoundingClientRect();
+      const nextX = clamp(event.clientX - bounds.left - drag.offsetX, 12, Math.max(12, bounds.width - drag.width - 12));
+      const nextY = clamp(event.clientY - bounds.top - drag.offsetY, 12, Math.max(12, bounds.height - drag.height - TASKBAR_HEIGHT - 12));
+
+      setWindows((prev) => prev.map((win) => (
+        win.id === drag.windowId && !win.maximized ? { ...win, x: nextX, y: nextY } : win
+      )));
+    };
+
+    const stopDrag = () => {
+      dragRef.current = null;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', stopDrag);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', stopDrag);
+    };
+  }, []);
+
   const openDirectory = async (relativePath) => {
-    if (!confirmDiscard()) return;
-    setSelectedFile(null);
-    setEditorValue('');
+    if (!confirmDiscard('You have unsaved editor changes. Discard them and change folder?')) return;
     await loadDirectory(relativePath);
   };
 
@@ -122,12 +218,12 @@ const TabGameData = ({ addToast }) => {
       return;
     }
 
-    if (!confirmDiscard()) return;
     await loadFile(entry.relativePath);
   };
 
   const handleEntryClick = (entry) => {
     setSelectedEntryPath(entry.relativePath);
+    setActiveWindowId(EXPLORER_WINDOW_ID);
   };
 
   const handleEntryDoubleClick = async (entry) => {
@@ -143,42 +239,90 @@ const TabGameData = ({ addToast }) => {
   };
 
   const refreshCurrent = async () => {
-    if (!confirmDiscard()) return;
-    const reopenPath = selectedFile?.relativePath || '';
+    if (!confirmDiscard('You have unsaved editor changes. Discard them and refresh?')) return;
     await loadDirectory(currentPath);
-    if (reopenPath) {
-      await loadFile(reopenPath);
+  };
+
+  const updateWindow = (windowId, updater) => {
+    setWindows((prev) => prev.map((win) => (win.id === windowId ? updater(win) : win)));
+  };
+
+  const closeWindow = (windowId) => {
+    const target = windowsById.get(windowId);
+    if (!target) return;
+    if (target.draft !== target.content && !window.confirm(`Close ${target.title} without saving?`)) {
+      return;
+    }
+    setWindows((prev) => prev.filter((win) => win.id !== windowId));
+    if (activeWindowId === windowId) {
+      setActiveWindowId(EXPLORER_WINDOW_ID);
     }
   };
 
-  const saveFile = async () => {
-    if (!selectedFile) return;
-    setSaving(true);
+  const minimizeWindow = (windowId) => {
+    updateWindow(windowId, (win) => ({ ...win, minimized: true }));
+    if (activeWindowId === windowId) {
+      setActiveWindowId(EXPLORER_WINDOW_ID);
+    }
+  };
+
+  const toggleMaximizeWindow = (windowId) => {
+    bumpWindow(windowId);
+    updateWindow(windowId, (win) => ({ ...win, minimized: false, maximized: !win.maximized }));
+  };
+
+  const restoreWindow = (windowId) => {
+    bumpWindow(windowId);
+    updateWindow(windowId, (win) => ({ ...win, minimized: false }));
+  };
+
+  const saveWindow = async (windowId) => {
+    const target = windowsById.get(windowId);
+    if (!target) return;
+
+    setSavingWindowId(windowId);
     try {
       const response = await fetch('/api/gamedata/file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: selectedFile.relativePath, content: editorValue })
+        body: JSON.stringify({ path: target.filePath, content: target.draft })
       });
       const data = await response.json();
       if (!response.ok || data.error) {
         throw new Error(data.error || 'Failed to save file');
       }
 
-      setSelectedFile((prev) => prev ? {
-        ...prev,
-        content: editorValue,
+      updateWindow(windowId, (win) => ({
+        ...win,
+        content: win.draft,
         modified: data.modified,
         size: data.size
-      } : prev);
-      addToast(`Saved ${selectedFile.relativePath}`, 'success');
+      }));
+      addToast(`Saved ${target.filePath}`, 'success');
       await loadDirectory(currentPath);
-      setSelectedEntryPath(selectedFile.relativePath);
+      setSelectedEntryPath(target.filePath);
     } catch (error) {
       addToast(error.message || 'Failed to save file', 'error');
     } finally {
-      setSaving(false);
+      setSavingWindowId('');
     }
+  };
+
+  const startDrag = (event, windowId) => {
+    const target = windowsById.get(windowId);
+    if (!target || target.maximized) return;
+    const desktop = desktopRef.current;
+    if (!desktop) return;
+
+    const bounds = desktop.getBoundingClientRect();
+    dragRef.current = {
+      windowId,
+      offsetX: event.clientX - bounds.left - target.x,
+      offsetY: event.clientY - bounds.top - target.y,
+      width: target.width,
+      height: target.height
+    };
+    bumpWindow(windowId);
   };
 
   const goUp = async () => {
@@ -186,46 +330,29 @@ const TabGameData = ({ addToast }) => {
     await openDirectory(getParentPath(currentPath));
   };
 
+  const visibleWindows = windows.filter((win) => !win.minimized).sort((a, b) => a.zIndex - b.zIndex);
+
   return (
-    <div className="plugins-panel">
-      <div className="plugins-toolbar">
-        <div style={{ fontSize: 13, color: 'var(--muted)', flex: 1, minWidth: 240 }}>
-          {loadingList ? 'Loading...' : note}
+    <div className="gamedata-shell">
+      <div className="gamedata-desktop" ref={desktopRef}>
+        <div className="gamedata-desktop-caption">
+          <strong>GameData Workspace</strong>
+          <span>{loadingList ? 'Loading...' : note}</span>
         </div>
-        <button
-          className="btn btn-ghost"
-          style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }}
-          onClick={refreshCurrent}
-          disabled={loadingList || loadingFile || saving}
-        >
-          ↻ Refresh
-        </button>
-      </div>
 
-      <div className="gamedata-layout gamedata-layout-explorer">
-        <section className="gamedata-explorer-panel">
-          <div className="gamedata-explorer-topbar">
-            <div className="gamedata-topbar-actions">
-              <button
-                type="button"
-                className="gamedata-nav-btn"
-                onClick={goUp}
-                disabled={!currentPath || loadingList}
-                title="Up"
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="gamedata-nav-btn"
-                onClick={refreshCurrent}
-                disabled={loadingList || loadingFile || saving}
-                title="Refresh"
-              >
-                ↻
-              </button>
+        <section className={`gamedata-window gamedata-window-explorer ${activeWindowId === EXPLORER_WINDOW_ID ? 'active' : ''}`}>
+          <div className="gamedata-window-titlebar" onMouseDown={() => setActiveWindowId(EXPLORER_WINDOW_ID)}>
+            <div className="gamedata-window-title">
+              <span className="gamedata-window-badge explorer">EXP</span>
+              <span>File Explorer</span>
             </div>
+            <div className="gamedata-window-controls">
+              <button type="button" className="gamedata-window-btn" onClick={goUp} disabled={!currentPath || loadingList}>↑</button>
+              <button type="button" className="gamedata-window-btn" onClick={refreshCurrent} disabled={loadingList || loadingFile || !!savingWindowId}>↻</button>
+            </div>
+          </div>
 
+          <div className="gamedata-window-toolbar">
             <div className="gamedata-addressbar" title={`${ROOT_LABEL}${currentPath ? `/${currentPath}` : ''}`}>
               {breadcrumbs.map((crumb) => (
                 <button
@@ -273,7 +400,7 @@ const TabGameData = ({ addToast }) => {
               )}
 
               {!loadingList && entries.length === 0 ? (
-                <div className="empty-state">
+                <div className="empty-state gamedata-empty-grid">
                   <div className="big">🗂️</div>
                   <p>Folder is empty</p>
                 </div>
@@ -308,71 +435,105 @@ const TabGameData = ({ addToast }) => {
 
           <div className="gamedata-statusbar">
             <span>{entries.length} item(s)</span>
-            <span>{selectedEntry ? selectedEntry.name : 'No selection'}</span>
+            <span>{selectedEntry ? selectedEntry.name : 'Single-click select, double-click open'}</span>
           </div>
         </section>
 
-        <section className="gamedata-editor-panel">
-          <div className="gamedata-editor-header">
-            <div>
-              <h2>{selectedFile ? selectedFile.relativePath : 'Preview / Editor'}</h2>
-              <p>
-                {selectedFile
-                  ? `${formatBytes(selectedFile.size)} • Updated ${formatTime(selectedFile.modified)}`
-                  : 'Double-click a .cfg file to open it. Double-click a folder to enter it.'}
-              </p>
-            </div>
+        {visibleWindows.map((win) => {
+          const isActive = activeWindowId === win.id;
+          const isSaving = savingWindowId === win.id;
+          const dirty = win.draft !== win.content;
+          const style = win.maximized
+            ? { zIndex: win.zIndex, inset: '10px 10px 70px 10px' }
+            : { zIndex: win.zIndex, left: win.x, top: win.y, width: win.width, height: win.height };
 
-            {selectedFile && (
-              <div className="gamedata-editor-actions">
-                <button
-                  className="btn btn-ghost"
-                  style={{ width: 'auto', margin: 0, padding: '8px 12px', fontSize: 12 }}
-                  onClick={() => {
-                    setEditorValue(selectedFile.content || '');
-                    addToast('Reverted unsaved changes', 'info');
-                  }}
-                  disabled={!isDirty || saving}
-                >
-                  Reset
-                </button>
-                <button
-                  className="btn btn-primary"
-                  style={{ width: 'auto', margin: 0, padding: '8px 12px', fontSize: 12 }}
-                  onClick={saveFile}
-                  disabled={!isDirty || saving || loadingFile}
-                >
-                  {saving ? 'Saving...' : 'Save file'}
-                </button>
+          return (
+            <section
+              key={win.id}
+              className={`gamedata-window gamedata-window-editor ${isActive ? 'active' : ''} ${win.maximized ? 'maximized' : ''}`}
+              style={style}
+              onMouseDown={() => bumpWindow(win.id)}
+            >
+              <div className="gamedata-window-titlebar" onMouseDown={(event) => startDrag(event, win.id)}>
+                <div className="gamedata-window-title">
+                  <span className="gamedata-window-badge cfg">CFG</span>
+                  <span>{win.title}</span>
+                  {dirty && <span className="gamedata-window-dirty">Unsaved</span>}
+                </div>
+
+                <div className="gamedata-window-controls">
+                  <button type="button" className="gamedata-window-btn" onClick={(event) => { event.stopPropagation(); minimizeWindow(win.id); }}>_</button>
+                  <button type="button" className="gamedata-window-btn" onClick={(event) => { event.stopPropagation(); toggleMaximizeWindow(win.id); }}>{win.maximized ? '▢' : '□'}</button>
+                  <button type="button" className="gamedata-window-btn close" onClick={(event) => { event.stopPropagation(); closeWindow(win.id); }}>×</button>
+                </div>
               </div>
-            )}
-          </div>
 
-          {!selectedFile ? (
-            <div className="empty-state gamedata-empty-editor">
-              <div className="big">🪟</div>
-              <p>Single-click để chọn, double-click để mở file hoặc vào thư mục</p>
-            </div>
-          ) : loadingFile ? (
-            <div className="empty-state gamedata-empty-editor">
-              <div className="big">⏳</div>
-              <p>Loading file content...</p>
-            </div>
-          ) : (
-            <>
+              <div className="gamedata-editor-header gamedata-editor-header-window">
+                <div>
+                  <h2>{win.filePath}</h2>
+                  <p>{formatBytes(win.size)} • Updated {formatTime(win.modified)}</p>
+                </div>
+                <div className="gamedata-editor-actions">
+                  <button
+                    className="btn btn-ghost"
+                    style={{ width: 'auto', margin: 0, padding: '8px 12px', fontSize: 12 }}
+                    onClick={() => updateWindow(win.id, (current) => ({ ...current, draft: current.content }))}
+                    disabled={!dirty || isSaving}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: 'auto', margin: 0, padding: '8px 12px', fontSize: 12 }}
+                    onClick={() => saveWindow(win.id)}
+                    disabled={!dirty || isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save file'}
+                  </button>
+                </div>
+              </div>
+
               <div className="gamedata-editor-meta">
-                <span>{selectedFile.rootLabel || ROOT_LABEL}</span>
-                <span>{isDirty ? 'Unsaved changes' : 'Saved'}</span>
+                <span>{win.rootLabel}</span>
+                <span>{dirty ? 'Unsaved changes' : 'Saved'}</span>
               </div>
+
               <textarea
                 className="gamedata-editor"
                 spellCheck={false}
-                value={editorValue}
-                onChange={(e) => setEditorValue(e.target.value)}
+                value={win.draft}
+                onChange={(event) => updateWindow(win.id, (current) => ({ ...current, draft: event.target.value }))}
               />
-            </>
-          )}
-        </section>
+            </section>
+          );
+        })}
+      </div>
+
+      <div className="gamedata-taskbar">
+        <button
+          type="button"
+          className={`gamedata-taskbar-item ${activeWindowId === EXPLORER_WINDOW_ID ? 'active' : ''}`}
+          onClick={() => setActiveWindowId(EXPLORER_WINDOW_ID)}
+        >
+          <span className="gamedata-taskbar-badge explorer">EXP</span>
+          <span>Explorer</span>
+        </button>
+
+        {windows.map((win) => {
+          const dirty = win.draft !== win.content;
+          return (
+            <button
+              key={win.id}
+              type="button"
+              className={`gamedata-taskbar-item ${activeWindowId === win.id && !win.minimized ? 'active' : ''}`}
+              onClick={() => (win.minimized ? restoreWindow(win.id) : bumpWindow(win.id))}
+            >
+              <span className="gamedata-taskbar-badge cfg">CFG</span>
+              <span>{win.title}</span>
+              {dirty && <span className="gamedata-taskbar-dot" />}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
