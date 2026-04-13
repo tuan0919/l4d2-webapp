@@ -205,42 +205,36 @@ const InfectedBotsDataConfig = [
   { key: 'spawn_time_max', type: 'number', label: 'Max Spawn Time', desc: 'Thời gian chờ lớn nhất (giây).' }
 ];
 
-const NotifierDIConfig = [
-  { cvar: 'tuan_notifier_di_enable', type: 'toggle', label: 'Bật DI Notifier', desc: 'Bật/tắt thông báo Death/Incap.' },
-  { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite SI Tag', desc: 'Hiện chữ Elite trong thông báo kill SI (chat đỏ).' },
-  { cvar: 'tuan_notifier_di_notify_incap_other', type: 'toggle', label: 'Incap Other', desc: 'Thông báo khi bị ai đó bắn gục.' },
-  { cvar: 'tuan_notifier_di_notify_kill_other', type: 'toggle', label: 'Kill Other', desc: 'Thông báo khi giết ai đó.' },
-  { cvar: 'tuan_notifier_di_notify_killed_by_unknown', type: 'toggle', label: 'Killed By Unknown', desc: 'Thông báo khi chết do môi trường.' },
-  { cvar: 'tuan_notifier_di_notify_incapped_by_unknown', type: 'toggle', label: 'Incapped By Unknown', desc: 'Thông báo khi gục do môi trường.' }
+const NotifierCoreDisplayConfig = [
+  { cvar: 'tuan_notify_core_screen_hud_notification', type: 'toggle', label: 'Screen hud notification', desc: 'Hiển thị thông báo lên HUD trên màn hình.' },
+  { cvar: 'tuan_notify_core_kill_feed', type: 'toggle', label: 'Kill feed HUD', desc: 'Hiển thị kill feed bên phải khi bật Screen HUD.' }
 ];
 
-const NotifierBWConfig = [
-  { cvar: 'tuan_notifier_bw_enable', type: 'toggle', label: 'Bật B&W Notifier', desc: 'Bật/tắt thông báo trắng đen.' },
-  { cvar: 'tuan_notifier_bw_notify_healed_other', type: 'toggle', label: 'Heal Other', desc: 'Thông báo khi cứu thương người B&W.' },
-  { cvar: 'tuan_notifier_bw_notify_go_bnw', type: 'toggle', label: 'Go B&W', desc: 'Thông báo khi một người rơi vào B&W.' },
-  { cvar: 'tuan_notifier_bw_notify_revived_other', type: 'toggle', label: 'Revive Other', desc: 'Thông báo khi gọi người khác dậy.' }
+const RedAnnounceConfig = [
+  { cvar: 'l4d2_redannounce_enable', type: 'toggle', label: 'Chat notification', desc: 'Bật/tắt thông báo Death/Incap qua plugin Tuan_l4d2_death_incap_red.' },
+  { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite SI Tag (chat)', desc: 'Hiện tag Elite trong thông báo survivor kill SI của chat đỏ.' }
 ];
 
-const NotifierThrowableConfig = [
-  { cvar: 'l4d_throwable_announcer_enable', type: 'toggle', label: 'Bật Throwable', desc: 'Bật/tắt thông báo ném lựu đạn.' },
-  { cvar: 'l4d_throwable_announcer_team', type: 'number', label: 'Team', desc: '1=Surv, 2=Inf, 4=Spec. (Ví dụ 3 là Surv+Inf)' },
-  { cvar: 'l4d_throwable_announcer_self', type: 'toggle', label: 'Self Notify', desc: 'Thông báo cho bản thân.' },
-  { cvar: 'l4d_throwable_announcer_fake_throw', type: 'number', label: 'Fake Throw Delay', desc: 'Delay để bỏ qua fake throw (s).' },
-  { cvar: 'l4d_throwable_announcer_molotov', type: 'toggle', label: 'Molotov', desc: 'Thông báo ném Molotov.' },
-  { cvar: 'l4d_throwable_announcer_pipebomb', type: 'toggle', label: 'Pipebomb', desc: 'Thông báo ném Pipebomb.' },
-  { cvar: 'l4d_throwable_announcer_vomitjar', type: 'toggle', label: 'Vomitjar', desc: 'Thông báo ném Bile/Boomer Vomit.' }
-];
-
-const NotifierExplosionConfig = [
-  { cvar: 'l4d_explosion_announcer_enable', type: 'toggle', label: 'Bật Explosion', desc: 'Bật/tắt thông báo bắn nổ.' },
-  { cvar: 'l4d_explosion_announcer_team', type: 'number', label: 'Team', desc: '1=Surv, 2=Inf, 4=Spec.' },
-  { cvar: 'l4d_explosion_announcer_spam_protection', type: 'number', label: 'Spam Protection (s)', desc: 'Thời gian delay chống spam chat.' },
-  { cvar: 'l4d_explosion_announcer_self', type: 'toggle', label: 'Self Notify', desc: 'Thông báo cho bản thân.' },
-  { cvar: 'l4d_explosion_announcer_gascan', type: 'toggle', label: 'Gascan', desc: 'Thông báo nổ bình xăng.' },
-  { cvar: 'l4d_explosion_announcer_propanecanister', type: 'toggle', label: 'Propane', desc: 'Thông báo nổ bình gas.' },
-  { cvar: 'l4d_explosion_announcer_oxygentank', type: 'toggle', label: 'Oxygen', desc: 'Thông báo nổ bình oxy.' },
-  { cvar: 'l4d_explosion_announcer_fireworkscrate', type: 'toggle', label: 'Fireworks', desc: 'Thông báo nổ pháo hoa.' },
-  { cvar: 'l4d_explosion_announcer_fuelbarrel', type: 'toggle', label: 'Fuel Barrel', desc: 'Thông báo nổ thùng dầu lớn.' }
+const NotifierEventConfig = [
+  { cvar: 'tuan_notify_member_evt_enable', type: 'toggle', label: 'Bật Events member', desc: 'Bật/tắt module thông báo sự kiện phụ.' },
+  { cvar: 'tuan_notify_member_evt_notify_healed_other', type: 'toggle', label: 'Heal Other', desc: 'Thông báo khi cứu thương người B&W.' },
+  { cvar: 'tuan_notify_member_evt_notify_go_bnw', type: 'toggle', label: 'Go B&W', desc: 'Thông báo khi một người rơi vào B&W.' },
+  { cvar: 'tuan_notify_member_evt_notify_revived_other', type: 'toggle', label: 'Revive Other', desc: 'Thông báo khi gọi người khác dậy.' },
+  { cvar: 'tuan_notify_member_evt_notify_self_revived', type: 'toggle', label: 'Self Revive', desc: 'Thông báo khi tự đứng dậy.' },
+  { cvar: 'tuan_notify_member_evt_notify_throw_molotov', type: 'toggle', label: 'Throw Molotov', desc: 'Thông báo khi ném Molotov.' },
+  { cvar: 'tuan_notify_member_evt_notify_throw_pipebomb', type: 'toggle', label: 'Throw Pipebomb', desc: 'Thông báo khi ném Pipebomb.' },
+  { cvar: 'tuan_notify_member_evt_notify_throw_vomitjar', type: 'toggle', label: 'Throw Vomitjar', desc: 'Thông báo khi ném Bile.' },
+  { cvar: 'tuan_notify_member_evt_notify_explode_gascan', type: 'toggle', label: 'Explode Gascan', desc: 'Thông báo nổ bình xăng.' },
+  { cvar: 'tuan_notify_member_evt_notify_explode_fuel_barrel', type: 'toggle', label: 'Explode Fuel Barrel', desc: 'Thông báo nổ thùng dầu.' },
+  { cvar: 'tuan_notify_member_evt_notify_explode_propanecanister', type: 'toggle', label: 'Explode Propane', desc: 'Thông báo nổ bình gas.' },
+  { cvar: 'tuan_notify_member_evt_notify_explode_oxygentank', type: 'toggle', label: 'Explode Oxygen', desc: 'Thông báo nổ bình oxy.' },
+  { cvar: 'tuan_notify_member_evt_notify_explode_barricade_gascan', type: 'toggle', label: 'Explode Barricade', desc: 'Thông báo nổ barricade gascan.' },
+  { cvar: 'tuan_notify_member_evt_notify_explode_gas_pump', type: 'toggle', label: 'Explode Gas Pump', desc: 'Thông báo nổ trụ xăng.' },
+  { cvar: 'tuan_notify_member_evt_notify_explode_fireworks_crate', type: 'toggle', label: 'Explode Fireworks', desc: 'Thông báo nổ thùng pháo hoa.' },
+  { cvar: 'tuan_notify_member_evt_notify_explode_oil_drum', type: 'toggle', label: 'Explode Oil Drum', desc: 'Thông báo nổ thùng dầu custom.' },
+  { cvar: 'tuan_notify_member_evt_notify_gear_give', type: 'toggle', label: 'Gear Give', desc: 'Thông báo khi đưa đồ đồng đội.' },
+  { cvar: 'tuan_notify_member_evt_notify_gear_grab', type: 'toggle', label: 'Gear Grab', desc: 'Thông báo khi lấy đồ từ đồng đội.' },
+  { cvar: 'tuan_notify_member_evt_notify_gear_swap', type: 'toggle', label: 'Gear Swap', desc: 'Thông báo khi đổi đồ với đồng đội.' }
 ];
 
 const IncappedModesOptions = [
@@ -1017,35 +1011,30 @@ const TabTutorial = ({ addToast }) => {
                  {cvarViewOpen.notifier ? 'Close Cvar View' : 'View as Cvar'}
                </button>
                <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Cvars</button>
-               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig], 'Notifier')}>Save All</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog([...NotifierCoreDisplayConfig, ...RedAnnounceConfig, ...NotifierEventConfig], 'Notifier')}>Save All</button>
             </div>
 
             {cvarViewOpen.notifier && (
-               <CvarViewPanel configList={[...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig]} values={values} onApply={applyCvarText} addToast={addToast} label="Notifier" getSourcePath={getCvarSourcePath} />
-            )}
+               <CvarViewPanel configList={[...NotifierCoreDisplayConfig, ...RedAnnounceConfig, ...NotifierEventConfig]} values={values} onApply={applyCvarText} addToast={addToast} label="Notifier" getSourcePath={getCvarSourcePath} />
+              )}
+
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Display</div>
+            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+               {NotifierCoreDisplayConfig.map(renderCvarField)}
+            </div>
 
             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Death & Incap</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-               {NotifierDIConfig.map(renderCvarField)}
+               {RedAnnounceConfig.map(renderCvarField)}
             </div>
 
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Black & White</div>
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Events (BW / Throwable / Explosion / Gear)</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-               {NotifierBWConfig.map(renderCvarField)}
-            </div>
-
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Throwable Announcer</div>
-            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-               {NotifierThrowableConfig.map(renderCvarField)}
-            </div>
-
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Explosion Announcer</div>
-            <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-               {NotifierExplosionConfig.map(renderCvarField)}
+               {NotifierEventConfig.map(renderCvarField)}
             </div>
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
-               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog([...NotifierDIConfig, ...NotifierBWConfig, ...NotifierThrowableConfig, ...NotifierExplosionConfig], 'Notifier')}>Save All (Notifier)</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog([...NotifierCoreDisplayConfig, ...RedAnnounceConfig, ...NotifierEventConfig], 'Notifier')}>Save All (Notifier)</button>
             </div>
           </div>
         )}
