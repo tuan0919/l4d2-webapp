@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import cvarFileMap from './tutorialCvarFileMap.json';
-import LoadingOverlay from './tutorial/LoadingOverlay';
-import CvarField from './tutorial/CvarField';
-import DataField from './tutorial/DataField';
-import CvarReviewDialog from './tutorial/CvarReviewDialog';
-import DataReviewDialog from './tutorial/DataReviewDialog';
+import cvarFileMap from './mainConfigurationsCvarFileMap.json';
+import MainConfigLoadingOverlay from './mainConfigurations/MainConfigLoadingOverlay';
+import MainConfigCvarField from './mainConfigurations/MainConfigCvarField';
+import MainConfigDataField from './mainConfigurations/MainConfigDataField';
+import MainConfigCvarReviewDialog from './mainConfigurations/MainConfigCvarReviewDialog';
+import MainConfigDataReviewDialog from './mainConfigurations/MainConfigDataReviewDialog';
 
 // Custom CSS for premium looks embedded in the component
 const styles = `
@@ -100,6 +100,15 @@ const styles = `
   .tut-review-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px 18px; border-top: 1px solid rgba(255,255,255,0.08); }
   .tut-review-actions .tut-btn { margin: 0; }
 `;
+
+const MAIN_CONFIGURATION_TABS = [
+  { id: 'multislots', label: 'MultiSlots' },
+  { id: 'infectedbots', label: 'InfectedBots' },
+  { id: 'incappedWeapons', label: 'Incapped Weapons' },
+  { id: 'gundamage', label: 'Gun Damage' },
+  { id: 'eliteReward', label: 'Elite SI Reward' },
+  { id: 'notifier', label: 'Notifier (Chat)' }
+];
 
 const WEAPONS = [
   { id: 'ak47', name: 'AK-47' },
@@ -449,8 +458,8 @@ const CvarViewPanel = ({ configList, values, onApply, addToast, label, getSource
   );
 };
 
-const TabTutorial = ({ addToast }) => {
-  const [activeTab, setActiveTab] = useState('multislots');
+const TabMainConfigurations = ({ addToast }) => {
+  const [activeSubTab, setActiveSubTab] = useState('multislots');
   const [values, setValues] = useState({});
   const [serverValues, setServerValues] = useState({});
   const [loadingState, setLoadingState] = useState({
@@ -502,23 +511,23 @@ const TabTutorial = ({ addToast }) => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'infectedbots') {
+    if (activeSubTab === 'infectedbots') {
       fetchDataFiles();
       fetchDataBlocks(selectedFile);
     }
-  }, [activeTab]);
+  }, [activeSubTab]);
 
   useEffect(() => {
-    if (activeTab === 'infectedbots' && selectedFile) {
+    if (activeSubTab === 'infectedbots' && selectedFile) {
       fetchDataBlocks(selectedFile);
     }
   }, [selectedFile]);
 
   useEffect(() => {
-    if (activeTab === 'infectedbots' && selectedFile && selectedBlock) {
+    if (activeSubTab === 'infectedbots' && selectedFile && selectedBlock) {
       fetchDataBlockValues(selectedFile, selectedBlock);
     }
-  }, [activeTab, selectedFile, selectedBlock]);
+  }, [activeSubTab, selectedFile, selectedBlock]);
 
   const fetchCvars = async () => {
     return withLoading(
@@ -755,7 +764,7 @@ const TabTutorial = ({ addToast }) => {
     const val = values[item.cvar] !== undefined ? values[item.cvar] : '';
     const sourcePath = getCvarSourcePath(item.cvar);
     return (
-      <CvarField
+      <MainConfigCvarField
         key={item.cvar}
         item={item}
         value={val}
@@ -770,7 +779,7 @@ const TabTutorial = ({ addToast }) => {
   const renderDataField = (item) => {
     const val = dataValues[item.key] !== undefined ? dataValues[item.key] : '';
     return (
-      <DataField key={item.key} item={item} value={val} onUpdate={handleDataUpdate} />
+      <MainConfigDataField key={item.key} item={item} value={val} onUpdate={handleDataUpdate} />
     );
   };
 
@@ -779,23 +788,31 @@ const TabTutorial = ({ addToast }) => {
       <style>{styles}</style>
       <div className="tut-container">
         
+        <div className="tut-header" style={{ marginBottom: 0 }}>
+          <h2>Main Configurations</h2>
+          <p>Trung tam chinh sua CVAR va Data block cho cac plugin quan trong.</p>
+        </div>
+
         <div className="tut-tabs-nav">
-          <button className={`tut-tab-btn ${activeTab === 'multislots' ? 'active' : ''}`} onClick={() => setActiveTab('multislots')}>MultiSlots</button>
-          <button className={`tut-tab-btn ${activeTab === 'infectedbots' ? 'active' : ''}`} onClick={() => setActiveTab('infectedbots')}>InfectedBots</button>
-          <button className={`tut-tab-btn ${activeTab === 'incappedWeapons' ? 'active' : ''}`} onClick={() => setActiveTab('incappedWeapons')}>Incapped Weapons</button>
-          <button className={`tut-tab-btn ${activeTab === 'gundamage' ? 'active' : ''}`} onClick={() => setActiveTab('gundamage')}>Gun Damage</button>
-          <button className={`tut-tab-btn ${activeTab === 'eliteReward' ? 'active' : ''}`} onClick={() => setActiveTab('eliteReward')}>Elite SI Reward</button>
-          <button className={`tut-tab-btn ${activeTab === 'notifier' ? 'active' : ''}`} onClick={() => setActiveTab('notifier')}>Notifier (Chat)</button>
+          {MAIN_CONFIGURATION_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tut-tab-btn ${activeSubTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveSubTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         <div className="tut-content-area">
-          <LoadingOverlay
+          <MainConfigLoadingOverlay
             active={loadingState.active}
             title={loadingState.title}
             description={loadingState.description}
           />
 
-        {activeTab === 'multislots' && (
+        {activeSubTab === 'multislots' && (
           <div className="tut-card">
             <div className="tut-header">
                <h2>MultiSlots Configuration</h2>
@@ -817,7 +834,7 @@ const TabTutorial = ({ addToast }) => {
           </div>
         )}
 
-        {activeTab === 'infectedbots' && (
+        {activeSubTab === 'infectedbots' && (
           <>
             {/* Cvars Section */}
             <div className="tut-card" style={{ marginBottom: 24 }}>
@@ -887,7 +904,7 @@ const TabTutorial = ({ addToast }) => {
           </>
         )}
 
-        {activeTab === 'gundamage' && (
+        {activeSubTab === 'gundamage' && (
           <div className="tut-card">
             <div className="tut-header">
                <h2>Gun Damage Modify</h2>
@@ -928,7 +945,7 @@ const TabTutorial = ({ addToast }) => {
           </div>
         )}
 
-        {activeTab === 'incappedWeapons' && (
+        {activeSubTab === 'incappedWeapons' && (
           <div className="tut-card">
             <div className="tut-header">
                <h2>Incapped Weapons</h2>
@@ -968,7 +985,7 @@ const TabTutorial = ({ addToast }) => {
           </div>
         )}
 
-        {activeTab === 'eliteReward' && (
+        {activeSubTab === 'eliteReward' && (
           <div className="tut-card">
             <div className="tut-header">
                <h2>Elite SI Reward</h2>
@@ -1016,7 +1033,7 @@ const TabTutorial = ({ addToast }) => {
           </div>
         )}
 
-        {activeTab === 'notifier' && (
+        {activeSubTab === 'notifier' && (
           <div className="tut-card">
             <div className="tut-header">
                <h2>Tuan's Event Notifier</h2>
@@ -1058,8 +1075,8 @@ const TabTutorial = ({ addToast }) => {
         </div>
 
       </div>
-      <CvarReviewDialog reviewDialog={reviewDialog} onClose={closeReviewDialog} onConfirm={confirmSaveCvarConfig} />
-      <DataReviewDialog
+      <MainConfigCvarReviewDialog reviewDialog={reviewDialog} onClose={closeReviewDialog} onConfirm={confirmSaveCvarConfig} />
+      <MainConfigDataReviewDialog
         dataReviewDialog={dataReviewDialog}
         selectedFile={selectedFile}
         selectedBlock={selectedBlock}
@@ -1070,4 +1087,4 @@ const TabTutorial = ({ addToast }) => {
   );
 };
 
-export default TabTutorial;
+export default TabMainConfigurations;

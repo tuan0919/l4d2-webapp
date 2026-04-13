@@ -66,7 +66,7 @@ const buildCsvValue = (rawValue, optionValue, checked, options, preserveUnknownC
   return [...ordered, ...extras].join(',');
 };
 
-const CvarField = ({
+const MainConfigCvarField = ({
   item,
   value,
   sourcePath,
@@ -187,4 +187,4 @@ const CvarField = ({
   );
 };
 
-export default CvarField;
+export default MainConfigCvarField;

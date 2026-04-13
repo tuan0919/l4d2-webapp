@@ -6,7 +6,7 @@ import TabPlugins from './components/Tabs/TabPlugins';
 import TabCvars from './components/Tabs/TabCvars';
 import TabAddons from './components/Tabs/TabAddons';
 import TabDeveloper from './components/Tabs/TabDeveloper';
-import TabTutorial from './components/Tabs/TabTutorial';
+import TabMainConfigurations from './components/Tabs/TabMainConfigurations';
 import ToastContainer from './components/Common/ToastContainer';
 
 const App = () => {
@@ -68,7 +68,7 @@ const App = () => {
             />
             <TabBtn id="cvars" label="Cvars" icon="⚙️" active={activeTab} onClick={setActiveTab} />
             <TabBtn id="addons" label="Custom Maps" icon="📦" active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="tutorial" label="Tutorial" icon="📖" active={activeTab} onClick={setActiveTab} />
+            <TabBtn id="main-configurations" label="Main Configurations" icon="📖" active={activeTab} onClick={setActiveTab} />
             <TabBtn id="developer" label="Developer" icon="🛠️" active={activeTab} onClick={setActiveTab} />
           </div>
 
@@ -77,7 +77,7 @@ const App = () => {
             {activeTab === 'plugins' && <TabPlugins setPluginCount={setPluginCount} />}
             {activeTab === 'cvars' && <TabCvars addToast={addToast} />}
             {activeTab === 'addons' && <TabAddons addToast={addToast} />}
-            {activeTab === 'tutorial' && <TabTutorial addToast={addToast} />}
+            {activeTab === 'main-configurations' && <TabMainConfigurations addToast={addToast} />}
             {activeTab === 'developer' && <TabDeveloper addToast={addToast} />}
           </div>
         </div>

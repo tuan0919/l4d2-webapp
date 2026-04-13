@@ -1,6 +1,6 @@
 import React from 'react';
 
-const LoadingOverlay = ({ active, title, description }) => {
+const MainConfigLoadingOverlay = ({ active, title, description }) => {
   if (!active) return null;
 
   return (
@@ -16,4 +16,4 @@ const LoadingOverlay = ({ active, title, description }) => {
   );
 };
 
-export default LoadingOverlay;
+export default MainConfigLoadingOverlay;

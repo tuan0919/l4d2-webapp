@@ -87,7 +87,7 @@ const DEV_ROOT_LABELS = {
 };
 const DEV_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
 const DEV_BROWSE_MAX_ENTRIES = 250;
-const TUTORIAL_CVAR_FILE_MAP = require(path.join(WEBAPP_DIR, 'frontend', 'src', 'components', 'Tabs', 'tutorialCvarFileMap.json'));
+const MAIN_CONFIG_CVAR_FILE_MAP = require(path.join(WEBAPP_DIR, 'frontend', 'src', 'components', 'Tabs', 'mainConfigurationsCvarFileMap.json'));
 
 // --- Auth ---
 app.use(basicAuth({
@@ -189,8 +189,8 @@ function parseCfgAssignments(content) {
   return assignments;
 }
 
-function getTutorialCvarRelativePath(cvarName) {
-  return TUTORIAL_CVAR_FILE_MAP[cvarName] || null;
+function getMainConfigCvarRelativePath(cvarName) {
+  return MAIN_CONFIG_CVAR_FILE_MAP[cvarName] || null;
 }
 
 function resolveGameRelativePath(relativePath) {
@@ -304,7 +304,7 @@ function migrateManagedWebappOverridesToCanonicalFiles() {
     const orphanAssignments = {};
 
     assignments.forEach((value, key) => {
-      const targetRelativePath = getTutorialCvarRelativePath(key);
+      const targetRelativePath = getMainConfigCvarRelativePath(key);
       if (!targetRelativePath) {
         orphanAssignments[key] = value;
         return;
@@ -341,7 +341,7 @@ function migrateManagedWebappOverridesToCanonicalFiles() {
 
     const lines = [
       '// Legacy webapp override file.',
-      '// Tutorial-managed cvars were migrated to their canonical cfg files.',
+      '// Main Configurations-managed cvars were migrated to their canonical cfg files.',
       ''
     ];
 
@@ -1524,9 +1524,9 @@ app.get('/api/cvars', (req, res) => {
           if (match) {
             const cvarName = match[1];
             const currentRelativePath = `cfg/sourcemod/${f}`;
-            const canonicalRelativePath = getTutorialCvarRelativePath(cvarName);
+            const canonicalRelativePath = getMainConfigCvarRelativePath(cvarName);
 
-            // Tutorial-managed cvars must be read from their canonical cfg only.
+            // Main Configurations-managed cvars must be read from their canonical cfg only.
             // This avoids legacy/merged cfg files from overriding the UI state.
             if (canonicalRelativePath && canonicalRelativePath !== currentRelativePath) {
               currentDesc = [];
@@ -1563,7 +1563,7 @@ app.post('/api/cvars/write', (req, res) => {
     const rejected = [];
 
     for (const [cvarName, cvarValue] of Object.entries(cvars)) {
-      const relativePath = getTutorialCvarRelativePath(cvarName);
+      const relativePath = getMainConfigCvarRelativePath(cvarName);
       if (!relativePath || !isValidCvarName(cvarName)) {
         rejected.push(cvarName);
         continue;
@@ -1577,7 +1577,7 @@ app.post('/api/cvars/write', (req, res) => {
     }
 
     if (targetFileAssignments.size === 0) {
-      return res.status(400).json({ error: 'No Tutorial-managed cvars provided', rejected });
+      return res.status(400).json({ error: 'No Main Configurations-managed cvars provided', rejected });
     }
 
     const acceptedCvars = {};
@@ -2280,7 +2280,7 @@ server.listen(PORT, '0.0.0.0', () => {
     const migrationInfo = migrateManagedWebappOverridesToCanonicalFiles();
     const syncInfo = syncWebappOverrideLoader();
     if (migrationInfo.migratedCvars > 0) {
-      console.log(`[L4D2 Dashboard] Migrated ${migrationInfo.migratedCvars} Tutorial cvar override(s) to canonical cfg files.`);
+      console.log(`[L4D2 Dashboard] Migrated ${migrationInfo.migratedCvars} Main Configurations cvar override(s) to canonical cfg files.`);
     }
     console.log(`[L4D2 Dashboard] Override loader ready (${syncInfo.overrideFiles.length} file(s)).`);
   } catch (e) {

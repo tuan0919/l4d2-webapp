@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DataField = ({ item, value, onUpdate }) => {
+const MainConfigDataField = ({ item, value, onUpdate }) => {
   if (!item) return null;
 
   return (
@@ -31,4 +31,4 @@ const DataField = ({ item, value, onUpdate }) => {
   );
 };
 
-export default DataField;
+export default MainConfigDataField;
