@@ -25,7 +25,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
       const data = await response.json();
       const list = data.addons || [];
       setAddons(list);
-      setNote(`${list.length} Custom Map(s) Installed`);
+      setNote(`${list.length} Addon VPK(s) Installed`);
       if (typeof onAddonsUpdated === 'function') onAddonsUpdated(list);
     } catch {
       setAddons([]);
@@ -150,7 +150,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
 
             if (event === 'success') {
               const detectedMaps = parsed.maps || [];
-              addToast(parsed.message || 'Workshop map(s) installed', 'success');
+              addToast(parsed.message || 'Workshop addon(s) installed', 'success');
               setProgressStatus(`✅ ${parsed.message || 'Done!'}`);
               setProgressPercent(100);
               setProgressSuccess(true);
@@ -264,7 +264,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
         <div>
           <h2 style={{ marginBottom: '4px' }}>Option 1: Install from Workshop</h2>
           <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: '8px', lineHeight: 1.5 }}>
-            Paste one or more Workshop URLs / IDs (one per line). Supports single maps, multi-part maps, and collections.
+            Paste one or more Workshop URLs / IDs (one per line). Supports maps, gameplay addons/mods, multi-part items, and collections.
             Dependencies are resolved automatically.
           </p>
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -494,7 +494,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
         {sortedAddons.length === 0 ? (
           <div className="empty-state">
             <div className="big">📦</div>
-            <p>Click Refresh to load custom maps</p>
+            <p>Click Refresh to load addon VPKs</p>
           </div>
         ) : (
           sortedAddons.map((addon) => (
