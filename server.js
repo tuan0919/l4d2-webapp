@@ -415,7 +415,7 @@ function sendCommandsToGame(commands, callback) {
   sendNext();
 }
 
-// --- Source Query Protocol (A2S_PLAYER) ---
+// --- Source Query Protocol (A2S_INFO) ---
 function sourceQuery(type, callback) {
   const client = dgram.createSocket('udp4');
   let done = false;
@@ -425,11 +425,7 @@ function sourceQuery(type, callback) {
   }, 3000);
 
   // A2S_INFO: FF FF FF FF 54 + "Source Engine Query\0"
-  // A2S_PLAYER challenge: FF FF FF FF 55 FF FF FF FF
   const A2S_INFO = Buffer.from([0xFF,0xFF,0xFF,0xFF,0x54,...Buffer.from('Source Engine Query\0')]);
-  const A2S_PLAYER_CHALLENGE = Buffer.from([0xFF,0xFF,0xFF,0xFF,0x55,0xFF,0xFF,0xFF,0xFF]);
-
-  let challengeReceived = false;
 
   client.on('message', (msg) => {
     if (done) return;
@@ -439,23 +435,6 @@ function sourceQuery(type, callback) {
       // A2S_INFO response
       done = true; clearTimeout(timeout); client.close();
       try { callback(null, parseA2SInfo(msg)); } catch(e) { callback(e); }
-      return;
-    }
-
-    if (type === 'players') {
-      if (header === 0x41 && !challengeReceived) {
-        // Got challenge, send real A2S_PLAYER request
-        challengeReceived = true;
-        const ch = msg.slice(5, 9);
-        const req = Buffer.from([0xFF,0xFF,0xFF,0xFF,0x55, ch[0],ch[1],ch[2],ch[3]]);
-        client.send(req, GAME_PORT, '127.0.0.1', () => {});
-        return;
-      }
-      if (header === 0x44) {
-        // Real player response
-        done = true; clearTimeout(timeout); client.close();
-        try { callback(null, parseA2SPlayer(msg)); } catch(e) { callback(e); }
-      }
     }
   });
 
@@ -463,8 +442,7 @@ function sourceQuery(type, callback) {
     if (!done) { done = true; clearTimeout(timeout); client.close(); callback(err); }
   });
 
-  const req = type === 'info' ? A2S_INFO : A2S_PLAYER_CHALLENGE;
-  client.send(req, GAME_PORT, '127.0.0.1', () => {});
+  client.send(A2S_INFO, GAME_PORT, '127.0.0.1', () => {});
 }
 
 function parseA2SInfo(buf) {
@@ -484,22 +462,6 @@ function parseA2SInfo(buf) {
   const maxPlayers = buf.readUInt8(offset++);
   const bots = buf.readUInt8(offset++);
   return { name, map, players, maxPlayers, bots };
-}
-
-function parseA2SPlayer(buf) {
-  const count = buf.readUInt8(5);
-  const players = [];
-  let offset = 6;
-  for (let i = 0; i < count; i++) {
-    offset++; // index
-    const end = buf.indexOf(0x00, offset);
-    const name = buf.slice(offset, end).toString('utf8');
-    offset = end + 1;
-    const score = buf.readInt32LE(offset); offset += 4;
-    const duration = buf.readFloatLE(offset); offset += 4;
-    players.push({ name, score, duration: Math.floor(duration) });
-  }
-  return players;
 }
 
 function ensureDirectoryExists(dirPath) {
@@ -1449,24 +1411,6 @@ app.get('/api/serverinfo', (req, res) => {
     if (err) return res.json({ error: err.message });
     res.json(info);
   });
-});
-
-app.get('/api/players', (req, res) => {
-  const jsonFile = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data', 'web_players.json');
-  if (!fs.existsSync(jsonFile)) {
-    // Plugin not yet active, fall back to A2S
-    return sourceQuery('players', (err, players) => {
-      if (err) return res.json({ source: 'a2s', error: err.message, players: [] });
-      res.json({ source: 'a2s', players });
-    });
-  }
-  try {
-    const raw = fs.readFileSync(jsonFile, 'utf8').replace(/\0/g, '');
-    const players = JSON.parse(raw);
-    res.json({ source: 'plugin', players });
-  } catch(e) {
-    res.json({ source: 'plugin', error: e.message, players: [] });
-  }
 });
 
 app.get('/api/plugins', (req, res) => {

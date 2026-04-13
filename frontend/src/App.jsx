@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import Header from './components/Layout/Header';
 import Sidebar from './components/Layout/Sidebar';
 import TabConsole from './components/Tabs/TabConsole';
-import TabPlayers from './components/Tabs/TabPlayers';
 import TabPlugins from './components/Tabs/TabPlugins';
 import TabCvars from './components/Tabs/TabCvars';
 import TabAddons from './components/Tabs/TabAddons';
@@ -17,8 +16,7 @@ const App = () => {
     running: false,
     map: '—',
     players: 0,
-    maxPlayers: 0,
-    bots: 0
+    maxPlayers: 0
   });
   const [toasts, setToasts] = useState([]);
 
@@ -37,8 +35,7 @@ const App = () => {
         running: !!s.running,
         map: info.map || '—',
         players: Number(info.players || 0),
-        maxPlayers: Number(info.maxPlayers || 0),
-        bots: Number(info.bots || 0)
+        maxPlayers: Number(info.maxPlayers || 0)
       });
     } catch {
       // keep previous status when polling fails
@@ -61,7 +58,6 @@ const App = () => {
         <div className="right-panel">
           <div className="tabs-header">
             <TabBtn id="console" label="Live Console" icon="🖥️" active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="players" label="Players" icon="👥" active={activeTab} onClick={setActiveTab} badge={status.players} />
             <TabBtn
               id="plugins"
               label="Plugins"
@@ -78,7 +74,6 @@ const App = () => {
 
           <div className="tab-content">
             {activeTab === 'console' && <TabConsole addToast={addToast} />}
-            {activeTab === 'players' && <TabPlayers addToast={addToast} />}
             {activeTab === 'plugins' && <TabPlugins setPluginCount={setPluginCount} />}
             {activeTab === 'cvars' && <TabCvars addToast={addToast} />}
             {activeTab === 'addons' && <TabAddons addToast={addToast} />}
