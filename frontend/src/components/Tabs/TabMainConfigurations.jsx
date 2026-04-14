@@ -327,7 +327,8 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_enable', type: 'toggle', label: 'Bật hệ Elite Core', desc: 'Bật/tắt hệ gán Elite SI và subtype.' },
   { cvar: 'l4d2_elite_reward_enable', type: 'toggle', label: 'Bật hệ Reward', desc: 'Bật/tắt toàn bộ hệ thưởng Temp HP.' },
 
-  { cvar: 'l4d2_elite_reward_si_enable', type: 'toggle', label: 'Bật thưởng Elite SI', desc: 'Bật/tắt thưởng khi hạ Elite Special Infected.' },
+  { cvar: 'l4d2_elite_reward_si_enable', type: 'toggle', label: 'Bật thưởng SI', desc: 'Bật/tắt thưởng khi hạ SI (elite và normal nếu có bật normal reward).' },
+  { cvar: 'l4d2_elite_reward_normal_si_enable', type: 'toggle', label: 'Bật thưởng Normal SI', desc: 'Cho phép SI thường (không elite) cũng nhận reward Temp HP khi bị hạ.' },
   { cvar: 'l4d2_elite_reward_tank_enable', type: 'toggle', label: 'Bật thưởng Tank', desc: 'Bật/tắt thưởng khi hạ Tank.' },
   { cvar: 'l4d2_elite_reward_witch_enable', type: 'toggle', label: 'Bật thưởng Witch', desc: 'Bật/tắt thưởng khi hạ Witch.' },
   { cvar: 'l4d2_elite_reward_temp_hp_limit', type: 'number', label: 'Giới hạn HP tối đa', desc: 'Ngưỡng HP thật + HP tạm sau khi cộng thưởng.' },
@@ -338,6 +339,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_reward_spitter', type: 'number', label: 'Spitter Reward', desc: 'HP thưởng khi hạ Elite Spitter.' },
   { cvar: 'l4d2_elite_reward_jockey', type: 'number', label: 'Jockey Reward', desc: 'HP thưởng khi hạ Elite Jockey.' },
   { cvar: 'l4d2_elite_reward_charger', type: 'number', label: 'Charger Reward', desc: 'HP thưởng khi hạ Elite Charger.' },
+  { cvar: 'l4d2_elite_reward_normal_si_amount', type: 'number', label: 'Normal SI Reward', desc: 'HP thưởng khi hạ SI thường (không elite). Chỉ dùng khi bật Normal SI Reward.' },
 
   { cvar: 'l4d2_elite_reward_headshot_bonus_enable', type: 'toggle', label: 'Headshot Bonus', desc: 'Nhân thưởng nếu kết liễu bằng headshot.' },
   { cvar: 'l4d2_elite_reward_headshot_bonus_multiplier', type: 'number', label: 'Headshot Multiplier', desc: 'Hệ số nhân thưởng khi headshot (ví dụ 2.0).' },
@@ -353,6 +355,8 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_reward_witch_mode', type: 'radio', label: 'Witch Reward Mode', desc: 'Cách phát thưởng khi hạ Witch.', options: [{ v: '0', n: 'Chỉ attacker' }, { v: '1', n: 'Toàn team sống' }] },
   { cvar: 'l4d2_elite_reward_witch_amount', type: 'number', label: 'Witch Reward Amount', desc: 'Lượng thưởng cơ bản khi hạ Witch.' },
   { cvar: 'l4d2_elite_reward_show_hint', type: 'toggle', label: 'Hiện Hint Reward', desc: 'Bật/tắt instructor hint khi nhận thưởng.' },
+  { cvar: 'l4d2_elite_reward_hint_color_normal_si', type: 'text', label: 'Hint Color Normal SI', desc: 'Màu hint khi hạ normal SI, định dạng: R G B (mặc định 255 255 255).' },
+  { cvar: 'l4d2_elite_reward_hint_color_elite_si', type: 'text', label: 'Hint Color Elite SI', desc: 'Màu hint khi hạ elite SI, định dạng: R G B (mặc định 255 255 0).' },
 
   { cvar: 'l4d2_elite_si_core_spawn_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI thường trở thành Elite. Roll này áp cho SI thường, không phải Tank.' },
   { cvar: 'l4d2_elite_si_core_hp_multiplier', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
@@ -989,7 +993,7 @@ const TabMainConfigurations = ({ addToast }) => {
           <div className="tut-card">
             <div className="tut-header">
                <h2>Elite SI Reward</h2>
-               <p>Điều chỉnh reward theo từng SI, scale theo độ khó và cấu hình subtype elite. Smoker/Spitter elite có thể được roll sang nhánh `AbilityMovement`, Charger có thể được roll sang `ChargerSteering` (nhánh bot control), còn các elite còn lại giữ nhánh `HardSI`.</p>
+               <p>Điều chỉnh reward theo từng SI, scale theo độ khó, màu hint instructor và cấu hình subtype elite. Smoker/Spitter elite có thể được roll sang nhánh `AbilityMovement`, Charger có thể được roll sang `ChargerSteering` (nhánh bot control), còn các elite còn lại giữ nhánh `HardSI`.</p>
             </div>
 
             <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
@@ -1006,17 +1010,17 @@ const TabMainConfigurations = ({ addToast }) => {
 
             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Rewards & Limits</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-               {EliteSIRewardConfig.slice(0, 10).map(renderCvarField)}
+               {EliteSIRewardConfig.slice(0, 14).map(renderCvarField)}
             </div>
 
             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Headshot & Difficulty Scaling</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-               {EliteSIRewardConfig.slice(10, 17).map(renderCvarField)}
+               {EliteSIRewardConfig.slice(14, 21).map(renderCvarField)}
             </div>
 
-            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Tank / Witch Modes</div>
+            <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Tank / Witch / Hint</div>
             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-               {EliteSIRewardConfig.slice(17, 21).map(renderCvarField)}
+               {EliteSIRewardConfig.slice(21, 28).map(renderCvarField)}
             </div>
 
              <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Elite Spawn & Subtype</div>
@@ -1024,7 +1028,7 @@ const TabMainConfigurations = ({ addToast }) => {
                 Một elite SI chỉ thuộc một nhánh duy nhất. `AbilityMovement` random cho `Smoker/Spitter`, `ChargerSteering` random cho `Charger`; Tank không đi qua hệ subtype elite này.
               </p>
              <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-                {EliteSIRewardConfig.slice(21).map(renderCvarField)}
+                {EliteSIRewardConfig.slice(28).map(renderCvarField)}
              </div>
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
