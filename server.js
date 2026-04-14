@@ -69,7 +69,6 @@ const WEBAPP_DIR = __dirname;
 const CONSOLE_LOG = path.join(L4D2_DIR, 'left4dead2', 'console.log');
 const SOURCEMOD_LOG_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'logs');
 const CFG_DIR = path.join(L4D2_DIR, 'left4dead2', 'cfg');
-const GAMEDATA_ROOT_RELATIVE_SEGMENTS = ['addons', 'sourcemod', 'data'];
 const SERVER_CFG_PATH = path.join(CFG_DIR, 'server.cfg');
 const WEBAPP_CFG_DIR = path.join(CFG_DIR, 'webapp');
 const WEBAPP_OVERRIDE_LOADER_NAME = 'overrides_loader.cfg';
@@ -613,114 +612,6 @@ function normalizeRelativePath(input) {
 
 function toDeveloperTarget(rootKey, relativePath) {
   return `${rootKey}:${normalizeRelativePath(relativePath)}`;
-}
-
-function getGameDataRootCandidates() {
-  const candidates = [
-    path.join(L4D2_DIR, 'l4d2-sourcemod', ...GAMEDATA_ROOT_RELATIVE_SEGMENTS),
-    path.resolve(WEBAPP_DIR, '..', 'l4d2-sourcemod', ...GAMEDATA_ROOT_RELATIVE_SEGMENTS),
-    path.resolve(process.cwd(), 'l4d2-sourcemod', ...GAMEDATA_ROOT_RELATIVE_SEGMENTS)
-  ];
-
-  return [...new Set(candidates.map((candidate) => path.resolve(candidate)))];
-}
-
-function getGameDataRootDir() {
-  const candidates = getGameDataRootCandidates();
-  const existing = candidates.find((candidate) => {
-    try {
-      return fs.existsSync(candidate) && fs.statSync(candidate).isDirectory();
-    } catch (e) {
-      return false;
-    }
-  });
-
-  if (existing) {
-    return existing;
-  }
-
-  throw new Error(`GameData root not found. Checked: ${candidates.join(' | ')}`);
-}
-
-function resolveGameDataPath(relativePath, options = {}) {
-  const { allowRoot = false, requireCfgFile = false } = options;
-  const normalizedRelativePath = normalizeRelativePath(relativePath).replace(/\/+$/, '');
-
-  if ((!allowRoot && !normalizedRelativePath) || path.isAbsolute(normalizedRelativePath) || normalizedRelativePath.includes('\0')) {
-    throw new Error('Invalid GameData path');
-  }
-
-  const allowedRoot = getGameDataRootDir();
-  const absolutePath = normalizedRelativePath
-    ? path.resolve(allowedRoot, normalizedRelativePath)
-    : allowedRoot;
-
-  if (absolutePath !== allowedRoot && !absolutePath.startsWith(`${allowedRoot}${path.sep}`)) {
-    throw new Error('Path escapes GameData root');
-  }
-
-  if (requireCfgFile) {
-    if (!normalizedRelativePath || path.extname(absolutePath).toLowerCase() !== '.cfg') {
-      throw new Error('Only .cfg files are supported');
-    }
-  }
-
-  return {
-    rootLabel: 'l4d2-sourcemod/addons/sourcemod/data',
-    relativePath: normalizedRelativePath,
-    absolutePath
-  };
-}
-
-function listGameDataDirectory(relativePath) {
-  const { rootLabel, relativePath: normalizedCurrent, absolutePath } = resolveGameDataPath(relativePath, { allowRoot: true });
-  const allowedRoot = getGameDataRootDir();
-
-  if (!fs.existsSync(absolutePath)) {
-    throw new Error('Directory not found');
-  }
-
-  const stats = fs.statSync(absolutePath);
-  if (!stats.isDirectory()) {
-    throw new Error('Target is not a directory');
-  }
-
-  const parentRelative = normalizedCurrent ? path.dirname(normalizedCurrent).replace(/\\/g, '/') : '';
-  const parentPath = normalizedCurrent && parentRelative !== '.' ? parentRelative : '';
-
-  const entries = fs.readdirSync(absolutePath, { withFileTypes: true })
-    .map((entry) => {
-      const entryAbsolutePath = path.join(absolutePath, entry.name);
-      const entryStats = fs.statSync(entryAbsolutePath);
-      const entryRelativePath = path.relative(allowedRoot, entryAbsolutePath).replace(/\\/g, '/');
-      const isDirectory = entry.isDirectory();
-      const extension = isDirectory ? '' : path.extname(entry.name).toLowerCase();
-
-      return {
-        name: entry.name,
-        type: isDirectory ? 'dir' : 'file',
-        relativePath: entryRelativePath,
-        extension,
-        editable: !isDirectory && extension === '.cfg',
-        size: entryStats.size,
-        modified: entryStats.mtime
-      };
-    })
-    .sort((a, b) => {
-      if (a.type !== b.type) {
-        return a.type === 'dir' ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
-    })
-    .slice(0, DEV_BROWSE_MAX_ENTRIES);
-
-  return {
-    rootLabel,
-    relativePath: normalizedCurrent,
-    absolutePath,
-    parentPath,
-    entries
-  };
 }
 
 function resolveDeveloperPath(target, options = {}) {
@@ -2289,75 +2180,6 @@ app.get('/api/dev/browse', (req, res) => {
     res.json(listDeveloperDirectory(target));
   } catch (e) {
     res.status(400).json({ error: e.message, entries: [] });
-  }
-});
-
-app.get('/api/gamedata/browse', (req, res) => {
-  const relativePath = String(req.query.path || '');
-
-  try {
-    res.json(listGameDataDirectory(relativePath));
-  } catch (e) {
-    res.status(400).json({ error: e.message, entries: [] });
-  }
-});
-
-app.get('/api/gamedata/file', (req, res) => {
-  const relativePath = String(req.query.path || '');
-
-  try {
-    const { rootLabel, relativePath: normalizedRelativePath, absolutePath } = resolveGameDataPath(relativePath, { requireCfgFile: true });
-
-    if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
-      return res.status(404).json({ error: 'File not found' });
-    }
-
-    const stats = fs.statSync(absolutePath);
-    const content = fs.readFileSync(absolutePath, 'utf8');
-    res.json({
-      rootLabel,
-      relativePath: normalizedRelativePath,
-      absolutePath,
-      size: stats.size,
-      modified: stats.mtime,
-      content
-    });
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
-});
-
-app.post('/api/gamedata/file', (req, res) => {
-  const { path: relativePath, content } = req.body || {};
-
-  if (typeof content !== 'string') {
-    return res.status(400).json({ error: 'No file content provided' });
-  }
-
-  try {
-    const { rootLabel, relativePath: normalizedRelativePath, absolutePath } = resolveGameDataPath(relativePath, { requireCfgFile: true });
-
-    if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
-      return res.status(404).json({ error: 'File not found' });
-    }
-
-    try {
-      fs.copyFileSync(absolutePath, `${absolutePath}.bak`);
-    } catch (backupError) {}
-
-    fs.writeFileSync(absolutePath, content, 'utf8');
-
-    const stats = fs.statSync(absolutePath);
-    res.json({
-      success: true,
-      rootLabel,
-      relativePath: normalizedRelativePath,
-      absolutePath,
-      size: stats.size,
-      modified: stats.mtime
-    });
-  } catch (e) {
-    res.status(400).json({ error: e.message });
   }
 });
 
