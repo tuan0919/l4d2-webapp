@@ -102,6 +102,7 @@
   "l4d_spasshotgun_damage_witch_multi": "cfg/sourcemod/l4d2_gun_damage_modify.cfg",
   "l4d2_elite_si_core_enable": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_spawn_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
+  "l4d2_elite_si_core_spawn_cooldown": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_hp_multiplier": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_fire_ignite_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_spitter_ability_subtype_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",

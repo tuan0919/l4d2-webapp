@@ -661,6 +661,8 @@ const EliteSITypeSections = {
 
 const getEliteConfigItem = (cvar) => EliteSIRewardConfig.find((item) => item.cvar === cvar);
 
+const EliteSIRewardSaveConfig = EliteSIRewardConfig.filter((item) => item.cvar !== 'l4d2_elite_smoker_noxious_enable');
+
 const getCvarSourcePath = (cvar) => cvarFileMap[cvar] || '';
 
 // Reusable "View as Cvar" panel component
@@ -773,10 +775,6 @@ const TabMainConfigurations = ({ addToast }) => {
   const toggleCvarView = (key) => setCvarViewOpen((prev) => ({ ...prev, [key]: !prev[key] }));
   const applyCvarText = (newValues) => setValues((prev) => ({ ...prev, ...newValues }));
   const [eliteTypeFilter, setEliteTypeFilter] = useState('smoker');
-  const eliteRewardSaveConfig = React.useMemo(
-    () => EliteSIRewardConfig.filter((item) => item.cvar !== 'l4d2_elite_smoker_noxious_enable'),
-    []
-  );
 
   // InfectedBots Data states
   const [dataFiles, setDataFiles] = useState([]);
@@ -1300,11 +1298,11 @@ const TabMainConfigurations = ({ addToast }) => {
                  {cvarViewOpen.eliteReward ? 'Close Cvar View' : 'View as Cvar'}
                </button>
                <button className="tut-btn tut-btn-refresh" onClick={fetchCvars}>Load Cvars</button>
-               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(eliteRewardSaveConfig, 'Elite SI Reward')}>Save All</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(EliteSIRewardSaveConfig, 'Elite SI Reward')}>Save All</button>
             </div>
 
             {cvarViewOpen.eliteReward && (
-               <CvarViewPanel configList={eliteRewardSaveConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Elite SI Reward" getSourcePath={getCvarSourcePath} />
+               <CvarViewPanel configList={EliteSIRewardSaveConfig} values={values} onApply={applyCvarText} addToast={addToast} label="Elite SI Reward" getSourcePath={getCvarSourcePath} />
             )}
 
             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>General Elite Reward & Core</div>
@@ -1359,7 +1357,7 @@ const TabMainConfigurations = ({ addToast }) => {
             })()}
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
-               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(eliteRewardSaveConfig, 'Elite SI Reward')}>Save All (Elite SI Reward)</button>
+               <button className="tut-btn tut-btn-save" onClick={() => openReviewDialog(EliteSIRewardSaveConfig, 'Elite SI Reward')}>Save All (Elite SI Reward)</button>
             </div>
           </div>
         )}
