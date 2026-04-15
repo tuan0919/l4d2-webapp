@@ -228,11 +228,9 @@ const CvarDefaultValues = {
   l4d2_redannounce_enable: '1',
   l4d2_elite_si_core_spawn_cooldown: '20.0',
   l4d2_elite_si_core_spawn_announce: '1',
-  l4d2_elite_si_core_auto_load_smoker_noxious: '1',
   l4d2_elite_si_core_smoker_force_subtype: '0',
   l4d2_elite_si_hardsi_director_enable: '1',
   l4d2_elite_si_hardsi_director_assault_interval: '2.0',
-  l4d2_elite_si_hardsi_director_aggressive_cfg: 'aggressive_ai.cfg',
   l4d2_elite_si_hardsi_smoker_enable: '1',
   l4d2_elite_si_hardsi_boomer_enable: '1',
   l4d2_elite_si_hardsi_boomer_bhop: '1',
@@ -257,7 +255,6 @@ const CvarDefaultValues = {
   l4d2_elite_si_hardsi_tank_smart_rock_enable: '1',
   l4d2_elite_si_hardsi_tank_smart_rock_range: '1200.0',
   l4d2_elite_si_hardsi_tank_smart_rock_aim_offset: '22.5',
-  l4d2_elite_smoker_noxious_enable: '1',
   l4d2_elite_smoker_noxious_warning_hint_enable: '1',
   l4d2_elite_smoker_noxious_warning_hint_cooldown: '1.8',
   l4d2_elite_smoker_noxious_warning_hint_color: '255 120 60',
@@ -445,7 +442,6 @@ const EliteSIRewardConfig = [
 
   { cvar: 'l4d2_elite_si_hardsi_director_enable', type: 'toggle', label: 'HardSI Director Enable', desc: 'Bật/tắt module director cho Abnormal Behavior (nb_assault + aggressive cfg).' },
   { cvar: 'l4d2_elite_si_hardsi_director_assault_interval', type: 'number', label: 'HardSI Director Assault Interval', desc: 'Tần suất chạy nb_assault (giây). 0 = tắt.' },
-  { cvar: 'l4d2_elite_si_hardsi_director_aggressive_cfg', type: 'text', label: 'HardSI Director Aggressive CFG', desc: 'Tên file cfg trong thư mục cfg/l4d2_elite_si_hardsi/.' },
 
   { cvar: 'l4d2_elite_si_hardsi_smoker_enable', type: 'toggle', label: 'Smoker HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Smoker elite.' },
 
@@ -479,11 +475,9 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_hardsi_tank_smart_rock_aim_offset', type: 'number', label: 'Tank HardSI Smart Rock Aim Offset', desc: 'Ngưỡng góc aim để quyết định retarget smart rock.' },
 
   { cvar: 'l4d2_elite_si_core_spawn_announce', type: 'toggle', label: 'Chat Spawn Announce', desc: 'Bật/tắt thông báo Elite spawn trong chat (không đẩy HUD script).' },
-  { cvar: 'l4d2_elite_si_core_auto_load_smoker_noxious', type: 'toggle', label: 'Auto-load Noxious Module', desc: 'Tự load module noxious nếu chưa có trong plugin list.' },
   { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite Type In Kill Message', desc: 'Hiện tên loại elite cụ thể trong kill/incap message thay vì chỉ "Elite SI".' },
   { cvar: 'l4d2_elite_si_core_smoker_force_subtype', type: 'number', label: 'Force Smoker Subtype (test)', desc: '0=random, 5-15 ép type để test nhanh từng kỹ năng noxious.' },
 
-  { cvar: 'l4d2_elite_smoker_noxious_enable', type: 'toggle', label: 'Enable Noxious Module', desc: 'Bật/tắt toàn bộ logic noxious cho Elite Smoker.' },
   { cvar: 'l4d2_elite_smoker_noxious_warning_hint_enable', type: 'toggle', label: 'Warning Hint Enable', desc: 'Hiện instructor warning khi survivor ăn noxious damage.' },
   { cvar: 'l4d2_elite_smoker_noxious_warning_hint_cooldown', type: 'number', label: 'Warning Hint Cooldown', desc: 'Khoảng nghỉ giữa các warning hint trên cùng người chơi.' },
   { cvar: 'l4d2_elite_smoker_noxious_warning_hint_color', type: 'text', label: 'Warning Hint Color', desc: 'Màu hint cảnh báo noxious, định dạng: R G B.' },
@@ -546,7 +540,6 @@ const EliteSICoreGeneralConfig = [
   'l4d2_elite_reward_enable',
   'l4d2_elite_reward_si_enable',
   'l4d2_elite_reward_normal_si_enable',
-  'l4d2_elite_reward_tank_enable',
   'l4d2_elite_reward_witch_enable',
   'l4d2_elite_reward_temp_hp_limit',
   'l4d2_elite_reward_normal_si_amount',
@@ -557,8 +550,6 @@ const EliteSICoreGeneralConfig = [
   'l4d2_elite_reward_diff_normal',
   'l4d2_elite_reward_diff_hard',
   'l4d2_elite_reward_diff_expert',
-  'l4d2_elite_reward_tank_mode',
-  'l4d2_elite_reward_tank_amount',
   'l4d2_elite_reward_witch_mode',
   'l4d2_elite_reward_witch_amount',
   'l4d2_elite_reward_show_hint',
@@ -570,15 +561,7 @@ const EliteSICoreGeneralConfig = [
   'l4d2_elite_si_core_fire_ignite_chance',
   'l4d2_elite_si_hardsi_director_enable',
   'l4d2_elite_si_hardsi_director_assault_interval',
-  'l4d2_elite_si_hardsi_director_aggressive_cfg',
-  'l4d2_elite_si_hardsi_tank_enable',
-  'l4d2_elite_si_hardsi_tank_bhop',
-  'l4d2_elite_si_hardsi_tank_allow_rock',
-  'l4d2_elite_si_hardsi_tank_smart_rock_enable',
-  'l4d2_elite_si_hardsi_tank_smart_rock_range',
-  'l4d2_elite_si_hardsi_tank_smart_rock_aim_offset',
   'l4d2_elite_si_core_spawn_announce',
-  'l4d2_elite_si_core_auto_load_smoker_noxious',
   'l4d2_redannounce_announce_elite_si_kill',
   'l4d2_elite_si_core_smoker_force_subtype'
 ];
@@ -589,21 +572,21 @@ const EliteSITypeRewardMap = [
   { key: 'hunter', label: 'Hunter Reward', rewardCvar: 'l4d2_elite_reward_hunter' },
   { key: 'spitter', label: 'Spitter Reward', rewardCvar: 'l4d2_elite_reward_spitter' },
   { key: 'jockey', label: 'Jockey Reward', rewardCvar: 'l4d2_elite_reward_jockey' },
-  { key: 'charger', label: 'Charger Reward', rewardCvar: 'l4d2_elite_reward_charger' }
+  { key: 'charger', label: 'Charger Reward', rewardCvar: 'l4d2_elite_reward_charger' },
+  { key: 'tank', label: 'Tank Reward', rewardCvar: null }
 ];
 
 const EliteSITypeSections = {
   smoker: [
     {
       id: 'smoker-hardsi',
-      title: 'HardSI (Abnormal Behavior)',
+      title: 'Smoker - Abnormal Behavior',
       cvars: ['l4d2_elite_si_hardsi_smoker_enable']
     },
     {
       id: 'smoker-common',
-      title: 'Common Smoker Noxious Settings',
+      title: 'Smoker Noxious - Common Settings',
       cvars: [
-        'l4d2_elite_smoker_noxious_enable',
         'l4d2_elite_smoker_noxious_warning_hint_enable',
         'l4d2_elite_smoker_noxious_warning_hint_cooldown',
         'l4d2_elite_smoker_noxious_warning_hint_color',
@@ -612,7 +595,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-asphyxiation',
-      title: 'Asphyxiation',
+      title: 'Smoker Noxious - Asphyxiation',
       cvars: [
         'l4d2_elite_smoker_noxious_asphyxiation_enable',
         'l4d2_elite_smoker_noxious_asphyxiation_damage',
@@ -622,7 +605,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-collapsed-lung',
-      title: 'Collapsed Lung',
+      title: 'Smoker Noxious - Collapsed Lung',
       cvars: [
         'l4d2_elite_smoker_noxious_collapsed_lung_enable',
         'l4d2_elite_smoker_noxious_collapsed_lung_chance',
@@ -632,7 +615,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-methane-blast',
-      title: 'Methane Blast',
+      title: 'Smoker Noxious - Methane Blast',
       cvars: [
         'l4d2_elite_smoker_noxious_methane_blast_enable',
         'l4d2_elite_smoker_noxious_methane_blast_inner_damage',
@@ -645,7 +628,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-methane-leak',
-      title: 'Methane Leak',
+      title: 'Smoker Noxious - Methane Leak',
       cvars: [
         'l4d2_elite_smoker_noxious_methane_leak_enable',
         'l4d2_elite_smoker_noxious_methane_leak_cooldown',
@@ -657,12 +640,12 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-methane-strike',
-      title: 'Methane Strike',
+      title: 'Smoker Noxious - Methane Strike',
       cvars: ['l4d2_elite_smoker_noxious_methane_strike_enable']
     },
     {
       id: 'smoker-moon-walk',
-      title: 'Moon Walk',
+      title: 'Smoker Noxious - Moon Walk',
       cvars: [
         'l4d2_elite_smoker_noxious_moon_walk_enable',
         'l4d2_elite_smoker_noxious_moon_walk_speed'
@@ -670,7 +653,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-restrained-hostage',
-      title: 'Restrained Hostage',
+      title: 'Smoker Noxious - Restrained Hostage',
       cvars: [
         'l4d2_elite_smoker_noxious_restrained_hostage_enable',
         'l4d2_elite_smoker_noxious_restrained_hostage_scale',
@@ -679,7 +662,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-smoke-screen',
-      title: 'Smoke Screen',
+      title: 'Smoker Noxious - Smoke Screen',
       cvars: [
         'l4d2_elite_smoker_noxious_smoke_screen_enable',
         'l4d2_elite_smoker_noxious_smoke_screen_chance'
@@ -687,7 +670,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-tongue-strip',
-      title: 'Tongue Strip',
+      title: 'Smoker Noxious - Tongue Strip',
       cvars: [
         'l4d2_elite_smoker_noxious_tongue_strip_enable',
         'l4d2_elite_smoker_noxious_tongue_strip_chance'
@@ -695,7 +678,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-tongue-whip',
-      title: 'Tongue Whip',
+      title: 'Smoker Noxious - Tongue Whip',
       cvars: [
         'l4d2_elite_smoker_noxious_tongue_whip_enable',
         'l4d2_elite_smoker_noxious_tongue_whip_damage',
@@ -705,7 +688,7 @@ const EliteSITypeSections = {
     },
     {
       id: 'smoker-void-pocket',
-      title: 'Void Pocket',
+      title: 'Smoker Noxious - Void Pocket',
       cvars: [
         'l4d2_elite_smoker_noxious_void_pocket_enable',
         'l4d2_elite_smoker_noxious_void_pocket_cooldown',
@@ -719,7 +702,7 @@ const EliteSITypeSections = {
   boomer: [
     {
       id: 'boomer-hardsi',
-      title: 'HardSI (Abnormal Behavior)',
+      title: 'Boomer - Abnormal Behavior',
       cvars: [
         'l4d2_elite_si_hardsi_boomer_enable',
         'l4d2_elite_si_hardsi_boomer_bhop'
@@ -729,7 +712,7 @@ const EliteSITypeSections = {
   hunter: [
     {
       id: 'hunter-hardsi',
-      title: 'HardSI (Abnormal Behavior)',
+      title: 'Hunter - Abnormal Behavior',
       cvars: [
         'l4d2_elite_si_hardsi_hunter_enable',
         'l4d2_elite_si_hardsi_hunter_fast_pounce_distance',
@@ -743,7 +726,7 @@ const EliteSITypeSections = {
   spitter: [
     {
       id: 'spitter-hardsi',
-      title: 'HardSI (Abnormal Behavior)',
+      title: 'Spitter - Abnormal Behavior',
       cvars: [
         'l4d2_elite_si_hardsi_spitter_enable',
         'l4d2_elite_si_hardsi_spitter_bhop'
@@ -758,7 +741,7 @@ const EliteSITypeSections = {
   jockey: [
     {
       id: 'jockey-hardsi',
-      title: 'HardSI (Abnormal Behavior)',
+      title: 'Jockey - Abnormal Behavior',
       cvars: [
         'l4d2_elite_si_hardsi_jockey_enable',
         'l4d2_elite_si_hardsi_jockey_hop_distance'
@@ -768,7 +751,7 @@ const EliteSITypeSections = {
   charger: [
     {
       id: 'charger-hardsi',
-      title: 'HardSI (Abnormal Behavior)',
+      title: 'Charger - Abnormal Behavior',
       cvars: [
         'l4d2_elite_si_hardsi_charger_enable',
         'l4d2_elite_si_hardsi_charger_bhop',
@@ -783,6 +766,29 @@ const EliteSITypeSections = {
       cvars: [
         'l4d2_elite_si_core_charger_steering_subtype_chance',
         'l4d2_elite_si_core_charger_action_subtype_chance'
+      ]
+    }
+  ],
+  tank: [
+    {
+      id: 'tank-reward',
+      title: 'Tank Reward',
+      cvars: [
+        'l4d2_elite_reward_tank_enable',
+        'l4d2_elite_reward_tank_mode',
+        'l4d2_elite_reward_tank_amount'
+      ]
+    },
+    {
+      id: 'tank-hardsi',
+      title: 'Tank - Abnormal Behavior',
+      cvars: [
+        'l4d2_elite_si_hardsi_tank_enable',
+        'l4d2_elite_si_hardsi_tank_bhop',
+        'l4d2_elite_si_hardsi_tank_allow_rock',
+        'l4d2_elite_si_hardsi_tank_smart_rock_enable',
+        'l4d2_elite_si_hardsi_tank_smart_rock_range',
+        'l4d2_elite_si_hardsi_tank_smart_rock_aim_offset'
       ]
     }
   ]
@@ -902,10 +908,7 @@ const TabMainConfigurations = ({ addToast }) => {
   const toggleCvarView = (key) => setCvarViewOpen((prev) => ({ ...prev, [key]: !prev[key] }));
   const applyCvarText = (newValues) => setValues((prev) => ({ ...prev, ...newValues }));
   const [eliteTypeFilter, setEliteTypeFilter] = useState('smoker');
-  const eliteRewardSaveConfig = React.useMemo(
-    () => EliteSIRewardConfig.filter((item) => item.cvar !== 'l4d2_elite_smoker_noxious_enable'),
-    []
-  );
+  const eliteRewardSaveConfig = EliteSIRewardConfig;
 
   // InfectedBots Data states
   const [dataFiles, setDataFiles] = useState([]);
@@ -1455,7 +1458,7 @@ const TabMainConfigurations = ({ addToast }) => {
 
             {(() => {
               const rewardEntry = EliteSITypeRewardMap.find((entry) => entry.key === eliteTypeFilter);
-              const rewardItem = rewardEntry ? getEliteConfigItem(rewardEntry.rewardCvar) : null;
+              const rewardItem = rewardEntry && rewardEntry.rewardCvar ? getEliteConfigItem(rewardEntry.rewardCvar) : null;
               const sections = EliteSITypeSections[eliteTypeFilter] || [];
 
               return (
