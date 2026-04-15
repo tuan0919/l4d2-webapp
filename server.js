@@ -1511,18 +1511,25 @@ app.get('/api/cvars', (req, res) => {
       let currentDesc = [];
 
       for (let line of lines) {
-        line = line.trim();
-        if (!line) continue;
+        const rawLine = line.trim();
+        if (!rawLine) continue;
 
-        if (line.startsWith('//')) {
-          const cleanDesc = line.replace(/^\/\/\s*/, '').trim();
+        if (rawLine.startsWith('//')) {
+          const cleanDesc = rawLine.replace(/^\/\/\s*/, '').trim();
           if (cleanDesc && cleanDesc !== '-' && !cleanDesc.includes('This file was auto-generated') && !cleanDesc.includes('ConVars for plugin')) {
             currentDesc.push(cleanDesc);
           }
         } else {
-          const match = line.match(/^([^\s]+)\s+"(.*)"$/);
+          line = rawLine.split('//')[0].trim();
+          if (!line) {
+            currentDesc = [];
+            continue;
+          }
+
+          const match = line.match(/^([^\s]+)\s+"(.*)"$/) || line.match(/^([^\s]+)\s+(.+)$/);
           if (match) {
             const cvarName = match[1];
+            const cvarValue = stripOptionalQuotes(match[2]);
             const currentRelativePath = `cfg/sourcemod/${f}`;
             const canonicalRelativePath = getMainConfigCvarRelativePath(cvarName);
 
@@ -1535,7 +1542,7 @@ app.get('/api/cvars', (req, res) => {
 
             cvarsList.push({
               name: cvarName,
-              value: match[2],
+              value: cvarValue,
               desc: currentDesc.join(' | ')
             });
           }
