@@ -361,10 +361,69 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_spawn_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI thường trở thành Elite. Roll này áp cho SI thường, không phải Tank.' },
   { cvar: 'l4d2_elite_si_core_hp_multiplier', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
   { cvar: 'l4d2_elite_si_core_fire_ignite_chance', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ Elite tự cháy mới kháng damage lửa.' },
-  { cvar: 'l4d2_elite_si_core_smoker_ability_subtype_chance', type: 'number', label: 'Smoker AbilityMovement Chance (%)', desc: 'Nếu Smoker đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
   { cvar: 'l4d2_elite_si_core_spitter_ability_subtype_chance', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
   { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'ChargerSteering Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerSteering thay vì nhánh khác.' },
-  { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction.' }
+  { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction.' },
+  { cvar: 'l4d2_elite_si_core_spawn_announce', type: 'toggle', label: 'Chat Spawn Announce', desc: 'Bật/tắt thông báo Elite spawn trong chat (không đẩy HUD script).' },
+  { cvar: 'l4d2_elite_si_core_auto_load_smoker_noxious', type: 'toggle', label: 'Auto-load Noxious Module', desc: 'Tự load module noxious nếu chưa có trong plugin list.' },
+  { cvar: 'l4d2_elite_si_core_smoker_force_subtype', type: 'number', label: 'Force Smoker Subtype (test)', desc: '0=random, 5-15 ép type để test nhanh từng kỹ năng noxious.' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_enable', type: 'toggle', label: 'Enable Noxious Module', desc: 'Bật/tắt toàn bộ logic noxious cho Elite Smoker.' },
+  { cvar: 'l4d2_elite_smoker_noxious_warning_hint_enable', type: 'toggle', label: 'Warning Hint Enable', desc: 'Hiện instructor warning khi survivor ăn noxious damage.' },
+  { cvar: 'l4d2_elite_smoker_noxious_warning_hint_cooldown', type: 'number', label: 'Warning Hint Cooldown', desc: 'Khoảng nghỉ giữa các warning hint trên cùng người chơi.' },
+  { cvar: 'l4d2_elite_smoker_noxious_warning_hint_color', type: 'text', label: 'Warning Hint Color', desc: 'Màu hint cảnh báo noxious, định dạng: R G B.' },
+  { cvar: 'l4d2_elite_smoker_noxious_smoke_screen_hint_enable', type: 'toggle', label: 'Smoke Screen Hint', desc: 'Hiện hint cho attacker khi Smoke Screen làm miss hit.' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_asphyxiation_enable', type: 'toggle', label: 'Asphyxiation Enable', desc: 'Bật/tắt subtype Asphyxiation.' },
+  { cvar: 'l4d2_elite_smoker_noxious_asphyxiation_damage', type: 'number', label: 'Asphyxiation Damage', desc: 'Damage mỗi tick của Asphyxiation.' },
+  { cvar: 'l4d2_elite_smoker_noxious_asphyxiation_frequency', type: 'number', label: 'Asphyxiation Frequency', desc: 'Chu kỳ gây damage Asphyxiation (giây).' },
+  { cvar: 'l4d2_elite_smoker_noxious_asphyxiation_range', type: 'number', label: 'Asphyxiation Range', desc: 'Bán kính tác dụng Asphyxiation.' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_collapsed_lung_enable', type: 'toggle', label: 'Collapsed Lung Enable', desc: 'Bật/tắt subtype Collapsed Lung.' },
+  { cvar: 'l4d2_elite_smoker_noxious_collapsed_lung_chance', type: 'number', label: 'Collapsed Lung Chance', desc: 'Tỷ lệ áp dụng sau tongue release (%).' },
+  { cvar: 'l4d2_elite_smoker_noxious_collapsed_lung_damage', type: 'number', label: 'Collapsed Lung Damage', desc: 'Damage mỗi giây của Collapsed Lung.' },
+  { cvar: 'l4d2_elite_smoker_noxious_collapsed_lung_duration', type: 'number', label: 'Collapsed Lung Duration', desc: 'Thời gian kéo dài Collapsed Lung (giây).' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_methane_blast_enable', type: 'toggle', label: 'Methane Blast Enable', desc: 'Bật/tắt subtype Methane Blast.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_blast_inner_damage', type: 'number', label: 'Methane Blast Inner Damage', desc: 'Damage vùng trong.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_blast_outer_damage', type: 'number', label: 'Methane Blast Outer Damage', desc: 'Damage vùng ngoài.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_blast_inner_range', type: 'number', label: 'Methane Blast Inner Range', desc: 'Bán kính vùng trong.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_blast_outer_range', type: 'number', label: 'Methane Blast Outer Range', desc: 'Bán kính vùng ngoài.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_blast_inner_push', type: 'number', label: 'Methane Blast Inner Push', desc: 'Lực đẩy vùng trong.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_blast_outer_push', type: 'number', label: 'Methane Blast Outer Push', desc: 'Lực đẩy vùng ngoài.' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_methane_leak_enable', type: 'toggle', label: 'Methane Leak Enable', desc: 'Bật/tắt subtype Methane Leak.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_leak_cooldown', type: 'number', label: 'Methane Leak Cooldown', desc: 'Thời gian chờ giữa mỗi lần thả cloud.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_leak_damage', type: 'number', label: 'Methane Leak Damage', desc: 'Damage mỗi tick trong cloud.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_leak_duration', type: 'number', label: 'Methane Leak Duration', desc: 'Thời gian cloud tồn tại.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_leak_period', type: 'number', label: 'Methane Leak Period', desc: 'Chu kỳ tick damage cloud.' },
+  { cvar: 'l4d2_elite_smoker_noxious_methane_leak_radius', type: 'number', label: 'Methane Leak Radius', desc: 'Bán kính cloud.' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_methane_strike_enable', type: 'toggle', label: 'Methane Strike Enable', desc: 'Bật/tắt subtype Methane Strike.' },
+  { cvar: 'l4d2_elite_smoker_noxious_moon_walk_enable', type: 'toggle', label: 'Moon Walk Enable', desc: 'Bật/tắt subtype Moon Walk.' },
+  { cvar: 'l4d2_elite_smoker_noxious_moon_walk_speed', type: 'number', label: 'Moon Walk Speed', desc: 'Multiplier tốc độ khi đang choke.' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_restrained_hostage_enable', type: 'toggle', label: 'Restrained Hostage Enable', desc: 'Bật/tắt subtype Restrained Hostage.' },
+  { cvar: 'l4d2_elite_smoker_noxious_restrained_hostage_scale', type: 'number', label: 'Restrained Hostage Scale', desc: 'Tỷ lệ giảm damage vào smoker khi đang choke.' },
+  { cvar: 'l4d2_elite_smoker_noxious_restrained_hostage_damage', type: 'number', label: 'Restrained Hostage Damage', desc: 'Damage chuyển sang hostage mỗi hit.' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_smoke_screen_enable', type: 'toggle', label: 'Smoke Screen Enable', desc: 'Bật/tắt subtype Smoke Screen.' },
+  { cvar: 'l4d2_elite_smoker_noxious_smoke_screen_chance', type: 'number', label: 'Smoke Screen Chance', desc: 'Tỷ lệ né damage vào smoker (%).' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_tongue_strip_enable', type: 'toggle', label: 'Tongue Strip Enable', desc: 'Bật/tắt subtype Tongue Strip.' },
+  { cvar: 'l4d2_elite_smoker_noxious_tongue_strip_chance', type: 'number', label: 'Tongue Strip Chance', desc: 'Tỷ lệ làm rơi item khi tongue grab (%).' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_tongue_whip_enable', type: 'toggle', label: 'Tongue Whip Enable', desc: 'Bật/tắt subtype Tongue Whip.' },
+  { cvar: 'l4d2_elite_smoker_noxious_tongue_whip_damage', type: 'number', label: 'Tongue Whip Damage', desc: 'Damage shockwave Tongue Whip.' },
+  { cvar: 'l4d2_elite_smoker_noxious_tongue_whip_range', type: 'number', label: 'Tongue Whip Range', desc: 'Bán kính Tongue Whip.' },
+  { cvar: 'l4d2_elite_smoker_noxious_tongue_whip_push', type: 'number', label: 'Tongue Whip Push', desc: 'Lực đẩy Tongue Whip.' },
+
+  { cvar: 'l4d2_elite_smoker_noxious_void_pocket_enable', type: 'toggle', label: 'Void Pocket Enable', desc: 'Bật/tắt subtype Void Pocket.' },
+  { cvar: 'l4d2_elite_smoker_noxious_void_pocket_cooldown', type: 'number', label: 'Void Pocket Cooldown', desc: 'Thời gian chờ giữa các lần kéo.' },
+  { cvar: 'l4d2_elite_smoker_noxious_void_pocket_chance', type: 'number', label: 'Void Pocket Chance', desc: 'Tỷ lệ cast mỗi lần think (%).' },
+  { cvar: 'l4d2_elite_smoker_noxious_void_pocket_range', type: 'number', label: 'Void Pocket Range', desc: 'Bán kính hút mục tiêu.' },
+  { cvar: 'l4d2_elite_smoker_noxious_void_pocket_pull', type: 'number', label: 'Void Pocket Pull', desc: 'Lực hút của Void Pocket.' },
+  { cvar: 'l4d2_elite_smoker_noxious_void_pocket_damage', type: 'number', label: 'Void Pocket Damage', desc: 'Damage bổ sung mỗi nạn nhân bị hút.' }
 ];
 
 const getCvarSourcePath = (cvar) => cvarFileMap[cvar] || '';
@@ -992,8 +1051,8 @@ const TabMainConfigurations = ({ addToast }) => {
         {activeSubTab === 'eliteReward' && (
           <div className="tut-card">
             <div className="tut-header">
-               <h2>Elite SI Reward</h2>
-               <p>Điều chỉnh reward theo từng SI, scale theo độ khó, màu hint instructor và cấu hình subtype elite. Smoker/Spitter elite có thể được roll sang nhánh `AbilityMovement`, Charger có thể được roll sang `ChargerSteering` (nhánh bot control), còn các elite còn lại giữ nhánh `HardSI`.</p>
+               <h2>Elite SI Reward + Noxious</h2>
+               <p>Điều chỉnh reward Elite SI, roll subtype và toàn bộ nhánh Elite Smoker Noxious (ability + warning hint + force subtype test). Spawn announce giờ chỉ dùng chat, không đẩy script HUD.</p>
             </div>
 
             <div className="tut-actions" style={{ marginBottom: 16, marginTop: 0, borderTop: 'none', paddingTop: 0 }}>
@@ -1023,12 +1082,22 @@ const TabMainConfigurations = ({ addToast }) => {
                {EliteSIRewardConfig.slice(21, 28).map(renderCvarField)}
             </div>
 
-             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Elite Spawn & Subtype</div>
+             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Elite Core Spawn & Subtype</div>
              <p style={{ marginTop: 0, marginBottom: 12, color: 'rgba(255,255,255,0.72)' }}>
-                Một elite SI chỉ thuộc một nhánh duy nhất. `AbilityMovement` random cho `Smoker/Spitter`, `ChargerSteering` random cho `Charger`; Tank không đi qua hệ subtype elite này.
+                Smoker Elite hiện roll trực tiếp bộ Noxious. Dùng `Smoker Force Subtype` (5-15) để ép type khi test, đặt lại 0 để random lại.
               </p>
              <div className="tut-form-grid" style={{ marginBottom: 24 }}>
-                {EliteSIRewardConfig.slice(28).map(renderCvarField)}
+                {EliteSIRewardConfig.slice(28, 34).map(renderCvarField)}
+             </div>
+
+             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Noxious Warning Hint</div>
+             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+                {EliteSIRewardConfig.slice(34, 39).map(renderCvarField)}
+             </div>
+
+             <div className="tut-section-title" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>Noxious Abilities</div>
+             <div className="tut-form-grid" style={{ marginBottom: 24 }}>
+                {EliteSIRewardConfig.slice(39).map(renderCvarField)}
              </div>
 
             <div className="tut-actions" style={{ marginTop: 32 }}>
