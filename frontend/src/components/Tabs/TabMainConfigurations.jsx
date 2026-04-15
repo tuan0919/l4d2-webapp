@@ -417,6 +417,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction.' },
   { cvar: 'l4d2_elite_si_core_spawn_announce', type: 'toggle', label: 'Chat Spawn Announce', desc: 'Bật/tắt thông báo Elite spawn trong chat (không đẩy HUD script).' },
   { cvar: 'l4d2_elite_si_core_auto_load_smoker_noxious', type: 'toggle', label: 'Auto-load Noxious Module', desc: 'Tự load module noxious nếu chưa có trong plugin list.' },
+  { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite Type In Kill Message', desc: 'Hiện tên loại elite cụ thể trong kill/incap message thay vì chỉ "Elite SI".' },
   { cvar: 'l4d2_elite_si_core_smoker_force_subtype', type: 'number', label: 'Force Smoker Subtype (test)', desc: '0=random, 5-15 ép type để test nhanh từng kỹ năng noxious.' },
 
   { cvar: 'l4d2_elite_smoker_noxious_enable', type: 'toggle', label: 'Enable Noxious Module', desc: 'Bật/tắt toàn bộ logic noxious cho Elite Smoker.' },
@@ -505,7 +506,9 @@ const EliteSICoreGeneralConfig = [
   'l4d2_elite_si_core_hp_multiplier',
   'l4d2_elite_si_core_fire_ignite_chance',
   'l4d2_elite_si_core_spawn_announce',
-  'l4d2_elite_si_core_auto_load_smoker_noxious'
+  'l4d2_elite_si_core_auto_load_smoker_noxious',
+  'l4d2_redannounce_announce_elite_si_kill',
+  'l4d2_elite_si_core_smoker_force_subtype'
 ];
 
 const EliteSITypeRewardMap = [
@@ -523,7 +526,6 @@ const EliteSITypeSections = {
       id: 'smoker-common',
       title: 'Common Smoker Noxious Settings',
       cvars: [
-        'l4d2_elite_si_core_smoker_force_subtype',
         'l4d2_elite_smoker_noxious_enable',
         'l4d2_elite_smoker_noxious_warning_hint_enable',
         'l4d2_elite_smoker_noxious_warning_hint_cooldown',
