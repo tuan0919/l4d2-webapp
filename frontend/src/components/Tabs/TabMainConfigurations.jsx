@@ -230,6 +230,33 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_spawn_announce: '1',
   l4d2_elite_si_core_auto_load_smoker_noxious: '1',
   l4d2_elite_si_core_smoker_force_subtype: '0',
+  l4d2_elite_si_hardsi_director_enable: '1',
+  l4d2_elite_si_hardsi_director_assault_interval: '2.0',
+  l4d2_elite_si_hardsi_director_aggressive_cfg: 'aggressive_ai.cfg',
+  l4d2_elite_si_hardsi_smoker_enable: '1',
+  l4d2_elite_si_hardsi_boomer_enable: '1',
+  l4d2_elite_si_hardsi_boomer_bhop: '1',
+  l4d2_elite_si_hardsi_hunter_enable: '1',
+  l4d2_elite_si_hardsi_hunter_fast_pounce_distance: '1000',
+  l4d2_elite_si_hardsi_hunter_pounce_vertical_limit: '7.0',
+  l4d2_elite_si_hardsi_hunter_aim_offset_sensitivity: '30.0',
+  l4d2_elite_si_hardsi_hunter_straight_pounce_distance: '200',
+  l4d2_elite_si_hardsi_hunter_leap_away_block_enable: '1',
+  l4d2_elite_si_hardsi_spitter_enable: '1',
+  l4d2_elite_si_hardsi_spitter_bhop: '1',
+  l4d2_elite_si_hardsi_jockey_enable: '1',
+  l4d2_elite_si_hardsi_jockey_hop_distance: '500',
+  l4d2_elite_si_hardsi_charger_enable: '1',
+  l4d2_elite_si_hardsi_charger_bhop: '1',
+  l4d2_elite_si_hardsi_charger_charge_distance: '300',
+  l4d2_elite_si_hardsi_charger_health_threshold: '300',
+  l4d2_elite_si_hardsi_charger_aim_offset_sensitivity: '22.5',
+  l4d2_elite_si_hardsi_tank_enable: '1',
+  l4d2_elite_si_hardsi_tank_bhop: '1',
+  l4d2_elite_si_hardsi_tank_allow_rock: '1',
+  l4d2_elite_si_hardsi_tank_smart_rock_enable: '1',
+  l4d2_elite_si_hardsi_tank_smart_rock_range: '1200.0',
+  l4d2_elite_si_hardsi_tank_smart_rock_aim_offset: '22.5',
   l4d2_elite_smoker_noxious_enable: '1',
   l4d2_elite_smoker_noxious_warning_hint_enable: '1',
   l4d2_elite_smoker_noxious_warning_hint_cooldown: '1.8',
@@ -415,6 +442,42 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_spitter_ability_subtype_chance', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
   { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'ChargerSteering Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerSteering thay vì nhánh khác.' },
   { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction.' },
+
+  { cvar: 'l4d2_elite_si_hardsi_director_enable', type: 'toggle', label: 'HardSI Director Enable', desc: 'Bật/tắt module director cho Abnormal Behavior (nb_assault + aggressive cfg).' },
+  { cvar: 'l4d2_elite_si_hardsi_director_assault_interval', type: 'number', label: 'HardSI Director Assault Interval', desc: 'Tần suất chạy nb_assault (giây). 0 = tắt.' },
+  { cvar: 'l4d2_elite_si_hardsi_director_aggressive_cfg', type: 'text', label: 'HardSI Director Aggressive CFG', desc: 'Tên file cfg trong thư mục cfg/l4d2_elite_si_hardsi/.' },
+
+  { cvar: 'l4d2_elite_si_hardsi_smoker_enable', type: 'toggle', label: 'Smoker HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Smoker elite.' },
+
+  { cvar: 'l4d2_elite_si_hardsi_boomer_enable', type: 'toggle', label: 'Boomer HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Boomer elite.' },
+  { cvar: 'l4d2_elite_si_hardsi_boomer_bhop', type: 'toggle', label: 'Boomer HardSI Bhop', desc: 'Bật/tắt bhop pressure cho Boomer HardSI.' },
+
+  { cvar: 'l4d2_elite_si_hardsi_hunter_enable', type: 'toggle', label: 'Hunter HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Hunter elite.' },
+  { cvar: 'l4d2_elite_si_hardsi_hunter_fast_pounce_distance', type: 'number', label: 'Hunter HardSI Fast Pounce Distance', desc: 'Khoảng cách kích hoạt fast pounce.' },
+  { cvar: 'l4d2_elite_si_hardsi_hunter_pounce_vertical_limit', type: 'number', label: 'Hunter HardSI Pounce Vertical Limit', desc: 'Giới hạn góc đứng khi pounce.' },
+  { cvar: 'l4d2_elite_si_hardsi_hunter_aim_offset_sensitivity', type: 'number', label: 'Hunter HardSI Aim Offset', desc: 'Độ nhạy lệch góc aim để ép đổi hướng pounce.' },
+  { cvar: 'l4d2_elite_si_hardsi_hunter_straight_pounce_distance', type: 'number', label: 'Hunter HardSI Straight Pounce Distance', desc: 'Khoảng cách giữ pounce thẳng.' },
+  { cvar: 'l4d2_elite_si_hardsi_hunter_leap_away_block_enable', type: 'toggle', label: 'Hunter HardSI LeapAway Block', desc: 'Chặn leap-away assault behavior theo logic AI_HardSI.' },
+
+  { cvar: 'l4d2_elite_si_hardsi_spitter_enable', type: 'toggle', label: 'Spitter HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Spitter elite.' },
+  { cvar: 'l4d2_elite_si_hardsi_spitter_bhop', type: 'toggle', label: 'Spitter HardSI Bhop', desc: 'Bật/tắt bhop pressure cho Spitter HardSI.' },
+
+  { cvar: 'l4d2_elite_si_hardsi_jockey_enable', type: 'toggle', label: 'Jockey HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Jockey elite.' },
+  { cvar: 'l4d2_elite_si_hardsi_jockey_hop_distance', type: 'number', label: 'Jockey HardSI Hop Distance', desc: 'Khoảng cách kích hoạt hop pressure.' },
+
+  { cvar: 'l4d2_elite_si_hardsi_charger_enable', type: 'toggle', label: 'Charger HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Charger elite.' },
+  { cvar: 'l4d2_elite_si_hardsi_charger_bhop', type: 'toggle', label: 'Charger HardSI Bhop', desc: 'Bật/tắt bhop pressure cho Charger HardSI.' },
+  { cvar: 'l4d2_elite_si_hardsi_charger_charge_distance', type: 'number', label: 'Charger HardSI Charge Distance', desc: 'Khoảng cách ưu tiên chuẩn bị charge.' },
+  { cvar: 'l4d2_elite_si_hardsi_charger_health_threshold', type: 'number', label: 'Charger HardSI Health Threshold', desc: 'Ngưỡng HP ép charge.' },
+  { cvar: 'l4d2_elite_si_hardsi_charger_aim_offset_sensitivity', type: 'number', label: 'Charger HardSI Aim Offset', desc: 'Độ nhạy retarget khi mục tiêu đang nhìn charger.' },
+
+  { cvar: 'l4d2_elite_si_hardsi_tank_enable', type: 'toggle', label: 'Tank HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Tank elite.' },
+  { cvar: 'l4d2_elite_si_hardsi_tank_bhop', type: 'toggle', label: 'Tank HardSI Bhop', desc: 'Bật/tắt bhop pressure cho Tank HardSI.' },
+  { cvar: 'l4d2_elite_si_hardsi_tank_allow_rock', type: 'toggle', label: 'Tank HardSI Allow Rock', desc: 'Cho phép/tắt ném đá của Tank HardSI.' },
+  { cvar: 'l4d2_elite_si_hardsi_tank_smart_rock_enable', type: 'toggle', label: 'Tank HardSI Smart Rock', desc: 'Bật/tắt smart rock target adjustment.' },
+  { cvar: 'l4d2_elite_si_hardsi_tank_smart_rock_range', type: 'number', label: 'Tank HardSI Smart Rock Range', desc: 'Bán kính tìm mục tiêu cho smart rock.' },
+  { cvar: 'l4d2_elite_si_hardsi_tank_smart_rock_aim_offset', type: 'number', label: 'Tank HardSI Smart Rock Aim Offset', desc: 'Ngưỡng góc aim để quyết định retarget smart rock.' },
+
   { cvar: 'l4d2_elite_si_core_spawn_announce', type: 'toggle', label: 'Chat Spawn Announce', desc: 'Bật/tắt thông báo Elite spawn trong chat (không đẩy HUD script).' },
   { cvar: 'l4d2_elite_si_core_auto_load_smoker_noxious', type: 'toggle', label: 'Auto-load Noxious Module', desc: 'Tự load module noxious nếu chưa có trong plugin list.' },
   { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite Type In Kill Message', desc: 'Hiện tên loại elite cụ thể trong kill/incap message thay vì chỉ "Elite SI".' },
@@ -505,6 +568,15 @@ const EliteSICoreGeneralConfig = [
   'l4d2_elite_si_core_spawn_cooldown',
   'l4d2_elite_si_core_hp_multiplier',
   'l4d2_elite_si_core_fire_ignite_chance',
+  'l4d2_elite_si_hardsi_director_enable',
+  'l4d2_elite_si_hardsi_director_assault_interval',
+  'l4d2_elite_si_hardsi_director_aggressive_cfg',
+  'l4d2_elite_si_hardsi_tank_enable',
+  'l4d2_elite_si_hardsi_tank_bhop',
+  'l4d2_elite_si_hardsi_tank_allow_rock',
+  'l4d2_elite_si_hardsi_tank_smart_rock_enable',
+  'l4d2_elite_si_hardsi_tank_smart_rock_range',
+  'l4d2_elite_si_hardsi_tank_smart_rock_aim_offset',
   'l4d2_elite_si_core_spawn_announce',
   'l4d2_elite_si_core_auto_load_smoker_noxious',
   'l4d2_redannounce_announce_elite_si_kill',
@@ -522,6 +594,11 @@ const EliteSITypeRewardMap = [
 
 const EliteSITypeSections = {
   smoker: [
+    {
+      id: 'smoker-hardsi',
+      title: 'HardSI (Abnormal Behavior)',
+      cvars: ['l4d2_elite_si_hardsi_smoker_enable']
+    },
     {
       id: 'smoker-common',
       title: 'Common Smoker Noxious Settings',
@@ -639,14 +716,67 @@ const EliteSITypeSections = {
       ]
     }
   ],
+  boomer: [
+    {
+      id: 'boomer-hardsi',
+      title: 'HardSI (Abnormal Behavior)',
+      cvars: [
+        'l4d2_elite_si_hardsi_boomer_enable',
+        'l4d2_elite_si_hardsi_boomer_bhop'
+      ]
+    }
+  ],
+  hunter: [
+    {
+      id: 'hunter-hardsi',
+      title: 'HardSI (Abnormal Behavior)',
+      cvars: [
+        'l4d2_elite_si_hardsi_hunter_enable',
+        'l4d2_elite_si_hardsi_hunter_fast_pounce_distance',
+        'l4d2_elite_si_hardsi_hunter_pounce_vertical_limit',
+        'l4d2_elite_si_hardsi_hunter_aim_offset_sensitivity',
+        'l4d2_elite_si_hardsi_hunter_straight_pounce_distance',
+        'l4d2_elite_si_hardsi_hunter_leap_away_block_enable'
+      ]
+    }
+  ],
   spitter: [
+    {
+      id: 'spitter-hardsi',
+      title: 'HardSI (Abnormal Behavior)',
+      cvars: [
+        'l4d2_elite_si_hardsi_spitter_enable',
+        'l4d2_elite_si_hardsi_spitter_bhop'
+      ]
+    },
     {
       id: 'spitter-subtype',
       title: 'Spitter Elite Subtype Roll',
       cvars: ['l4d2_elite_si_core_spitter_ability_subtype_chance']
     }
   ],
+  jockey: [
+    {
+      id: 'jockey-hardsi',
+      title: 'HardSI (Abnormal Behavior)',
+      cvars: [
+        'l4d2_elite_si_hardsi_jockey_enable',
+        'l4d2_elite_si_hardsi_jockey_hop_distance'
+      ]
+    }
+  ],
   charger: [
+    {
+      id: 'charger-hardsi',
+      title: 'HardSI (Abnormal Behavior)',
+      cvars: [
+        'l4d2_elite_si_hardsi_charger_enable',
+        'l4d2_elite_si_hardsi_charger_bhop',
+        'l4d2_elite_si_hardsi_charger_charge_distance',
+        'l4d2_elite_si_hardsi_charger_health_threshold',
+        'l4d2_elite_si_hardsi_charger_aim_offset_sensitivity'
+      ]
+    },
     {
       id: 'charger-subtype',
       title: 'Charger Elite Subtype Roll',
@@ -655,10 +785,7 @@ const EliteSITypeSections = {
         'l4d2_elite_si_core_charger_action_subtype_chance'
       ]
     }
-  ],
-  boomer: [],
-  hunter: [],
-  jockey: []
+  ]
 };
 
 const getEliteConfigItem = (cvar) => EliteSIRewardConfig.find((item) => item.cvar === cvar);
