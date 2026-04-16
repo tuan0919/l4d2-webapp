@@ -229,6 +229,7 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_spawn_cooldown: '20.0',
   l4d2_elite_si_core_spawn_announce: '1',
   l4d2_elite_si_core_smoker_force_subtype: '0',
+  l4d2_elite_si_core_boomer_force_subtype: '0',
   l4d2_elite_si_hardsi_director_enable: '1',
   l4d2_elite_si_hardsi_director_assault_interval: '2.0',
   l4d2_elite_si_hardsi_smoker_enable: '1',
@@ -299,7 +300,50 @@ const CvarDefaultValues = {
   l4d2_elite_smoker_noxious_void_pocket_chance: '35',
   l4d2_elite_smoker_noxious_void_pocket_range: '200.0',
   l4d2_elite_smoker_noxious_void_pocket_pull: '350.0',
-  l4d2_elite_smoker_noxious_void_pocket_damage: '0'
+  l4d2_elite_smoker_noxious_void_pocket_damage: '0',
+  l4d2_elite_boomer_nauseating_think_interval: '0.2',
+  l4d2_elite_boomer_nauseating_bile_belly_enable: '1',
+  l4d2_elite_boomer_nauseating_bile_belly_damage_scale: '0.5',
+  l4d2_elite_boomer_nauseating_bile_blast_enable: '1',
+  l4d2_elite_boomer_nauseating_bile_blast_inner_push: '200.0',
+  l4d2_elite_boomer_nauseating_bile_blast_outer_push: '100.0',
+  l4d2_elite_boomer_nauseating_bile_blast_inner_damage: '15',
+  l4d2_elite_boomer_nauseating_bile_blast_outer_damage: '5',
+  l4d2_elite_boomer_nauseating_bile_blast_inner_range: '250.0',
+  l4d2_elite_boomer_nauseating_bile_blast_outer_range: '400.0',
+  l4d2_elite_boomer_nauseating_bile_feet_enable: '1',
+  l4d2_elite_boomer_nauseating_bile_feet_speed: '1.5',
+  l4d2_elite_boomer_nauseating_bile_feet_clear_vomit_fatigue: '1',
+  l4d2_elite_boomer_nauseating_bile_mask_enable: '1',
+  l4d2_elite_boomer_nauseating_bile_mask_mode: '1',
+  l4d2_elite_boomer_nauseating_bile_mask_amount: '200',
+  l4d2_elite_boomer_nauseating_bile_mask_duration: '10.0',
+  l4d2_elite_boomer_nauseating_bile_pimple_enable: '1',
+  l4d2_elite_boomer_nauseating_bile_pimple_chance: '5',
+  l4d2_elite_boomer_nauseating_bile_pimple_damage: '10',
+  l4d2_elite_boomer_nauseating_bile_pimple_range: '500.0',
+  l4d2_elite_boomer_nauseating_bile_pimple_period: '0.5',
+  l4d2_elite_boomer_nauseating_bile_shower_enable: '1',
+  l4d2_elite_boomer_nauseating_bile_shower_cooldown: '10.0',
+  l4d2_elite_boomer_nauseating_bile_swipe_enable: '1',
+  l4d2_elite_boomer_nauseating_bile_swipe_chance: '100',
+  l4d2_elite_boomer_nauseating_bile_swipe_damage: '1',
+  l4d2_elite_boomer_nauseating_bile_swipe_duration: '10',
+  l4d2_elite_boomer_nauseating_bile_throw_enable: '1',
+  l4d2_elite_boomer_nauseating_bile_throw_cooldown: '8.0',
+  l4d2_elite_boomer_nauseating_bile_throw_damage: '10',
+  l4d2_elite_boomer_nauseating_bile_throw_range: '700.0',
+  l4d2_elite_boomer_nauseating_bile_throw_vision_dot: '0.73',
+  l4d2_elite_boomer_nauseating_explosive_diarrhea_enable: '1',
+  l4d2_elite_boomer_nauseating_explosive_diarrhea_range: '100.0',
+  l4d2_elite_boomer_nauseating_explosive_diarrhea_rear_dot: '0.73',
+  l4d2_elite_boomer_nauseating_flatulence_enable: '1',
+  l4d2_elite_boomer_nauseating_flatulence_bile_chance: '20',
+  l4d2_elite_boomer_nauseating_flatulence_cooldown: '60.0',
+  l4d2_elite_boomer_nauseating_flatulence_damage: '5',
+  l4d2_elite_boomer_nauseating_flatulence_duration: '10.0',
+  l4d2_elite_boomer_nauseating_flatulence_period: '2.0',
+  l4d2_elite_boomer_nauseating_flatulence_radius: '100.0'
 };
 
 const getNormalizedCvarValue = (cvar, rawValue) => {
@@ -477,6 +521,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_spawn_announce', type: 'toggle', label: 'Chat Spawn Announce', desc: 'Bật/tắt thông báo Elite spawn trong chat (không đẩy HUD script).' },
   { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite Type In Kill Message', desc: 'Hiện tên loại elite cụ thể trong kill/incap message thay vì chỉ "Elite SI".' },
   { cvar: 'l4d2_elite_si_core_smoker_force_subtype', type: 'number', label: 'Force Smoker Subtype (test)', desc: '0=random, 5-15 ép type để test nhanh từng kỹ năng noxious.' },
+  { cvar: 'l4d2_elite_si_core_boomer_force_subtype', type: 'number', label: 'Force Boomer Subtype (test)', desc: '0=random, 16-25 ép type để test nhanh từng kỹ năng nauseating.' },
 
   { cvar: 'l4d2_elite_smoker_noxious_warning_hint_enable', type: 'toggle', label: 'Warning Hint Enable', desc: 'Hiện instructor warning khi survivor ăn noxious damage.' },
   { cvar: 'l4d2_elite_smoker_noxious_warning_hint_cooldown', type: 'number', label: 'Warning Hint Cooldown', desc: 'Khoảng nghỉ giữa các warning hint trên cùng người chơi.' },
@@ -532,7 +577,61 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_smoker_noxious_void_pocket_chance', type: 'number', label: 'Void Pocket Chance', desc: 'Tỷ lệ cast mỗi lần think (%).' },
   { cvar: 'l4d2_elite_smoker_noxious_void_pocket_range', type: 'number', label: 'Void Pocket Range', desc: 'Bán kính hút mục tiêu.' },
   { cvar: 'l4d2_elite_smoker_noxious_void_pocket_pull', type: 'number', label: 'Void Pocket Pull', desc: 'Lực hút của Void Pocket.' },
-  { cvar: 'l4d2_elite_smoker_noxious_void_pocket_damage', type: 'number', label: 'Void Pocket Damage', desc: 'Damage bổ sung mỗi nạn nhân bị hút.' }
+  { cvar: 'l4d2_elite_smoker_noxious_void_pocket_damage', type: 'number', label: 'Void Pocket Damage', desc: 'Damage bổ sung mỗi nạn nhân bị hút.' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_think_interval', type: 'number', label: 'Nauseating Think Interval', desc: 'Chu kỳ xử lý main-think cho module boomer nauseating.' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_belly_enable', type: 'toggle', label: 'Bile Belly Enable', desc: 'Bật/tắt subtype Bile Belly.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_belly_damage_scale', type: 'number', label: 'Bile Belly Damage Scale', desc: 'Hệ số damage nhận vào của Boomer Bile Belly.' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_blast_enable', type: 'toggle', label: 'Bile Blast Enable', desc: 'Bật/tắt subtype Bile Blast.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_blast_inner_push', type: 'number', label: 'Bile Blast Inner Push', desc: 'Lực đẩy vùng trong của Bile Blast.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_blast_outer_push', type: 'number', label: 'Bile Blast Outer Push', desc: 'Lực đẩy vùng ngoài của Bile Blast.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_blast_inner_damage', type: 'number', label: 'Bile Blast Inner Damage', desc: 'Damage vùng trong của Bile Blast.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_blast_outer_damage', type: 'number', label: 'Bile Blast Outer Damage', desc: 'Damage vùng ngoài của Bile Blast.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_blast_inner_range', type: 'number', label: 'Bile Blast Inner Range', desc: 'Bán kính vùng trong của Bile Blast.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_blast_outer_range', type: 'number', label: 'Bile Blast Outer Range', desc: 'Bán kính vùng ngoài của Bile Blast.' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_feet_enable', type: 'toggle', label: 'Bile Feet Enable', desc: 'Bật/tắt subtype Bile Feet.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_feet_speed', type: 'number', label: 'Bile Feet Speed', desc: 'Tốc độ di chuyển multiplier của Bile Feet.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_feet_clear_vomit_fatigue', type: 'toggle', label: 'Bile Feet Clear Vomit Fatigue', desc: 'Có force z_vomit_fatigue về 0 khi Bile Feet hoạt động hay không.' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_mask_enable', type: 'toggle', label: 'Bile Mask Enable', desc: 'Bật/tắt subtype Bile Mask.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_mask_mode', type: 'radio', label: 'Bile Mask Mode', desc: 'Cách reset HUD mask sau khi bị bôi bile.', options: [{ v: '0', n: 'Fixed duration' }, { v: '1', n: 'Until bile dry' }] },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_mask_amount', type: 'number', label: 'Bile Mask Amount', desc: 'Mức che HUD (0-255).' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_mask_duration', type: 'number', label: 'Bile Mask Duration', desc: 'Thời lượng che HUD khi mode = Fixed duration.' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_pimple_enable', type: 'toggle', label: 'Bile Pimple Enable', desc: 'Bật/tắt subtype Bile Pimple.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_pimple_chance', type: 'number', label: 'Bile Pimple Chance', desc: 'Tỷ lệ proc mỗi tick trên survivor trong vùng (%).' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_pimple_damage', type: 'number', label: 'Bile Pimple Damage', desc: 'Damage mỗi lần proc Bile Pimple.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_pimple_range', type: 'number', label: 'Bile Pimple Range', desc: 'Bán kính kiểm tra mục tiêu của Bile Pimple.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_pimple_period', type: 'number', label: 'Bile Pimple Period', desc: 'Khoảng thời gian giữa các tick Bile Pimple.' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_shower_enable', type: 'toggle', label: 'Bile Shower Enable', desc: 'Bật/tắt subtype Bile Shower.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_shower_cooldown', type: 'number', label: 'Bile Shower Cooldown', desc: 'Cooldown giữa các lần gọi thêm mob sau khi vomit.' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_swipe_enable', type: 'toggle', label: 'Bile Swipe Enable', desc: 'Bật/tắt subtype Bile Swipe.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_swipe_chance', type: 'number', label: 'Bile Swipe Chance', desc: 'Tỷ lệ apply DoT khi boomer claw trúng survivor (%).' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_swipe_damage', type: 'number', label: 'Bile Swipe Damage', desc: 'Damage mỗi giây của DoT Bile Swipe.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_swipe_duration', type: 'number', label: 'Bile Swipe Duration', desc: 'Thời gian DoT Bile Swipe kéo dài (giây).' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_throw_enable', type: 'toggle', label: 'Bile Throw Enable', desc: 'Bật/tắt subtype Bile Throw.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_throw_cooldown', type: 'number', label: 'Bile Throw Cooldown', desc: 'Cooldown của Bile Throw khi boomer bấm chuột phải.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_throw_damage', type: 'number', label: 'Bile Throw Damage', desc: 'Damage khi Bile Throw trúng mục tiêu.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_throw_range', type: 'number', label: 'Bile Throw Range', desc: 'Tầm kiểm tra mục tiêu của Bile Throw.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_bile_throw_vision_dot', type: 'number', label: 'Bile Throw Vision Dot', desc: 'Độ mở cone nhìn của Bile Throw (-1 đến 1).' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_explosive_diarrhea_enable', type: 'toggle', label: 'Explosive Diarrhea Enable', desc: 'Bật/tắt subtype Explosive Diarrhea.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_explosive_diarrhea_range', type: 'number', label: 'Explosive Diarrhea Range', desc: 'Tầm phía sau boomer bị ảnh hưởng khi vomit.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_explosive_diarrhea_rear_dot', type: 'number', label: 'Explosive Diarrhea Rear Dot', desc: 'Độ mở reverse cone cho Explosive Diarrhea (-1 đến 1).' },
+
+  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_enable', type: 'toggle', label: 'Flatulence Enable', desc: 'Bật/tắt subtype Flatulence.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_bile_chance', type: 'number', label: 'Flatulence Bile Chance', desc: 'Tỷ lệ bôi bile mỗi tick cloud Flatulence (%).' },
+  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_cooldown', type: 'number', label: 'Flatulence Cooldown', desc: 'Thời gian giữa 2 lần xả cloud Flatulence.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_damage', type: 'number', label: 'Flatulence Damage', desc: 'Damage mỗi tick cloud Flatulence.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_duration', type: 'number', label: 'Flatulence Duration', desc: 'Thời gian tồn tại của cloud Flatulence.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_period', type: 'number', label: 'Flatulence Period', desc: 'Khoảng tick damage của cloud Flatulence.' },
+  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_radius', type: 'number', label: 'Flatulence Radius', desc: 'Bán kính cloud Flatulence.' }
 ];
 
 const EliteSICoreGeneralConfig = [
@@ -563,7 +662,8 @@ const EliteSICoreGeneralConfig = [
   'l4d2_elite_si_hardsi_director_assault_interval',
   'l4d2_elite_si_core_spawn_announce',
   'l4d2_redannounce_announce_elite_si_kill',
-  'l4d2_elite_si_core_smoker_force_subtype'
+  'l4d2_elite_si_core_smoker_force_subtype',
+  'l4d2_elite_si_core_boomer_force_subtype'
 ];
 
 const EliteSITypeRewardMap = [
@@ -706,6 +806,115 @@ const EliteSITypeSections = {
       cvars: [
         'l4d2_elite_si_hardsi_boomer_enable',
         'l4d2_elite_si_hardsi_boomer_bhop'
+      ]
+    },
+    {
+      id: 'boomer-nauseating-common',
+      title: 'Boomer Nauseating - Common Settings',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_think_interval'
+      ]
+    },
+    {
+      id: 'boomer-bile-belly',
+      title: 'Boomer Nauseating - Bile Belly',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_bile_belly_enable',
+        'l4d2_elite_boomer_nauseating_bile_belly_damage_scale'
+      ]
+    },
+    {
+      id: 'boomer-bile-blast',
+      title: 'Boomer Nauseating - Bile Blast',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_bile_blast_enable',
+        'l4d2_elite_boomer_nauseating_bile_blast_inner_push',
+        'l4d2_elite_boomer_nauseating_bile_blast_outer_push',
+        'l4d2_elite_boomer_nauseating_bile_blast_inner_damage',
+        'l4d2_elite_boomer_nauseating_bile_blast_outer_damage',
+        'l4d2_elite_boomer_nauseating_bile_blast_inner_range',
+        'l4d2_elite_boomer_nauseating_bile_blast_outer_range'
+      ]
+    },
+    {
+      id: 'boomer-bile-feet',
+      title: 'Boomer Nauseating - Bile Feet',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_bile_feet_enable',
+        'l4d2_elite_boomer_nauseating_bile_feet_speed',
+        'l4d2_elite_boomer_nauseating_bile_feet_clear_vomit_fatigue'
+      ]
+    },
+    {
+      id: 'boomer-bile-mask',
+      title: 'Boomer Nauseating - Bile Mask',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_bile_mask_enable',
+        'l4d2_elite_boomer_nauseating_bile_mask_mode',
+        'l4d2_elite_boomer_nauseating_bile_mask_amount',
+        'l4d2_elite_boomer_nauseating_bile_mask_duration'
+      ]
+    },
+    {
+      id: 'boomer-bile-pimple',
+      title: 'Boomer Nauseating - Bile Pimple',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_bile_pimple_enable',
+        'l4d2_elite_boomer_nauseating_bile_pimple_chance',
+        'l4d2_elite_boomer_nauseating_bile_pimple_damage',
+        'l4d2_elite_boomer_nauseating_bile_pimple_range',
+        'l4d2_elite_boomer_nauseating_bile_pimple_period'
+      ]
+    },
+    {
+      id: 'boomer-bile-shower',
+      title: 'Boomer Nauseating - Bile Shower',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_bile_shower_enable',
+        'l4d2_elite_boomer_nauseating_bile_shower_cooldown'
+      ]
+    },
+    {
+      id: 'boomer-bile-swipe',
+      title: 'Boomer Nauseating - Bile Swipe',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_bile_swipe_enable',
+        'l4d2_elite_boomer_nauseating_bile_swipe_chance',
+        'l4d2_elite_boomer_nauseating_bile_swipe_damage',
+        'l4d2_elite_boomer_nauseating_bile_swipe_duration'
+      ]
+    },
+    {
+      id: 'boomer-bile-throw',
+      title: 'Boomer Nauseating - Bile Throw',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_bile_throw_enable',
+        'l4d2_elite_boomer_nauseating_bile_throw_cooldown',
+        'l4d2_elite_boomer_nauseating_bile_throw_damage',
+        'l4d2_elite_boomer_nauseating_bile_throw_range',
+        'l4d2_elite_boomer_nauseating_bile_throw_vision_dot'
+      ]
+    },
+    {
+      id: 'boomer-explosive-diarrhea',
+      title: 'Boomer Nauseating - Explosive Diarrhea',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_explosive_diarrhea_enable',
+        'l4d2_elite_boomer_nauseating_explosive_diarrhea_range',
+        'l4d2_elite_boomer_nauseating_explosive_diarrhea_rear_dot'
+      ]
+    },
+    {
+      id: 'boomer-flatulence',
+      title: 'Boomer Nauseating - Flatulence',
+      cvars: [
+        'l4d2_elite_boomer_nauseating_flatulence_enable',
+        'l4d2_elite_boomer_nauseating_flatulence_bile_chance',
+        'l4d2_elite_boomer_nauseating_flatulence_cooldown',
+        'l4d2_elite_boomer_nauseating_flatulence_damage',
+        'l4d2_elite_boomer_nauseating_flatulence_duration',
+        'l4d2_elite_boomer_nauseating_flatulence_period',
+        'l4d2_elite_boomer_nauseating_flatulence_radius'
       ]
     }
   ],
@@ -1423,7 +1632,7 @@ const TabMainConfigurations = ({ addToast }) => {
         {activeSubTab === 'eliteReward' && (
           <div className="tut-card">
             <div className="tut-header">
-               <h2>Elite SI Reward + Noxious</h2>
+               <h2>Elite SI Reward + Noxious/Nauseating</h2>
                <p>Điều chỉnh reward Elite SI, cooldown spawn elite, roll subtype và cấu hình kỹ năng theo từng loại Elite SI.</p>
             </div>
 
