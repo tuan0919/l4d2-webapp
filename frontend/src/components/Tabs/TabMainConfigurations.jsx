@@ -440,7 +440,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'ChargerSteering Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerSteering thay vì nhánh khác.' },
   { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction.' },
 
-  { cvar: 'l4d2_elite_si_hardsi_director_enable', type: 'toggle', label: 'HardSI Director Enable', desc: 'Bật/tắt module director cho Abnormal Behavior (nb_assault + aggressive cfg).' },
+  { cvar: 'l4d2_elite_si_hardsi_director_enable', type: 'toggle', label: 'HardSI Director Enable', desc: 'Bật/tắt module director cho Abnormal Behavior (chỉ chạy nhịp nb_assault, không exec cfg dùng chung).' },
   { cvar: 'l4d2_elite_si_hardsi_director_assault_interval', type: 'number', label: 'HardSI Director Assault Interval', desc: 'Tần suất chạy nb_assault (giây). 0 = tắt.' },
 
   { cvar: 'l4d2_elite_si_hardsi_smoker_enable', type: 'toggle', label: 'Smoker HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Smoker elite.' },
