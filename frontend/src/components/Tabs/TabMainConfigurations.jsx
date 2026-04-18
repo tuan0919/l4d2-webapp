@@ -228,6 +228,9 @@ const CvarDefaultValues = {
   l4d2_redannounce_enable: '1',
   l4d2_elite_si_core_spawn_cooldown: '20.0',
   l4d2_elite_si_core_spawn_announce: '1',
+  l4d2_elite_si_core_smoker_movement_subtype_chance: '0',
+  l4d2_elite_si_core_spitter_ability_subtype_chance: '50',
+  l4d2_elite_si_core_tank_movement_subtype_chance: '50',
   l4d2_elite_si_core_smoker_force_subtype: '0',
   l4d2_elite_si_core_boomer_force_subtype: '0',
   l4d2_elite_si_hardsi_director_enable: '1',
@@ -256,6 +259,16 @@ const CvarDefaultValues = {
   l4d2_elite_si_hardsi_tank_smart_rock_enable: '1',
   l4d2_elite_si_hardsi_tank_smart_rock_range: '1200.0',
   l4d2_elite_si_hardsi_tank_smart_rock_aim_offset: '22.5',
+  l4d2_elite_si_infected_movement_smoker_enable: '1',
+  l4d2_elite_si_infected_movement_smoker_mode: '2',
+  l4d2_elite_si_infected_movement_smoker_delay: '0.0',
+  l4d2_elite_si_infected_movement_smoker_speed: '250',
+  l4d2_elite_si_infected_movement_spitter_enable: '1',
+  l4d2_elite_si_infected_movement_spitter_delay: '0.0',
+  l4d2_elite_si_infected_movement_spitter_speed: '250',
+  l4d2_elite_si_infected_movement_tank_enable: '1',
+  l4d2_elite_si_infected_movement_tank_delay: '0.0',
+  l4d2_elite_si_infected_movement_tank_speed: '250',
   l4d2_elite_smoker_noxious_warning_hint_enable: '1',
   l4d2_elite_smoker_noxious_warning_hint_cooldown: '1.8',
   l4d2_elite_smoker_noxious_warning_hint_color: '255 120 60',
@@ -480,7 +493,9 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_spawn_cooldown', type: 'number', label: 'Elite Spawn Cooldown (s)', desc: 'Khoảng nghỉ tối thiểu giữa 2 lần spawn Elite thành công. Mặc định 20 giây.' },
   { cvar: 'l4d2_elite_si_core_hp_multiplier', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
   { cvar: 'l4d2_elite_si_core_fire_ignite_chance', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ Elite tự cháy mới kháng damage lửa.' },
-  { cvar: 'l4d2_elite_si_core_spitter_ability_subtype_chance', type: 'number', label: 'Spitter AbilityMovement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng AbilityMovement thay vì HardSI.' },
+  { cvar: 'l4d2_elite_si_core_smoker_movement_subtype_chance', type: 'number', label: 'Smoker Movement Chance (%)', desc: 'Nếu Smoker đã roll thành Elite, đây là tỷ lệ nó thuộc chủng Strange Movement thay vì Noxious.' },
+  { cvar: 'l4d2_elite_si_core_spitter_ability_subtype_chance', type: 'number', label: 'Spitter Movement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng Strange Movement thay vì Abnormal Behavior.' },
+  { cvar: 'l4d2_elite_si_core_tank_movement_subtype_chance', type: 'number', label: 'Tank Movement Chance (%)', desc: 'Nếu Tank đã roll thành Elite, đây là tỷ lệ nó thuộc chủng Strange Movement thay vì Abnormal Behavior.' },
   { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'ChargerSteering Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerSteering thay vì nhánh khác.' },
   { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction.' },
 
@@ -658,6 +673,9 @@ const EliteSICoreGeneralConfig = [
   'l4d2_elite_si_core_spawn_cooldown',
   'l4d2_elite_si_core_hp_multiplier',
   'l4d2_elite_si_core_fire_ignite_chance',
+  'l4d2_elite_si_core_smoker_movement_subtype_chance',
+  'l4d2_elite_si_core_spitter_ability_subtype_chance',
+  'l4d2_elite_si_core_tank_movement_subtype_chance',
   'l4d2_elite_si_hardsi_director_enable',
   'l4d2_elite_si_hardsi_director_assault_interval',
   'l4d2_elite_si_core_spawn_announce',
@@ -682,6 +700,17 @@ const EliteSITypeSections = {
       id: 'smoker-hardsi',
       title: 'Smoker - Abnormal Behavior',
       cvars: ['l4d2_elite_si_hardsi_smoker_enable']
+    },
+    {
+      id: 'smoker-movement',
+      title: 'Smoker - Strange Movement',
+      cvars: [
+        'l4d2_elite_si_core_smoker_movement_subtype_chance',
+        'l4d2_elite_si_infected_movement_smoker_enable',
+        'l4d2_elite_si_infected_movement_smoker_mode',
+        'l4d2_elite_si_infected_movement_smoker_delay',
+        'l4d2_elite_si_infected_movement_smoker_speed'
+      ]
     },
     {
       id: 'smoker-common',
@@ -942,9 +971,14 @@ const EliteSITypeSections = {
       ]
     },
     {
-      id: 'spitter-subtype',
-      title: 'Spitter Elite Subtype Roll',
-      cvars: ['l4d2_elite_si_core_spitter_ability_subtype_chance']
+      id: 'spitter-movement',
+      title: 'Spitter - Strange Movement',
+      cvars: [
+        'l4d2_elite_si_core_spitter_ability_subtype_chance',
+        'l4d2_elite_si_infected_movement_spitter_enable',
+        'l4d2_elite_si_infected_movement_spitter_delay',
+        'l4d2_elite_si_infected_movement_spitter_speed'
+      ]
     }
   ],
   jockey: [
@@ -998,6 +1032,16 @@ const EliteSITypeSections = {
         'l4d2_elite_si_hardsi_tank_smart_rock_enable',
         'l4d2_elite_si_hardsi_tank_smart_rock_range',
         'l4d2_elite_si_hardsi_tank_smart_rock_aim_offset'
+      ]
+    },
+    {
+      id: 'tank-movement',
+      title: 'Tank - Strange Movement',
+      cvars: [
+        'l4d2_elite_si_core_tank_movement_subtype_chance',
+        'l4d2_elite_si_infected_movement_tank_enable',
+        'l4d2_elite_si_infected_movement_tank_delay',
+        'l4d2_elite_si_infected_movement_tank_speed'
       ]
     }
   ]
@@ -1760,3 +1804,13 @@ const TabMainConfigurations = ({ addToast }) => {
 };
 
 export default TabMainConfigurations;
+  { cvar: 'l4d2_elite_si_infected_movement_smoker_enable', type: 'toggle', label: 'Smoker Movement Enable', desc: 'Bật/tắt Strange Movement cho Smoker elite bot.' },
+  { cvar: 'l4d2_elite_si_infected_movement_smoker_mode', type: 'radio', label: 'Smoker Movement Mode', desc: 'Giữ movement cho Smoker sau khi bắn lưỡi.', options: [{ v: '0', n: 'Only shoot' }, { v: '1', n: 'While pull' }, { v: '2', n: 'Pull + hanging' }] },
+  { cvar: 'l4d2_elite_si_infected_movement_smoker_delay', type: 'number', label: 'Smoker Movement Delay', desc: 'Độ trễ trước khi mở movement cho Smoker.' },
+  { cvar: 'l4d2_elite_si_infected_movement_smoker_speed', type: 'number', label: 'Smoker Movement Speed', desc: 'Tốc độ Smoker trong cửa sổ Strange Movement.' },
+  { cvar: 'l4d2_elite_si_infected_movement_spitter_enable', type: 'toggle', label: 'Spitter Movement Enable', desc: 'Bật/tắt Strange Movement cho Spitter elite bot.' },
+  { cvar: 'l4d2_elite_si_infected_movement_spitter_delay', type: 'number', label: 'Spitter Movement Delay', desc: 'Độ trễ trước khi mở movement cho Spitter.' },
+  { cvar: 'l4d2_elite_si_infected_movement_spitter_speed', type: 'number', label: 'Spitter Movement Speed', desc: 'Tốc độ Spitter trong cửa sổ Strange Movement.' },
+  { cvar: 'l4d2_elite_si_infected_movement_tank_enable', type: 'toggle', label: 'Tank Movement Enable', desc: 'Bật/tắt Strange Movement cho Tank elite bot.' },
+  { cvar: 'l4d2_elite_si_infected_movement_tank_delay', type: 'number', label: 'Tank Movement Delay', desc: 'Độ trễ trước khi mở movement cho Tank.' },
+  { cvar: 'l4d2_elite_si_infected_movement_tank_speed', type: 'number', label: 'Tank Movement Speed', desc: 'Tốc độ Tank trong cửa sổ Strange Movement.' },
