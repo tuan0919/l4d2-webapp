@@ -533,6 +533,17 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_hardsi_tank_smart_rock_range', type: 'number', label: 'Tank HardSI Smart Rock Range', desc: 'Bán kính tìm mục tiêu cho smart rock.' },
   { cvar: 'l4d2_elite_si_hardsi_tank_smart_rock_aim_offset', type: 'number', label: 'Tank HardSI Smart Rock Aim Offset', desc: 'Ngưỡng góc aim để quyết định retarget smart rock.' },
 
+  { cvar: 'l4d2_elite_si_infected_movement_smoker_enable', type: 'toggle', label: 'Smoker Movement Enable', desc: 'Bật/tắt Strange Movement cho Smoker elite bot.' },
+  { cvar: 'l4d2_elite_si_infected_movement_smoker_mode', type: 'radio', label: 'Smoker Movement Mode', desc: 'Giữ movement cho Smoker sau khi bắn lưỡi.', options: [{ v: '0', n: 'Only shoot' }, { v: '1', n: 'While pull' }, { v: '2', n: 'Pull + hanging' }] },
+  { cvar: 'l4d2_elite_si_infected_movement_smoker_delay', type: 'number', label: 'Smoker Movement Delay', desc: 'Độ trễ trước khi mở movement cho Smoker.' },
+  { cvar: 'l4d2_elite_si_infected_movement_smoker_speed', type: 'number', label: 'Smoker Movement Speed', desc: 'Tốc độ Smoker trong cửa sổ Strange Movement.' },
+  { cvar: 'l4d2_elite_si_infected_movement_spitter_enable', type: 'toggle', label: 'Spitter Movement Enable', desc: 'Bật/tắt Strange Movement cho Spitter elite bot.' },
+  { cvar: 'l4d2_elite_si_infected_movement_spitter_delay', type: 'number', label: 'Spitter Movement Delay', desc: 'Độ trễ trước khi mở movement cho Spitter.' },
+  { cvar: 'l4d2_elite_si_infected_movement_spitter_speed', type: 'number', label: 'Spitter Movement Speed', desc: 'Tốc độ Spitter trong cửa sổ Strange Movement.' },
+  { cvar: 'l4d2_elite_si_infected_movement_tank_enable', type: 'toggle', label: 'Tank Movement Enable', desc: 'Bật/tắt Strange Movement cho Tank elite bot.' },
+  { cvar: 'l4d2_elite_si_infected_movement_tank_delay', type: 'number', label: 'Tank Movement Delay', desc: 'Độ trễ trước khi mở movement cho Tank.' },
+  { cvar: 'l4d2_elite_si_infected_movement_tank_speed', type: 'number', label: 'Tank Movement Speed', desc: 'Tốc độ Tank trong cửa sổ Strange Movement.' },
+
   { cvar: 'l4d2_elite_si_core_spawn_announce', type: 'toggle', label: 'Chat Spawn Announce', desc: 'Bật/tắt thông báo Elite spawn trong chat (không đẩy HUD script).' },
   { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite Type In Kill Message', desc: 'Hiện tên loại elite cụ thể trong kill/incap message thay vì chỉ "Elite SI".' },
   { cvar: 'l4d2_elite_si_core_smoker_force_subtype', type: 'number', label: 'Force Smoker Subtype (test)', desc: '0=random, 5-15 ép type để test nhanh từng kỹ năng noxious.' },
@@ -1804,13 +1815,3 @@ const TabMainConfigurations = ({ addToast }) => {
 };
 
 export default TabMainConfigurations;
-  { cvar: 'l4d2_elite_si_infected_movement_smoker_enable', type: 'toggle', label: 'Smoker Movement Enable', desc: 'Bật/tắt Strange Movement cho Smoker elite bot.' },
-  { cvar: 'l4d2_elite_si_infected_movement_smoker_mode', type: 'radio', label: 'Smoker Movement Mode', desc: 'Giữ movement cho Smoker sau khi bắn lưỡi.', options: [{ v: '0', n: 'Only shoot' }, { v: '1', n: 'While pull' }, { v: '2', n: 'Pull + hanging' }] },
-  { cvar: 'l4d2_elite_si_infected_movement_smoker_delay', type: 'number', label: 'Smoker Movement Delay', desc: 'Độ trễ trước khi mở movement cho Smoker.' },
-  { cvar: 'l4d2_elite_si_infected_movement_smoker_speed', type: 'number', label: 'Smoker Movement Speed', desc: 'Tốc độ Smoker trong cửa sổ Strange Movement.' },
-  { cvar: 'l4d2_elite_si_infected_movement_spitter_enable', type: 'toggle', label: 'Spitter Movement Enable', desc: 'Bật/tắt Strange Movement cho Spitter elite bot.' },
-  { cvar: 'l4d2_elite_si_infected_movement_spitter_delay', type: 'number', label: 'Spitter Movement Delay', desc: 'Độ trễ trước khi mở movement cho Spitter.' },
-  { cvar: 'l4d2_elite_si_infected_movement_spitter_speed', type: 'number', label: 'Spitter Movement Speed', desc: 'Tốc độ Spitter trong cửa sổ Strange Movement.' },
-  { cvar: 'l4d2_elite_si_infected_movement_tank_enable', type: 'toggle', label: 'Tank Movement Enable', desc: 'Bật/tắt Strange Movement cho Tank elite bot.' },
-  { cvar: 'l4d2_elite_si_infected_movement_tank_delay', type: 'number', label: 'Tank Movement Delay', desc: 'Độ trễ trước khi mở movement cho Tank.' },
-  { cvar: 'l4d2_elite_si_infected_movement_tank_speed', type: 'number', label: 'Tank Movement Speed', desc: 'Tốc độ Tank trong cửa sổ Strange Movement.' },
