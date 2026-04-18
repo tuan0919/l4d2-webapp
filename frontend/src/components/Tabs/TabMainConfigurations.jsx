@@ -230,6 +230,7 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_spawn_announce: '1',
   l4d2_elite_si_core_spawn_chance: '50',
   l4d2_elite_si_core_smoker_movement_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_pull_weapon_drop_subtype_chance: '1',
   l4d2_elite_si_core_boomer_abnormal_subtype_chance: '1',
   l4d2_elite_si_core_hunter_target_switch_subtype_chance: '1',
   l4d2_elite_si_core_hunter_abnormal_subtype_chance: '1',
@@ -277,6 +278,7 @@ const CvarDefaultValues = {
   l4d2_elite_si_infected_movement_smoker_mode: '2',
   l4d2_elite_si_infected_movement_smoker_delay: '0.0',
   l4d2_elite_si_infected_movement_smoker_speed: '250',
+  l4d2_elite_si_smoker_pull_weapon_drop_enable: '1',
   l4d2_elite_si_infected_movement_spitter_enable: '1',
   l4d2_elite_si_infected_movement_spitter_delay: '0.0',
   l4d2_elite_si_infected_movement_spitter_speed: '250',
@@ -431,6 +433,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_spawn_cooldown', type: 'number', label: 'Elite Spawn Cooldown (s)', desc: 'Khoảng nghỉ tối thiểu giữa 2 lần spawn Elite thành công. Mặc định 20 giây.' },
   { cvar: 'l4d2_elite_si_core_hp_multiplier', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
   { cvar: 'l4d2_elite_si_core_smoker_movement_subtype_chance', type: 'number', label: 'Smoker Strange Movement Weight', desc: 'Trọng số roll subtype Strange Movement của Smoker sau khi đã spawn thành Elite.' },
+  { cvar: 'l4d2_elite_si_core_smoker_pull_weapon_drop_subtype_chance', type: 'number', label: 'Smoker Pull Weapon Drop Weight', desc: 'Trọng số roll subtype Pull Weapon Drop của Smoker sau khi đã spawn thành Elite.' },
   { cvar: 'l4d2_elite_si_core_boomer_abnormal_subtype_chance', type: 'number', label: 'Boomer Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Boomer.' },
   { cvar: 'l4d2_elite_si_core_boomer_flashbang_subtype_chance', type: 'number', label: 'Boomer Flashbang Weight', desc: 'Trọng số roll subtype Flashbang của Boomer.' },
   { cvar: 'l4d2_elite_si_core_hunter_abnormal_subtype_chance', type: 'number', label: 'Hunter Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Hunter.' },
@@ -487,6 +490,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_infected_movement_smoker_mode', type: 'radio', label: 'Smoker Movement Mode', desc: 'Giữ movement cho Smoker sau khi bắn lưỡi.', options: [{ v: '0', n: 'Only shoot' }, { v: '1', n: 'While pull' }, { v: '2', n: 'Pull + hanging' }] },
   { cvar: 'l4d2_elite_si_infected_movement_smoker_delay', type: 'number', label: 'Smoker Movement Delay', desc: 'Độ trễ trước khi mở movement cho Smoker.' },
   { cvar: 'l4d2_elite_si_infected_movement_smoker_speed', type: 'number', label: 'Smoker Movement Speed', desc: 'Tốc độ Smoker trong cửa sổ Strange Movement.' },
+  { cvar: 'l4d2_elite_si_smoker_pull_weapon_drop_enable', type: 'toggle', label: 'Smoker Pull Weapon Drop Enable', desc: 'Bật/tắt chủng Pull Weapon Drop cho Smoker elite bot. Khi kéo trúng survivor, survivor sẽ làm rớt vũ khí đang cầm.' },
   { cvar: 'l4d2_elite_si_infected_movement_spitter_enable', type: 'toggle', label: 'Spitter Movement Enable', desc: 'Bật/tắt Strange Movement cho Spitter elite bot.' },
   { cvar: 'l4d2_elite_si_infected_movement_spitter_delay', type: 'number', label: 'Spitter Movement Delay', desc: 'Độ trễ trước khi mở movement cho Spitter.' },
   { cvar: 'l4d2_elite_si_infected_movement_spitter_speed', type: 'number', label: 'Spitter Movement Speed', desc: 'Tốc độ Spitter trong cửa sổ Strange Movement.' },
@@ -496,7 +500,7 @@ const EliteSIRewardConfig = [
 
   { cvar: 'l4d2_elite_si_core_spawn_announce', type: 'toggle', label: 'Chat Spawn Announce', desc: 'Bật/tắt thông báo Elite spawn trong chat (không đẩy HUD script).' },
   { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite Type In Kill Message', desc: 'Hiện tên loại elite cụ thể trong kill/incap message thay vì chỉ "Elite SI".' },
-  { cvar: 'l4d2_elite_si_core_smoker_force_subtype', type: 'number', label: 'Force Smoker Subtype (test)', desc: '0=random, 2 ép Strange Movement để test.' },
+  { cvar: 'l4d2_elite_si_core_smoker_force_subtype', type: 'number', label: 'Force Smoker Subtype (test)', desc: '0=random, 2 ép Strange Movement, 28 ép Pull Weapon Drop để test.' },
   { cvar: 'l4d2_elite_si_core_boomer_force_subtype', type: 'number', label: 'Force Boomer Subtype (test)', desc: '0=random, 1 hoặc 27 để ép Abnormal Behavior hoặc Flashbang.' },
   { cvar: 'l4d2_elite_si_boomer_flashbang_enable', type: 'toggle', label: 'Boomer Flashbang Enable', desc: 'Bật/tắt chủng Flashbang cho Boomer elite bot.' },
   { cvar: 'l4d2_elite_si_boomer_flashbang_sight_angle', type: 'number', label: 'Boomer Flashbang Sight Angle', desc: 'Góc nhìn để survivor bị ảnh hưởng bởi flash.' },
@@ -569,6 +573,14 @@ const EliteSITypeSections = {
         'l4d2_elite_si_infected_movement_smoker_mode',
         'l4d2_elite_si_infected_movement_smoker_delay',
         'l4d2_elite_si_infected_movement_smoker_speed'
+      ]
+    },
+    {
+      id: 'smoker-pull-weapon-drop',
+      title: 'Smoker - Pull Weapon Drop',
+      cvars: [
+        'l4d2_elite_si_core_smoker_pull_weapon_drop_subtype_chance',
+        'l4d2_elite_si_smoker_pull_weapon_drop_enable'
       ]
     }
   ],
