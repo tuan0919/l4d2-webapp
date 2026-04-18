@@ -229,8 +229,37 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_spawn_cooldown: '20.0',
   l4d2_elite_si_core_spawn_announce: '1',
   l4d2_elite_si_core_smoker_movement_subtype_chance: '0',
+  l4d2_elite_si_core_smoker_asphyxiation_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_collapsed_lung_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_methane_blast_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_methane_leak_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_methane_strike_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_moon_walk_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_restrained_hostage_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_smoke_screen_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_tongue_strip_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_tongue_whip_subtype_chance: '1',
+  l4d2_elite_si_core_smoker_void_pocket_subtype_chance: '1',
+  l4d2_elite_si_core_boomer_abnormal_subtype_chance: '0',
+  l4d2_elite_si_core_boomer_bile_belly_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_bile_blast_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_bile_feet_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_bile_mask_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_bile_pimple_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_bile_shower_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_bile_swipe_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_bile_throw_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_explosive_diarrhea_subtype_chance: '8',
+  l4d2_elite_si_core_boomer_flatulence_subtype_chance: '8',
+  l4d2_elite_si_core_hunter_target_switch_subtype_chance: '50',
+  l4d2_elite_si_core_hunter_abnormal_subtype_chance: '50',
+  l4d2_elite_si_core_spitter_abnormal_subtype_chance: '50',
   l4d2_elite_si_core_spitter_ability_subtype_chance: '50',
+  l4d2_elite_si_core_jockey_abnormal_subtype_chance: '100',
+  l4d2_elite_si_core_charger_abnormal_subtype_chance: '0',
   l4d2_elite_si_core_tank_movement_subtype_chance: '50',
+  l4d2_elite_si_core_tank_abnormal_subtype_chance: '50',
+  l4d2_elite_si_core_boomer_flashbang_subtype_chance: '20',
   l4d2_elite_si_core_smoker_force_subtype: '0',
   l4d2_elite_si_core_boomer_force_subtype: '0',
   l4d2_elite_si_hardsi_director_enable: '1',
@@ -244,6 +273,11 @@ const CvarDefaultValues = {
   l4d2_elite_si_hardsi_hunter_aim_offset_sensitivity: '30.0',
   l4d2_elite_si_hardsi_hunter_straight_pounce_distance: '200',
   l4d2_elite_si_hardsi_hunter_leap_away_block_enable: '1',
+  l4d2_elite_si_hunter_target_switch_enable: '1',
+  l4d2_elite_si_hunter_target_switch_check_interval: '0.2',
+  l4d2_elite_si_hunter_target_switch_release_delay: '0.1',
+  l4d2_elite_si_hunter_target_switch_retarget_range: '600.0',
+  l4d2_elite_si_hunter_target_switch_leap_speed: '800.0',
   l4d2_elite_si_hardsi_spitter_enable: '1',
   l4d2_elite_si_hardsi_spitter_bhop: '1',
   l4d2_elite_si_hardsi_jockey_enable: '1',
@@ -356,7 +390,19 @@ const CvarDefaultValues = {
   l4d2_elite_boomer_nauseating_flatulence_damage: '5',
   l4d2_elite_boomer_nauseating_flatulence_duration: '10.0',
   l4d2_elite_boomer_nauseating_flatulence_period: '2.0',
-  l4d2_elite_boomer_nauseating_flatulence_radius: '100.0'
+  l4d2_elite_boomer_nauseating_flatulence_radius: '100.0',
+  l4d2_elite_si_boomer_flashbang_enable: '1',
+  l4d2_elite_si_boomer_flashbang_sight_angle: '180.0',
+  l4d2_elite_si_boomer_flashbang_close_range: '1000.0',
+  l4d2_elite_si_boomer_flashbang_medium_range: '1500.0',
+  l4d2_elite_si_boomer_flashbang_far_range: '2000.0',
+  l4d2_elite_si_boomer_flashbang_close_duration: '4000',
+  l4d2_elite_si_boomer_flashbang_medium_duration: '2000',
+  l4d2_elite_si_boomer_flashbang_far_duration: '1500',
+  l4d2_elite_si_boomer_flashbang_distant_duration: '500',
+  l4d2_elite_si_boomer_flashbang_blocked_duration: '200',
+  l4d2_elite_si_boomer_flashbang_color: '127 235 212',
+  l4d2_elite_si_boomer_flashbang_alpha: '255'
 };
 
 const getNormalizedCvarValue = (cvar, rawValue) => {
@@ -489,15 +535,43 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_reward_hint_color_normal_si', type: 'text', label: 'Hint Color Normal SI', desc: 'Màu hint khi hạ normal SI, định dạng: R G B (mặc định 255 255 255).' },
   { cvar: 'l4d2_elite_reward_hint_color_elite_si', type: 'text', label: 'Hint Color Elite SI', desc: 'Màu hint khi hạ elite SI, định dạng: R G B (mặc định 255 255 0).' },
 
-  { cvar: 'l4d2_elite_si_core_spawn_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI thường trở thành Elite. Roll này áp cho SI thường, không phải Tank.' },
+  { cvar: 'l4d2_elite_si_core_spawn_chance', type: 'number', label: 'Elite Spawn Chance (%)', desc: 'Tỷ lệ SI spawn ra trở thành Elite trước khi roll subtype.' },
   { cvar: 'l4d2_elite_si_core_spawn_cooldown', type: 'number', label: 'Elite Spawn Cooldown (s)', desc: 'Khoảng nghỉ tối thiểu giữa 2 lần spawn Elite thành công. Mặc định 20 giây.' },
   { cvar: 'l4d2_elite_si_core_hp_multiplier', type: 'number', label: 'Elite HP Multiplier', desc: 'Hệ số buff máu cho Elite SI.' },
-  { cvar: 'l4d2_elite_si_core_fire_ignite_chance', type: 'number', label: 'Elite Self-Ignite Chance (%)', desc: 'Tỷ lệ Elite tự bốc cháy. Chỉ Elite tự cháy mới kháng damage lửa.' },
-  { cvar: 'l4d2_elite_si_core_smoker_movement_subtype_chance', type: 'number', label: 'Smoker Movement Chance (%)', desc: 'Nếu Smoker đã roll thành Elite, đây là tỷ lệ nó thuộc chủng Strange Movement thay vì Noxious.' },
-  { cvar: 'l4d2_elite_si_core_spitter_ability_subtype_chance', type: 'number', label: 'Spitter Movement Chance (%)', desc: 'Nếu Spitter đã roll thành Elite, đây là tỷ lệ nó thuộc chủng Strange Movement thay vì Abnormal Behavior.' },
-  { cvar: 'l4d2_elite_si_core_tank_movement_subtype_chance', type: 'number', label: 'Tank Movement Chance (%)', desc: 'Nếu Tank đã roll thành Elite, đây là tỷ lệ nó thuộc chủng Strange Movement thay vì Abnormal Behavior.' },
-  { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'ChargerSteering Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerSteering thay vì nhánh khác.' },
-  { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'ChargerAction Chance (%)', desc: 'Nếu Charger đã roll thành Elite, đây là tỷ lệ nó thuộc chủng ChargerAction.' },
+  { cvar: 'l4d2_elite_si_core_smoker_movement_subtype_chance', type: 'number', label: 'Smoker Strange Movement Weight', desc: 'Trọng số roll subtype Strange Movement của Smoker sau khi đã spawn thành Elite.' },
+  { cvar: 'l4d2_elite_si_core_smoker_asphyxiation_subtype_chance', type: 'number', label: 'Smoker Asphyxiation Weight', desc: 'Trọng số roll subtype Asphyxiation của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_collapsed_lung_subtype_chance', type: 'number', label: 'Smoker Collapsed Lung Weight', desc: 'Trọng số roll subtype Collapsed Lung của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_methane_blast_subtype_chance', type: 'number', label: 'Smoker Methane Blast Weight', desc: 'Trọng số roll subtype Methane Blast của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_methane_leak_subtype_chance', type: 'number', label: 'Smoker Methane Leak Weight', desc: 'Trọng số roll subtype Methane Leak của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_methane_strike_subtype_chance', type: 'number', label: 'Smoker Methane Strike Weight', desc: 'Trọng số roll subtype Methane Strike của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_moon_walk_subtype_chance', type: 'number', label: 'Smoker Moon Walk Weight', desc: 'Trọng số roll subtype Moon Walk của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_restrained_hostage_subtype_chance', type: 'number', label: 'Smoker Restrained Hostage Weight', desc: 'Trọng số roll subtype Restrained Hostage của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_smoke_screen_subtype_chance', type: 'number', label: 'Smoker Smoke Screen Weight', desc: 'Trọng số roll subtype Smoke Screen của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_tongue_strip_subtype_chance', type: 'number', label: 'Smoker Tongue Strip Weight', desc: 'Trọng số roll subtype Tongue Strip của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_tongue_whip_subtype_chance', type: 'number', label: 'Smoker Tongue Whip Weight', desc: 'Trọng số roll subtype Tongue Whip của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_smoker_void_pocket_subtype_chance', type: 'number', label: 'Smoker Void Pocket Weight', desc: 'Trọng số roll subtype Void Pocket của Smoker.' },
+  { cvar: 'l4d2_elite_si_core_boomer_abnormal_subtype_chance', type: 'number', label: 'Boomer Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_bile_belly_subtype_chance', type: 'number', label: 'Boomer Bile Belly Weight', desc: 'Trọng số roll subtype Bile Belly của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_bile_blast_subtype_chance', type: 'number', label: 'Boomer Bile Blast Weight', desc: 'Trọng số roll subtype Bile Blast của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_bile_feet_subtype_chance', type: 'number', label: 'Boomer Bile Feet Weight', desc: 'Trọng số roll subtype Bile Feet của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_bile_mask_subtype_chance', type: 'number', label: 'Boomer Bile Mask Weight', desc: 'Trọng số roll subtype Bile Mask của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_bile_pimple_subtype_chance', type: 'number', label: 'Boomer Bile Pimple Weight', desc: 'Trọng số roll subtype Bile Pimple của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_bile_shower_subtype_chance', type: 'number', label: 'Boomer Bile Shower Weight', desc: 'Trọng số roll subtype Bile Shower của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_bile_swipe_subtype_chance', type: 'number', label: 'Boomer Bile Swipe Weight', desc: 'Trọng số roll subtype Bile Swipe của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_bile_throw_subtype_chance', type: 'number', label: 'Boomer Bile Throw Weight', desc: 'Trọng số roll subtype Bile Throw của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_explosive_diarrhea_subtype_chance', type: 'number', label: 'Boomer Explosive Diarrhea Weight', desc: 'Trọng số roll subtype Explosive Diarrhea của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_flatulence_subtype_chance', type: 'number', label: 'Boomer Flatulence Weight', desc: 'Trọng số roll subtype Flatulence của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_flashbang_subtype_chance', type: 'number', label: 'Boomer Flashbang Weight', desc: 'Trọng số roll subtype Flashbang của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_hunter_abnormal_subtype_chance', type: 'number', label: 'Hunter Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Hunter.' },
+  { cvar: 'l4d2_elite_si_core_hunter_target_switch_subtype_chance', type: 'number', label: 'Hunter Target Switch Weight', desc: 'Trọng số roll subtype Target Switch của Hunter.' },
+  { cvar: 'l4d2_elite_si_core_spitter_abnormal_subtype_chance', type: 'number', label: 'Spitter Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Spitter.' },
+  { cvar: 'l4d2_elite_si_core_spitter_ability_subtype_chance', type: 'number', label: 'Spitter Strange Movement Weight', desc: 'Trọng số roll subtype Strange Movement của Spitter.' },
+  { cvar: 'l4d2_elite_si_core_jockey_abnormal_subtype_chance', type: 'number', label: 'Jockey Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Jockey.' },
+  { cvar: 'l4d2_elite_si_core_charger_abnormal_subtype_chance', type: 'number', label: 'Charger Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Charger.' },
+  { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'Charger Steering Weight', desc: 'Trọng số roll subtype ChargerSteering của Charger.' },
+  { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'Charger Action Weight', desc: 'Trọng số roll subtype ChargerAction của Charger.' },
+  { cvar: 'l4d2_elite_si_core_tank_abnormal_subtype_chance', type: 'number', label: 'Tank Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Tank.' },
+  { cvar: 'l4d2_elite_si_core_tank_movement_subtype_chance', type: 'number', label: 'Tank Strange Movement Weight', desc: 'Trọng số roll subtype Strange Movement của Tank.' },
 
   { cvar: 'l4d2_elite_si_hardsi_director_enable', type: 'toggle', label: 'HardSI Director Enable', desc: 'Bật/tắt module director cho Abnormal Behavior (chỉ chạy nhịp nb_assault, không exec cfg dùng chung).' },
   { cvar: 'l4d2_elite_si_hardsi_director_assault_interval', type: 'number', label: 'HardSI Director Assault Interval', desc: 'Tần suất chạy nb_assault (giây). 0 = tắt.' },
@@ -513,6 +587,11 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_hardsi_hunter_aim_offset_sensitivity', type: 'number', label: 'Hunter HardSI Aim Offset', desc: 'Độ nhạy lệch góc aim để ép đổi hướng pounce.' },
   { cvar: 'l4d2_elite_si_hardsi_hunter_straight_pounce_distance', type: 'number', label: 'Hunter HardSI Straight Pounce Distance', desc: 'Khoảng cách giữ pounce thẳng.' },
   { cvar: 'l4d2_elite_si_hardsi_hunter_leap_away_block_enable', type: 'toggle', label: 'Hunter HardSI LeapAway Block', desc: 'Chặn leap-away assault behavior theo logic AI_HardSI.' },
+  { cvar: 'l4d2_elite_si_hunter_target_switch_enable', type: 'toggle', label: 'Hunter Target Switch Enable', desc: 'Bật/tắt chủng Target Switch cho Hunter elite bot.' },
+  { cvar: 'l4d2_elite_si_hunter_target_switch_check_interval', type: 'number', label: 'Hunter Target Switch Check Interval', desc: 'Chu kỳ kiểm tra nạn nhân đã incap để đổi mục tiêu.' },
+  { cvar: 'l4d2_elite_si_hunter_target_switch_release_delay', type: 'number', label: 'Hunter Target Switch Release Delay', desc: 'Độ trễ ngắn trước khi hunter tái bật pounce sang mục tiêu mới.' },
+  { cvar: 'l4d2_elite_si_hunter_target_switch_retarget_range', type: 'number', label: 'Hunter Target Switch Retarget Range', desc: 'Tầm tìm survivor còn đứng để hunter chuyển mục tiêu.' },
+  { cvar: 'l4d2_elite_si_hunter_target_switch_leap_speed', type: 'number', label: 'Hunter Target Switch Leap Speed', desc: 'Tốc độ phóng khi hunter chuyển sang mục tiêu mới.' },
 
   { cvar: 'l4d2_elite_si_hardsi_spitter_enable', type: 'toggle', label: 'Spitter HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Spitter elite.' },
   { cvar: 'l4d2_elite_si_hardsi_spitter_bhop', type: 'toggle', label: 'Spitter HardSI Bhop', desc: 'Bật/tắt bhop pressure cho Spitter HardSI.' },
@@ -657,7 +736,19 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_boomer_nauseating_flatulence_damage', type: 'number', label: 'Flatulence Damage', desc: 'Damage mỗi tick cloud Flatulence.' },
   { cvar: 'l4d2_elite_boomer_nauseating_flatulence_duration', type: 'number', label: 'Flatulence Duration', desc: 'Thời gian tồn tại của cloud Flatulence.' },
   { cvar: 'l4d2_elite_boomer_nauseating_flatulence_period', type: 'number', label: 'Flatulence Period', desc: 'Khoảng tick damage của cloud Flatulence.' },
-  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_radius', type: 'number', label: 'Flatulence Radius', desc: 'Bán kính cloud Flatulence.' }
+  { cvar: 'l4d2_elite_boomer_nauseating_flatulence_radius', type: 'number', label: 'Flatulence Radius', desc: 'Bán kính cloud Flatulence.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_enable', type: 'toggle', label: 'Boomer Flashbang Enable', desc: 'Bật/tắt chủng Flashbang cho Boomer elite bot.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_sight_angle', type: 'number', label: 'Boomer Flashbang Sight Angle', desc: 'Góc nhìn để survivor bị ảnh hưởng bởi flash.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_close_range', type: 'number', label: 'Boomer Flashbang Close Range', desc: 'Ngưỡng khoảng cách cho cường độ flash mạnh nhất.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_medium_range', type: 'number', label: 'Boomer Flashbang Medium Range', desc: 'Ngưỡng khoảng cách cho flash trung bình.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_far_range', type: 'number', label: 'Boomer Flashbang Far Range', desc: 'Ngưỡng khoảng cách cho flash xa.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_close_duration', type: 'number', label: 'Boomer Flashbang Close Duration', desc: 'Thời lượng fade khi đứng gần vụ nổ.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_medium_duration', type: 'number', label: 'Boomer Flashbang Medium Duration', desc: 'Thời lượng fade ở tầm trung.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_far_duration', type: 'number', label: 'Boomer Flashbang Far Duration', desc: 'Thời lượng fade ở tầm xa.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_distant_duration', type: 'number', label: 'Boomer Flashbang Distant Duration', desc: 'Thời lượng fade khi còn nhìn thấy nhưng đứng ngoài ngưỡng xa.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_blocked_duration', type: 'number', label: 'Boomer Flashbang Blocked Duration', desc: 'Thời lượng fade tối thiểu khi flash bị che hoặc ngoài góc nhìn.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_color', type: 'text', label: 'Boomer Flashbang Color', desc: 'Màu fade, định dạng: R G B.' },
+  { cvar: 'l4d2_elite_si_boomer_flashbang_alpha', type: 'number', label: 'Boomer Flashbang Alpha', desc: 'Độ đậm fade (0-255).' }
 ];
 
 const EliteSICoreGeneralConfig = [
@@ -683,7 +774,6 @@ const EliteSICoreGeneralConfig = [
   'l4d2_elite_si_core_spawn_chance',
   'l4d2_elite_si_core_spawn_cooldown',
   'l4d2_elite_si_core_hp_multiplier',
-  'l4d2_elite_si_core_fire_ignite_chance',
   'l4d2_elite_si_hardsi_director_enable',
   'l4d2_elite_si_hardsi_director_assault_interval',
   'l4d2_elite_si_core_spawn_announce',
@@ -734,6 +824,7 @@ const EliteSITypeSections = {
       id: 'smoker-asphyxiation',
       title: 'Smoker Noxious - Asphyxiation',
       cvars: [
+        'l4d2_elite_si_core_smoker_asphyxiation_subtype_chance',
         'l4d2_elite_smoker_noxious_asphyxiation_enable',
         'l4d2_elite_smoker_noxious_asphyxiation_damage',
         'l4d2_elite_smoker_noxious_asphyxiation_frequency',
@@ -744,6 +835,7 @@ const EliteSITypeSections = {
       id: 'smoker-collapsed-lung',
       title: 'Smoker Noxious - Collapsed Lung',
       cvars: [
+        'l4d2_elite_si_core_smoker_collapsed_lung_subtype_chance',
         'l4d2_elite_smoker_noxious_collapsed_lung_enable',
         'l4d2_elite_smoker_noxious_collapsed_lung_chance',
         'l4d2_elite_smoker_noxious_collapsed_lung_damage',
@@ -754,6 +846,7 @@ const EliteSITypeSections = {
       id: 'smoker-methane-blast',
       title: 'Smoker Noxious - Methane Blast',
       cvars: [
+        'l4d2_elite_si_core_smoker_methane_blast_subtype_chance',
         'l4d2_elite_smoker_noxious_methane_blast_enable',
         'l4d2_elite_smoker_noxious_methane_blast_inner_damage',
         'l4d2_elite_smoker_noxious_methane_blast_outer_damage',
@@ -767,6 +860,7 @@ const EliteSITypeSections = {
       id: 'smoker-methane-leak',
       title: 'Smoker Noxious - Methane Leak',
       cvars: [
+        'l4d2_elite_si_core_smoker_methane_leak_subtype_chance',
         'l4d2_elite_smoker_noxious_methane_leak_enable',
         'l4d2_elite_smoker_noxious_methane_leak_cooldown',
         'l4d2_elite_smoker_noxious_methane_leak_damage',
@@ -778,12 +872,13 @@ const EliteSITypeSections = {
     {
       id: 'smoker-methane-strike',
       title: 'Smoker Noxious - Methane Strike',
-      cvars: ['l4d2_elite_smoker_noxious_methane_strike_enable']
+      cvars: ['l4d2_elite_si_core_smoker_methane_strike_subtype_chance', 'l4d2_elite_smoker_noxious_methane_strike_enable']
     },
     {
       id: 'smoker-moon-walk',
       title: 'Smoker Noxious - Moon Walk',
       cvars: [
+        'l4d2_elite_si_core_smoker_moon_walk_subtype_chance',
         'l4d2_elite_smoker_noxious_moon_walk_enable',
         'l4d2_elite_smoker_noxious_moon_walk_speed'
       ]
@@ -792,6 +887,7 @@ const EliteSITypeSections = {
       id: 'smoker-restrained-hostage',
       title: 'Smoker Noxious - Restrained Hostage',
       cvars: [
+        'l4d2_elite_si_core_smoker_restrained_hostage_subtype_chance',
         'l4d2_elite_smoker_noxious_restrained_hostage_enable',
         'l4d2_elite_smoker_noxious_restrained_hostage_scale',
         'l4d2_elite_smoker_noxious_restrained_hostage_damage'
@@ -801,6 +897,7 @@ const EliteSITypeSections = {
       id: 'smoker-smoke-screen',
       title: 'Smoker Noxious - Smoke Screen',
       cvars: [
+        'l4d2_elite_si_core_smoker_smoke_screen_subtype_chance',
         'l4d2_elite_smoker_noxious_smoke_screen_enable',
         'l4d2_elite_smoker_noxious_smoke_screen_chance'
       ]
@@ -809,6 +906,7 @@ const EliteSITypeSections = {
       id: 'smoker-tongue-strip',
       title: 'Smoker Noxious - Tongue Strip',
       cvars: [
+        'l4d2_elite_si_core_smoker_tongue_strip_subtype_chance',
         'l4d2_elite_smoker_noxious_tongue_strip_enable',
         'l4d2_elite_smoker_noxious_tongue_strip_chance'
       ]
@@ -817,6 +915,7 @@ const EliteSITypeSections = {
       id: 'smoker-tongue-whip',
       title: 'Smoker Noxious - Tongue Whip',
       cvars: [
+        'l4d2_elite_si_core_smoker_tongue_whip_subtype_chance',
         'l4d2_elite_smoker_noxious_tongue_whip_enable',
         'l4d2_elite_smoker_noxious_tongue_whip_damage',
         'l4d2_elite_smoker_noxious_tongue_whip_range',
@@ -827,6 +926,7 @@ const EliteSITypeSections = {
       id: 'smoker-void-pocket',
       title: 'Smoker Noxious - Void Pocket',
       cvars: [
+        'l4d2_elite_si_core_smoker_void_pocket_subtype_chance',
         'l4d2_elite_smoker_noxious_void_pocket_enable',
         'l4d2_elite_smoker_noxious_void_pocket_cooldown',
         'l4d2_elite_smoker_noxious_void_pocket_chance',
@@ -841,8 +941,28 @@ const EliteSITypeSections = {
       id: 'boomer-hardsi',
       title: 'Boomer - Abnormal Behavior',
       cvars: [
+        'l4d2_elite_si_core_boomer_abnormal_subtype_chance',
         'l4d2_elite_si_hardsi_boomer_enable',
         'l4d2_elite_si_hardsi_boomer_bhop'
+      ]
+    },
+    {
+      id: 'boomer-flashbang',
+      title: 'Boomer - Flashbang',
+      cvars: [
+        'l4d2_elite_si_core_boomer_flashbang_subtype_chance',
+        'l4d2_elite_si_boomer_flashbang_enable',
+        'l4d2_elite_si_boomer_flashbang_sight_angle',
+        'l4d2_elite_si_boomer_flashbang_close_range',
+        'l4d2_elite_si_boomer_flashbang_medium_range',
+        'l4d2_elite_si_boomer_flashbang_far_range',
+        'l4d2_elite_si_boomer_flashbang_close_duration',
+        'l4d2_elite_si_boomer_flashbang_medium_duration',
+        'l4d2_elite_si_boomer_flashbang_far_duration',
+        'l4d2_elite_si_boomer_flashbang_distant_duration',
+        'l4d2_elite_si_boomer_flashbang_blocked_duration',
+        'l4d2_elite_si_boomer_flashbang_color',
+        'l4d2_elite_si_boomer_flashbang_alpha'
       ]
     },
     {
@@ -856,6 +976,7 @@ const EliteSITypeSections = {
       id: 'boomer-bile-belly',
       title: 'Boomer Nauseating - Bile Belly',
       cvars: [
+        'l4d2_elite_si_core_boomer_bile_belly_subtype_chance',
         'l4d2_elite_boomer_nauseating_bile_belly_enable',
         'l4d2_elite_boomer_nauseating_bile_belly_damage_scale'
       ]
@@ -864,6 +985,7 @@ const EliteSITypeSections = {
       id: 'boomer-bile-blast',
       title: 'Boomer Nauseating - Bile Blast',
       cvars: [
+        'l4d2_elite_si_core_boomer_bile_blast_subtype_chance',
         'l4d2_elite_boomer_nauseating_bile_blast_enable',
         'l4d2_elite_boomer_nauseating_bile_blast_inner_push',
         'l4d2_elite_boomer_nauseating_bile_blast_outer_push',
@@ -877,6 +999,7 @@ const EliteSITypeSections = {
       id: 'boomer-bile-feet',
       title: 'Boomer Nauseating - Bile Feet',
       cvars: [
+        'l4d2_elite_si_core_boomer_bile_feet_subtype_chance',
         'l4d2_elite_boomer_nauseating_bile_feet_enable',
         'l4d2_elite_boomer_nauseating_bile_feet_speed',
         'l4d2_elite_boomer_nauseating_bile_feet_clear_vomit_fatigue'
@@ -886,6 +1009,7 @@ const EliteSITypeSections = {
       id: 'boomer-bile-mask',
       title: 'Boomer Nauseating - Bile Mask',
       cvars: [
+        'l4d2_elite_si_core_boomer_bile_mask_subtype_chance',
         'l4d2_elite_boomer_nauseating_bile_mask_enable',
         'l4d2_elite_boomer_nauseating_bile_mask_mode',
         'l4d2_elite_boomer_nauseating_bile_mask_amount',
@@ -896,6 +1020,7 @@ const EliteSITypeSections = {
       id: 'boomer-bile-pimple',
       title: 'Boomer Nauseating - Bile Pimple',
       cvars: [
+        'l4d2_elite_si_core_boomer_bile_pimple_subtype_chance',
         'l4d2_elite_boomer_nauseating_bile_pimple_enable',
         'l4d2_elite_boomer_nauseating_bile_pimple_chance',
         'l4d2_elite_boomer_nauseating_bile_pimple_damage',
@@ -907,6 +1032,7 @@ const EliteSITypeSections = {
       id: 'boomer-bile-shower',
       title: 'Boomer Nauseating - Bile Shower',
       cvars: [
+        'l4d2_elite_si_core_boomer_bile_shower_subtype_chance',
         'l4d2_elite_boomer_nauseating_bile_shower_enable',
         'l4d2_elite_boomer_nauseating_bile_shower_cooldown'
       ]
@@ -915,6 +1041,7 @@ const EliteSITypeSections = {
       id: 'boomer-bile-swipe',
       title: 'Boomer Nauseating - Bile Swipe',
       cvars: [
+        'l4d2_elite_si_core_boomer_bile_swipe_subtype_chance',
         'l4d2_elite_boomer_nauseating_bile_swipe_enable',
         'l4d2_elite_boomer_nauseating_bile_swipe_chance',
         'l4d2_elite_boomer_nauseating_bile_swipe_damage',
@@ -925,6 +1052,7 @@ const EliteSITypeSections = {
       id: 'boomer-bile-throw',
       title: 'Boomer Nauseating - Bile Throw',
       cvars: [
+        'l4d2_elite_si_core_boomer_bile_throw_subtype_chance',
         'l4d2_elite_boomer_nauseating_bile_throw_enable',
         'l4d2_elite_boomer_nauseating_bile_throw_cooldown',
         'l4d2_elite_boomer_nauseating_bile_throw_damage',
@@ -936,6 +1064,7 @@ const EliteSITypeSections = {
       id: 'boomer-explosive-diarrhea',
       title: 'Boomer Nauseating - Explosive Diarrhea',
       cvars: [
+        'l4d2_elite_si_core_boomer_explosive_diarrhea_subtype_chance',
         'l4d2_elite_boomer_nauseating_explosive_diarrhea_enable',
         'l4d2_elite_boomer_nauseating_explosive_diarrhea_range',
         'l4d2_elite_boomer_nauseating_explosive_diarrhea_rear_dot'
@@ -945,6 +1074,7 @@ const EliteSITypeSections = {
       id: 'boomer-flatulence',
       title: 'Boomer Nauseating - Flatulence',
       cvars: [
+        'l4d2_elite_si_core_boomer_flatulence_subtype_chance',
         'l4d2_elite_boomer_nauseating_flatulence_enable',
         'l4d2_elite_boomer_nauseating_flatulence_bile_chance',
         'l4d2_elite_boomer_nauseating_flatulence_cooldown',
@@ -960,12 +1090,25 @@ const EliteSITypeSections = {
       id: 'hunter-hardsi',
       title: 'Hunter - Abnormal Behavior',
       cvars: [
+        'l4d2_elite_si_core_hunter_abnormal_subtype_chance',
         'l4d2_elite_si_hardsi_hunter_enable',
         'l4d2_elite_si_hardsi_hunter_fast_pounce_distance',
         'l4d2_elite_si_hardsi_hunter_pounce_vertical_limit',
         'l4d2_elite_si_hardsi_hunter_aim_offset_sensitivity',
         'l4d2_elite_si_hardsi_hunter_straight_pounce_distance',
         'l4d2_elite_si_hardsi_hunter_leap_away_block_enable'
+      ]
+    },
+    {
+      id: 'hunter-target-switch',
+      title: 'Hunter - Target Switch',
+      cvars: [
+        'l4d2_elite_si_core_hunter_target_switch_subtype_chance',
+        'l4d2_elite_si_hunter_target_switch_enable',
+        'l4d2_elite_si_hunter_target_switch_check_interval',
+        'l4d2_elite_si_hunter_target_switch_release_delay',
+        'l4d2_elite_si_hunter_target_switch_retarget_range',
+        'l4d2_elite_si_hunter_target_switch_leap_speed'
       ]
     }
   ],
@@ -974,6 +1117,7 @@ const EliteSITypeSections = {
       id: 'spitter-hardsi',
       title: 'Spitter - Abnormal Behavior',
       cvars: [
+        'l4d2_elite_si_core_spitter_abnormal_subtype_chance',
         'l4d2_elite_si_hardsi_spitter_enable',
         'l4d2_elite_si_hardsi_spitter_bhop'
       ]
@@ -994,6 +1138,7 @@ const EliteSITypeSections = {
       id: 'jockey-hardsi',
       title: 'Jockey - Abnormal Behavior',
       cvars: [
+        'l4d2_elite_si_core_jockey_abnormal_subtype_chance',
         'l4d2_elite_si_hardsi_jockey_enable',
         'l4d2_elite_si_hardsi_jockey_hop_distance'
       ]
@@ -1004,6 +1149,7 @@ const EliteSITypeSections = {
       id: 'charger-hardsi',
       title: 'Charger - Abnormal Behavior',
       cvars: [
+        'l4d2_elite_si_core_charger_abnormal_subtype_chance',
         'l4d2_elite_si_hardsi_charger_enable',
         'l4d2_elite_si_hardsi_charger_bhop',
         'l4d2_elite_si_hardsi_charger_charge_distance',
@@ -1034,6 +1180,7 @@ const EliteSITypeSections = {
       id: 'tank-hardsi',
       title: 'Tank - Abnormal Behavior',
       cvars: [
+        'l4d2_elite_si_core_tank_abnormal_subtype_chance',
         'l4d2_elite_si_hardsi_tank_enable',
         'l4d2_elite_si_hardsi_tank_bhop',
         'l4d2_elite_si_hardsi_tank_allow_rock',
