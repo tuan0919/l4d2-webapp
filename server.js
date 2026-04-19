@@ -136,6 +136,20 @@ function changeMapWithAddonRefresh(map, callback) {
   });
 }
 
+function wakeEmptyServerBeforeMapChange(callback) {
+  sendToGame('sm_cvar sv_hibernate_when_empty 0', (result) => {
+    if (result && result.error) {
+      callback && callback(result);
+      return;
+    }
+
+    // Let the server leave hibernation before refreshing addon paths or loading a custom map.
+    setTimeout(() => {
+      callback && callback({ ok: true, hibernateDisabled: true });
+    }, 2000);
+  });
+}
+
 function isGameScreenRunning(callback) {
   exec('screen -ls | grep l4d2', (err, stdout) => {
     const running = !!(stdout && stdout.includes('l4d2'));
@@ -1711,7 +1725,12 @@ app.post('/api/map', (req, res) => {
     if (!infoErr && Number(info?.players || 0) === 0) {
       // Empty L4D2 servers can hibernate and fail custom-map changelevel while addon
       // paths are being refreshed, so wake the server before switching maps.
-      sendToGame('sm_cvar sv_hibernate_when_empty 0', () => {
+      wakeEmptyServerBeforeMapChange((wakeResult) => {
+        if (wakeResult && wakeResult.error) {
+          res.json(wakeResult);
+          return;
+        }
+
         changeMapWithAddonRefresh(map, (result) => {
           res.json({
             ...result,
