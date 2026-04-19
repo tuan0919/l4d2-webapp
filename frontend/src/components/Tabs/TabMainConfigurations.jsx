@@ -235,6 +235,7 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_smoker_toxic_gas_subtype_chance: '1',
   l4d2_elite_si_core_smoker_ignitor_subtype_chance: '1',
   l4d2_elite_si_core_boomer_abnormal_subtype_chance: '1',
+  l4d2_elite_si_core_boomer_leaker_subtype_chance: '1',
   l4d2_elite_si_core_hunter_target_switch_subtype_chance: '1',
   l4d2_elite_si_core_hunter_abnormal_subtype_chance: '1',
   l4d2_elite_si_core_spitter_abnormal_subtype_chance: '1',
@@ -338,7 +339,16 @@ const CvarDefaultValues = {
   l4d2_elite_si_boomer_flashbang_distant_duration: '500',
   l4d2_elite_si_boomer_flashbang_blocked_duration: '200',
   l4d2_elite_si_boomer_flashbang_color: '127 235 212',
-  l4d2_elite_si_boomer_flashbang_alpha: '255'
+  l4d2_elite_si_boomer_flashbang_alpha: '255',
+  l4d2_elite_si_boomer_leaker_enable: '1',
+  l4d2_elite_si_boomer_leaker_approach_range: '900.0',
+  l4d2_elite_si_boomer_leaker_prepare_range: '170.0',
+  l4d2_elite_si_boomer_leaker_prepare_duration: '2.5',
+  l4d2_elite_si_boomer_leaker_speed_multiplier: '1.12',
+  l4d2_elite_si_boomer_leaker_fire_patch_duration: '10.0',
+  l4d2_elite_si_boomer_leaker_fire_patch_radius: '180.0',
+  l4d2_elite_si_boomer_leaker_fire_patch_damage_per_second: '12.0',
+  l4d2_elite_si_boomer_leaker_fire_damage_interval: '0.5'
 };
 
 const getNormalizedCvarValue = (cvar, rawValue) => {
@@ -481,6 +491,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_smoker_ignitor_subtype_chance', type: 'number', label: 'Smoker Ignitor Weight', desc: 'Trọng số roll subtype Ignitor của Smoker sau khi đã spawn thành Elite.' },
   { cvar: 'l4d2_elite_si_core_boomer_abnormal_subtype_chance', type: 'number', label: 'Boomer Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Boomer.' },
   { cvar: 'l4d2_elite_si_core_boomer_flashbang_subtype_chance', type: 'number', label: 'Boomer Flashbang Weight', desc: 'Trọng số roll subtype Flashbang của Boomer.' },
+  { cvar: 'l4d2_elite_si_core_boomer_leaker_subtype_chance', type: 'number', label: 'Boomer Leaker Weight', desc: 'Trọng số roll subtype Leaker của Boomer.' },
   { cvar: 'l4d2_elite_si_core_hunter_abnormal_subtype_chance', type: 'number', label: 'Hunter Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Hunter.' },
   { cvar: 'l4d2_elite_si_core_hunter_target_switch_subtype_chance', type: 'number', label: 'Hunter Target Switch Weight', desc: 'Trọng số roll subtype Target Switch của Hunter.' },
   { cvar: 'l4d2_elite_si_core_spitter_abnormal_subtype_chance', type: 'number', label: 'Spitter Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Spitter.' },
@@ -597,7 +608,16 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_boomer_flashbang_distant_duration', type: 'number', label: 'Boomer Flashbang Distant Duration', desc: 'Thời lượng fade khi còn nhìn thấy nhưng đứng ngoài ngưỡng xa.' },
   { cvar: 'l4d2_elite_si_boomer_flashbang_blocked_duration', type: 'number', label: 'Boomer Flashbang Blocked Duration', desc: 'Thời lượng fade tối thiểu khi flash bị che hoặc ngoài góc nhìn.' },
   { cvar: 'l4d2_elite_si_boomer_flashbang_color', type: 'text', label: 'Boomer Flashbang Color', desc: 'Màu fade, định dạng: R G B.' },
-  { cvar: 'l4d2_elite_si_boomer_flashbang_alpha', type: 'number', label: 'Boomer Flashbang Alpha', desc: 'Độ đậm fade (0-255).' }
+  { cvar: 'l4d2_elite_si_boomer_flashbang_alpha', type: 'number', label: 'Boomer Flashbang Alpha', desc: 'Độ đậm fade (0-255).' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_enable', type: 'toggle', label: 'Boomer Leaker Enable', desc: 'Bật/tắt chủng Leaker cho Boomer elite bot.' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_approach_range', type: 'number', label: 'Boomer Leaker Approach Range', desc: 'Khoảng cách tối đa để Leaker Boomer áp sát survivor trước khi chuẩn bị nổ.' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_prepare_range', type: 'number', label: 'Boomer Leaker Prepare Range', desc: 'Khoảng cách tới survivor để Leaker Boomer ngồi xuống và bắt đầu đếm ngược tự nổ.' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_prepare_duration', type: 'number', label: 'Boomer Leaker Prepare Duration', desc: 'Thời gian Leaker Boomer ngồi chờ trước khi tự phát nổ.' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_speed_multiplier', type: 'number', label: 'Boomer Leaker Speed Multiplier', desc: 'Hệ số tốc độ của Leaker Boomer khi áp sát survivor.' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_fire_patch_duration', type: 'number', label: 'Boomer Leaker Fire Patch Duration', desc: 'Thời gian tồn tại của bãi lửa do Leaker Boomer tạo ra khi nổ.' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_fire_patch_radius', type: 'number', label: 'Boomer Leaker Fire Patch Radius', desc: 'Bán kính bãi lửa do Leaker Boomer tạo ra khi nổ.' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_fire_patch_damage_per_second', type: 'number', label: 'Boomer Leaker Fire Patch Damage Per Second', desc: 'Sát thương mỗi giây của bãi lửa Leaker Boomer lên cả survivor lẫn infected.' },
+  { cvar: 'l4d2_elite_si_boomer_leaker_fire_damage_interval', type: 'number', label: 'Boomer Leaker Fire Damage Interval', desc: 'Khoảng thời gian giữa các lần tick damage của bãi lửa Leaker Boomer.' }
 ];
 
 const EliteSICoreGeneralConfig = [
@@ -732,6 +752,22 @@ const EliteSITypeSections = {
         'l4d2_elite_si_boomer_flashbang_blocked_duration',
         'l4d2_elite_si_boomer_flashbang_color',
         'l4d2_elite_si_boomer_flashbang_alpha'
+      ]
+    },
+    {
+      id: 'boomer-leaker',
+      title: 'Boomer - Leaker',
+      cvars: [
+        'l4d2_elite_si_core_boomer_leaker_subtype_chance',
+        'l4d2_elite_si_boomer_leaker_enable',
+        'l4d2_elite_si_boomer_leaker_approach_range',
+        'l4d2_elite_si_boomer_leaker_prepare_range',
+        'l4d2_elite_si_boomer_leaker_prepare_duration',
+        'l4d2_elite_si_boomer_leaker_speed_multiplier',
+        'l4d2_elite_si_boomer_leaker_fire_patch_duration',
+        'l4d2_elite_si_boomer_leaker_fire_patch_radius',
+        'l4d2_elite_si_boomer_leaker_fire_patch_damage_per_second',
+        'l4d2_elite_si_boomer_leaker_fire_damage_interval'
       ]
     }
   ],
