@@ -124,6 +124,18 @@ function sendToGame(command, callback) {
   });
 }
 
+function changeMapWithAddonRefresh(map, callback) {
+  sendToGame('update_addon_paths', () => {
+    setTimeout(() => {
+      sendToGame('update_addon_paths', () => {
+        setTimeout(() => {
+          sendToGame(`changelevel ${map}`, callback);
+        }, 1500);
+      });
+    }, 1500);
+  });
+}
+
 function isGameScreenRunning(callback) {
   exec('screen -ls | grep l4d2', (err, stdout) => {
     const running = !!(stdout && stdout.includes('l4d2'));
@@ -1694,16 +1706,26 @@ app.post('/api/command', (req, res) => {
 app.post('/api/map', (req, res) => {
   const { map } = req.body;
   if (!map) return res.status(400).json({ error: 'No map provided' });
-  // Force engine to re-index addon VPKs twice with enough delay so pre-existing
-  // custom maps are fully registered before changelevel.
-  sendToGame('update_addon_paths', () => {
-    setTimeout(() => {
-      sendToGame('update_addon_paths', () => {
-        setTimeout(() => {
-          sendToGame(`changelevel ${map}`, (result) => res.json(result));
-        }, 1500);
+
+  sourceQuery('info', (infoErr, info) => {
+    if (!infoErr && Number(info?.players || 0) === 0) {
+      // Empty L4D2 servers can hibernate and fail custom-map changelevel while addon
+      // paths are being refreshed, so wake the server before switching maps.
+      sendToGame('sm_cvar sv_hibernate_when_empty 0', () => {
+        changeMapWithAddonRefresh(map, (result) => {
+          res.json({
+            ...result,
+            hibernateDisabled: true,
+            message: `Changing map to ${map}. Disabled hibernate first because the server is empty.`
+          });
+        });
       });
-    }, 1500);
+      return;
+    }
+
+    // Force engine to re-index addon VPKs twice with enough delay so pre-existing
+    // custom maps are fully registered before changelevel.
+    changeMapWithAddonRefresh(map, (result) => res.json(result));
   });
 });
 
