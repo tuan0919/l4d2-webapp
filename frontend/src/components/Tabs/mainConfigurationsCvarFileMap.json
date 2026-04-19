@@ -133,6 +133,7 @@
   "l4d2_elite_si_smoker_toxic_gas_cloud_duration": "cfg/sourcemod/l4d2_elite_si_smoker_toxic_gas.cfg",
   "l4d2_elite_si_smoker_toxic_gas_cloud_radius": "cfg/sourcemod/l4d2_elite_si_smoker_toxic_gas.cfg",
   "l4d2_elite_si_smoker_toxic_gas_damage_per_second": "cfg/sourcemod/l4d2_elite_si_smoker_toxic_gas.cfg",
+  "l4d2_elite_si_smoker_toxic_gas_damage_interval": "cfg/sourcemod/l4d2_elite_si_smoker_toxic_gas.cfg",
   "l4d2_elite_si_smoker_toxic_gas_hint_enable": "cfg/sourcemod/l4d2_elite_si_smoker_toxic_gas.cfg",
   "l4d2_elite_si_smoker_toxic_gas_hint_color": "cfg/sourcemod/l4d2_elite_si_smoker_toxic_gas.cfg",
   "l4d2_elite_si_smoker_toxic_gas_hint_interval": "cfg/sourcemod/l4d2_elite_si_smoker_toxic_gas.cfg",

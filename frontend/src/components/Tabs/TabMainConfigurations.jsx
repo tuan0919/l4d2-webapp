@@ -286,6 +286,7 @@ const CvarDefaultValues = {
   l4d2_elite_si_smoker_toxic_gas_cloud_duration: '8.0',
   l4d2_elite_si_smoker_toxic_gas_cloud_radius: '180.0',
   l4d2_elite_si_smoker_toxic_gas_damage_per_second: '3.0',
+  l4d2_elite_si_smoker_toxic_gas_damage_interval: '0.5',
   l4d2_elite_si_smoker_toxic_gas_hint_enable: '1',
   l4d2_elite_si_smoker_toxic_gas_hint_color: '80 80 80',
   l4d2_elite_si_smoker_toxic_gas_hint_interval: '1.5',
@@ -508,6 +509,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_smoker_toxic_gas_cloud_duration', type: 'number', label: 'Smoker Toxic Gas Cloud Duration', desc: 'Thời lượng tồn tại của làn khói độc.' },
   { cvar: 'l4d2_elite_si_smoker_toxic_gas_cloud_radius', type: 'number', label: 'Smoker Toxic Gas Cloud Radius', desc: 'Bán kính gây sát thương của làn khói độc.' },
   { cvar: 'l4d2_elite_si_smoker_toxic_gas_damage_per_second', type: 'number', label: 'Smoker Toxic Gas Damage Per Second', desc: 'Sát thương mỗi giây của làn khói độc lên survivor đứng trong vùng.' },
+  { cvar: 'l4d2_elite_si_smoker_toxic_gas_damage_interval', type: 'number', label: 'Smoker Toxic Gas Damage Interval', desc: 'Khoảng thời gian giữa các lần tick damage của làn khói độc.' },
   { cvar: 'l4d2_elite_si_smoker_toxic_gas_hint_enable', type: 'toggle', label: 'Smoker Toxic Gas Hint Enable', desc: 'Hiện instructor hint cho survivor đang nhận damage từ làn khói độc.' },
   { cvar: 'l4d2_elite_si_smoker_toxic_gas_hint_color', type: 'text', label: 'Smoker Toxic Gas Hint Color', desc: 'Màu instructor hint của làn khói độc, định dạng: R G B.' },
   { cvar: 'l4d2_elite_si_smoker_toxic_gas_hint_interval', type: 'number', label: 'Smoker Toxic Gas Hint Interval', desc: 'Khoảng nghỉ tối thiểu giữa các instructor hint cho cùng một survivor.' },
@@ -614,6 +616,7 @@ const EliteSITypeSections = {
         'l4d2_elite_si_smoker_toxic_gas_cloud_duration',
         'l4d2_elite_si_smoker_toxic_gas_cloud_radius',
         'l4d2_elite_si_smoker_toxic_gas_damage_per_second',
+        'l4d2_elite_si_smoker_toxic_gas_damage_interval',
         'l4d2_elite_si_smoker_toxic_gas_hint_enable',
         'l4d2_elite_si_smoker_toxic_gas_hint_color',
         'l4d2_elite_si_smoker_toxic_gas_hint_interval'
