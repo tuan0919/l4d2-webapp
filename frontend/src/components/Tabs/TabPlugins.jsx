@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
-const TabPlugins = ({ setPluginCount }) => {
+const TabPlugins = ({ setPluginCount, addToast }) => {
   const [plugins, setPlugins] = useState([]);
   const [errors, setErrors] = useState([]);
   const [note, setNote] = useState('Click Refresh to fetch plugin list');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [reloading, setReloading] = useState(false);
 
   const fetchPlugins = async () => {
     setLoading(true);
@@ -39,11 +41,67 @@ const TabPlugins = ({ setPluginCount }) => {
     }
   };
 
+  const reloadPlugins = async () => {
+    setReloading(true);
+    setNote('Reloading plugins on server...');
+
+    try {
+      const response = await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: 'sm plugins refresh' })
+      });
+      const data = await response.json();
+
+      if (data?.error) {
+        addToast?.(data.error || 'Failed to reload plugins', 'error');
+        setNote(`Reload failed: ${data.error}`);
+        return;
+      }
+
+      addToast?.('Reloaded plugins successfully', 'success');
+      await fetchPlugins();
+    } catch {
+      addToast?.('Network error', 'error');
+      setNote('Reload failed: network error');
+    } finally {
+      setReloading(false);
+    }
+  };
+
+  const query = search.trim().toLowerCase();
+  const filteredPlugins = useMemo(() => {
+    if (!query) return plugins;
+    return plugins.filter((plugin) => (plugin.name || '').toLowerCase().includes(query));
+  }, [plugins, query]);
+
   return (
     <div className="plugins-panel">
       <div className="plugins-toolbar">
-        <div style={{ fontSize: 13, color: 'var(--muted)' }}>{loading ? 'Loading...' : note}</div>
-        <button className="btn btn-ghost" style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }} onClick={fetchPlugins}>
+        <div style={{ fontSize: 13, color: 'var(--muted)', flex: 1, minWidth: 200 }}>
+          {loading ? 'Loading...' : reloading ? 'Reloading...' : note}
+        </div>
+        <input
+          type="text"
+          className="cvars-search-input"
+          placeholder="Search plugins by name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button
+          className="btn btn-ghost"
+          style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }}
+          onClick={reloadPlugins}
+          disabled={loading || reloading}
+        >
+          ↻ Reload Plugins
+        </button>
+        <button
+          className="btn btn-ghost"
+          style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }}
+          onClick={fetchPlugins}
+          disabled={loading || reloading}
+        >
           ↻ Refresh
         </button>
       </div>
@@ -86,8 +144,13 @@ const TabPlugins = ({ setPluginCount }) => {
             <div className="big">🧩</div>
             <p>Click Refresh to load plugins from server</p>
           </div>
+        ) : !loading && filteredPlugins.length === 0 ? (
+          <div className="empty-state">
+            <div className="big">🔎</div>
+            <p>No plugins matched your search</p>
+          </div>
         ) : (
-          plugins.map((plugin) => (
+          filteredPlugins.map((plugin) => (
             <div className="plugin-item" key={`${plugin.index}-${plugin.name}`}>
               <div className="plugin-index">{plugin.index}</div>
               <div className="plugin-info">

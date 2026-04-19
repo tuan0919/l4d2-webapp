@@ -74,7 +74,7 @@ const App = () => {
 
           <div className="tab-content">
             {activeTab === 'console' && <TabConsole addToast={addToast} />}
-            {activeTab === 'plugins' && <TabPlugins setPluginCount={setPluginCount} />}
+            {activeTab === 'plugins' && <TabPlugins setPluginCount={setPluginCount} addToast={addToast} />}
             {activeTab === 'cvars' && <TabCvars addToast={addToast} />}
             {activeTab === 'addons' && <TabAddons addToast={addToast} />}
             {activeTab === 'main-configurations' && <TabMainConfigurations addToast={addToast} />}
