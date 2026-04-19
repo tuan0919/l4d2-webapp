@@ -237,7 +237,6 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_boomer_abnormal_subtype_chance: '1',
   l4d2_elite_si_core_boomer_leaker_subtype_chance: '1',
   l4d2_elite_si_core_hunter_target_switch_subtype_chance: '1',
-  l4d2_elite_si_core_hunter_heroic_subtype_chance: '1',
   l4d2_elite_si_core_hunter_abnormal_subtype_chance: '1',
   l4d2_elite_si_core_spitter_abnormal_subtype_chance: '1',
   l4d2_elite_si_core_spitter_ability_subtype_chance: '1',
@@ -266,11 +265,6 @@ const CvarDefaultValues = {
   l4d2_elite_si_hunter_target_switch_release_delay: '0.1',
   l4d2_elite_si_hunter_target_switch_retarget_range: '600.0',
   l4d2_elite_si_hunter_target_switch_leap_speed: '800.0',
-  l4d2_elite_si_hunter_heroic_enable: '1',
-  l4d2_elite_si_hunter_heroic_pipebomb_fuse: '3.0',
-  l4d2_elite_si_hunter_heroic_pipebomb_damage: '220.0',
-  l4d2_elite_si_hunter_heroic_pipebomb_radius: '320.0',
-  l4d2_elite_si_hunter_heroic_pipebomb_drop_offset: '28.0',
   l4d2_elite_si_hardsi_spitter_enable: '1',
   l4d2_elite_si_hardsi_spitter_bhop: '1',
   l4d2_elite_si_hardsi_jockey_enable: '1',
@@ -500,7 +494,6 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_boomer_leaker_subtype_chance', type: 'number', label: 'Boomer Leaker Weight', desc: 'Trọng số roll subtype Leaker của Boomer.' },
   { cvar: 'l4d2_elite_si_core_hunter_abnormal_subtype_chance', type: 'number', label: 'Hunter Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Hunter.' },
   { cvar: 'l4d2_elite_si_core_hunter_target_switch_subtype_chance', type: 'number', label: 'Hunter Target Switch Weight', desc: 'Trọng số roll subtype Target Switch của Hunter.' },
-  { cvar: 'l4d2_elite_si_core_hunter_heroic_subtype_chance', type: 'number', label: 'Hunter Heroic Weight', desc: 'Trọng số roll subtype Heroic của Hunter.' },
   { cvar: 'l4d2_elite_si_core_spitter_abnormal_subtype_chance', type: 'number', label: 'Spitter Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Spitter.' },
   { cvar: 'l4d2_elite_si_core_spitter_ability_subtype_chance', type: 'number', label: 'Spitter Strange Movement Weight', desc: 'Trọng số roll subtype Strange Movement của Spitter.' },
   { cvar: 'l4d2_elite_si_core_spitter_acid_pool_subtype_chance', type: 'number', label: 'Spitter Acid Pool Weight', desc: 'Trọng số roll subtype Acid Pool của Spitter.' },
@@ -531,11 +524,6 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_hunter_target_switch_release_delay', type: 'number', label: 'Hunter Target Switch Release Delay', desc: 'Độ trễ ngắn trước khi hunter tái bật pounce sang mục tiêu mới.' },
   { cvar: 'l4d2_elite_si_hunter_target_switch_retarget_range', type: 'number', label: 'Hunter Target Switch Retarget Range', desc: 'Tầm tìm survivor còn đứng để hunter chuyển mục tiêu.' },
   { cvar: 'l4d2_elite_si_hunter_target_switch_leap_speed', type: 'number', label: 'Hunter Target Switch Leap Speed', desc: 'Tốc độ phóng khi hunter chuyển sang mục tiêu mới.' },
-  { cvar: 'l4d2_elite_si_hunter_heroic_enable', type: 'toggle', label: 'Hunter Heroic Enable', desc: 'Bật/tắt chủng Heroic cho Hunter elite bot.' },
-  { cvar: 'l4d2_elite_si_hunter_heroic_pipebomb_fuse', type: 'number', label: 'Hunter Heroic Pipebomb Fuse', desc: 'Thời gian nổ của quả pipebomb Heroic Hunter sau khi được kích hoạt.' },
-  { cvar: 'l4d2_elite_si_hunter_heroic_pipebomb_damage', type: 'number', label: 'Hunter Heroic Pipebomb Damage', desc: 'Sát thương vụ nổ pipebomb của Heroic Hunter.' },
-  { cvar: 'l4d2_elite_si_hunter_heroic_pipebomb_radius', type: 'number', label: 'Hunter Heroic Pipebomb Radius', desc: 'Bán kính vụ nổ pipebomb của Heroic Hunter.' },
-  { cvar: 'l4d2_elite_si_hunter_heroic_pipebomb_drop_offset', type: 'number', label: 'Hunter Heroic Pipebomb Drop Offset', desc: 'Độ lệch vị trí khi Heroic Hunter làm rơi pipebomb xuống đất gần survivor bị pounce.' },
 
   { cvar: 'l4d2_elite_si_hardsi_spitter_enable', type: 'toggle', label: 'Spitter HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Spitter elite.' },
   { cvar: 'l4d2_elite_si_hardsi_spitter_bhop', type: 'toggle', label: 'Spitter HardSI Bhop', desc: 'Bật/tắt bhop pressure cho Spitter HardSI.' },
@@ -807,18 +795,6 @@ const EliteSITypeSections = {
         'l4d2_elite_si_hunter_target_switch_release_delay',
         'l4d2_elite_si_hunter_target_switch_retarget_range',
         'l4d2_elite_si_hunter_target_switch_leap_speed'
-      ]
-    },
-    {
-      id: 'hunter-heroic',
-      title: 'Hunter - Heroic',
-      cvars: [
-        'l4d2_elite_si_core_hunter_heroic_subtype_chance',
-        'l4d2_elite_si_hunter_heroic_enable',
-        'l4d2_elite_si_hunter_heroic_pipebomb_fuse',
-        'l4d2_elite_si_hunter_heroic_pipebomb_damage',
-        'l4d2_elite_si_hunter_heroic_pipebomb_radius',
-        'l4d2_elite_si_hunter_heroic_pipebomb_drop_offset'
       ]
     }
   ],
