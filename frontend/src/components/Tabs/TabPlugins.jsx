@@ -6,7 +6,7 @@ const TabPlugins = ({ setPluginCount, addToast }) => {
   const [note, setNote] = useState('Click Refresh to fetch plugin list');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
-  const [reloading, setReloading] = useState(false);
+  const [reloadingPluginKey, setReloadingPluginKey] = useState(null);
 
   const fetchPlugins = async () => {
     setLoading(true);
@@ -41,31 +41,37 @@ const TabPlugins = ({ setPluginCount, addToast }) => {
     }
   };
 
-  const reloadPlugins = async () => {
-    setReloading(true);
-    setNote('Reloading plugins on server...');
+  const reloadPlugin = async (plugin) => {
+    const pluginIndex = String(plugin?.index || '').trim();
+    if (!/^\d+$/.test(pluginIndex)) {
+      addToast?.(`Cannot reload ${plugin?.name || 'plugin'}: invalid plugin index`, 'error');
+      return;
+    }
+
+    setReloadingPluginKey(`${plugin.index}-${plugin.name}`);
+    setNote(`Reloading ${plugin.name}...`);
 
     try {
       const response = await fetch('/api/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: 'sm plugins refresh' })
+        body: JSON.stringify({ command: `sm plugins reload ${pluginIndex}` })
       });
       const data = await response.json();
 
       if (data?.error) {
-        addToast?.(data.error || 'Failed to reload plugins', 'error');
+        addToast?.(data.error || `Failed to reload ${plugin.name}`, 'error');
         setNote(`Reload failed: ${data.error}`);
         return;
       }
 
-      addToast?.('Reloaded plugins successfully', 'success');
+      addToast?.(`Reloaded ${plugin.name}`, 'success');
       await fetchPlugins();
     } catch {
       addToast?.('Network error', 'error');
       setNote('Reload failed: network error');
     } finally {
-      setReloading(false);
+      setReloadingPluginKey(null);
     }
   };
 
@@ -79,7 +85,7 @@ const TabPlugins = ({ setPluginCount, addToast }) => {
     <div className="plugins-panel">
       <div className="plugins-toolbar">
         <div style={{ fontSize: 13, color: 'var(--muted)', flex: 1, minWidth: 200 }}>
-          {loading ? 'Loading...' : reloading ? 'Reloading...' : note}
+          {loading ? 'Loading...' : reloadingPluginKey ? 'Reloading...' : note}
         </div>
         <input
           type="text"
@@ -91,16 +97,8 @@ const TabPlugins = ({ setPluginCount, addToast }) => {
         <button
           className="btn btn-ghost"
           style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }}
-          onClick={reloadPlugins}
-          disabled={loading || reloading}
-        >
-          ↻ Reload Plugins
-        </button>
-        <button
-          className="btn btn-ghost"
-          style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }}
           onClick={fetchPlugins}
-          disabled={loading || reloading}
+          disabled={loading || !!reloadingPluginKey}
         >
           ↻ Refresh
         </button>
@@ -150,16 +148,31 @@ const TabPlugins = ({ setPluginCount, addToast }) => {
             <p>No plugins matched your search</p>
           </div>
         ) : (
-          filteredPlugins.map((plugin) => (
-            <div className="plugin-item" key={`${plugin.index}-${plugin.name}`}>
+          filteredPlugins.map((plugin) => {
+            const pluginKey = `${plugin.index}-${plugin.name}`;
+            const isReloading = reloadingPluginKey === pluginKey;
+            const canReload = /^\d+$/.test(String(plugin.index || '').trim());
+
+            return (
+            <div className="plugin-item" key={pluginKey}>
               <div className="plugin-index">{plugin.index}</div>
               <div className="plugin-info">
                 <div className="plugin-name">{plugin.name}</div>
                 <div className="plugin-meta">by {plugin.author}</div>
               </div>
               <span className="plugin-version">v{plugin.version}</span>
+              <button
+                className="btn btn-ghost"
+                style={{ width: 'auto', margin: 0, padding: '6px 12px', fontSize: 12 }}
+                onClick={() => reloadPlugin(plugin)}
+                disabled={loading || isReloading || !canReload}
+                title={canReload ? `Reload ${plugin.name}` : 'Plugin này không có index hợp lệ để reload'}
+              >
+                {isReloading ? 'Reloading...' : '↻ Reload'}
+              </button>
             </div>
-          ))
+          );
+          })
         )}
       </div>
     </div>
