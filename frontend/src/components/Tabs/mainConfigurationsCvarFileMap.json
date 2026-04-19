@@ -212,6 +212,7 @@
   "l4d2_elite_si_hunter_heroic_pipebomb_damage": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
   "l4d2_elite_si_hunter_heroic_pipebomb_radius": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
   "l4d2_elite_si_hunter_heroic_pipebomb_drop_offset": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
+  "l4d2_elite_si_hunter_heroic_visual_enable": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
   "l4d2_elite_si_boomer_flashbang_enable": "cfg/sourcemod/l4d2_elite_si_boomer_flashbang.cfg",
   "l4d2_elite_si_boomer_flashbang_sight_angle": "cfg/sourcemod/l4d2_elite_si_boomer_flashbang.cfg",
   "l4d2_elite_si_boomer_flashbang_close_range": "cfg/sourcemod/l4d2_elite_si_boomer_flashbang.cfg",
