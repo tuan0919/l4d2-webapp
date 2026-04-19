@@ -104,6 +104,7 @@
   "l4d2_elite_si_core_spawn_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_spawn_cooldown": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_hp_multiplier": "cfg/sourcemod/l4d2_elite_si_core.cfg",
+  "l4d2_elite_si_core_smoker_abnormal_subtype_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_smoker_movement_subtype_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_smoker_pull_weapon_drop_subtype_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
   "l4d2_elite_si_core_smoker_toxic_gas_subtype_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
