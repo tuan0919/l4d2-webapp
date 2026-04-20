@@ -515,6 +515,7 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_charger_abnormal_subtype_chance', type: 'number', label: 'Charger Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Charger.' },
   { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'Charger Steering Weight', desc: 'Trọng số roll subtype ChargerSteering của Charger.' },
   { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'Charger Action Weight', desc: 'Trọng số roll subtype ChargerAction của Charger.' },
+  { cvar: 'l4d2_elite_si_core_charger_unstoppable_subtype_chance', type: 'number', label: 'Charger Unstoppable Weight', desc: 'Trọng số roll subtype Unstoppable của Charger.' },
   { cvar: 'l4d2_elite_si_core_tank_abnormal_subtype_chance', type: 'number', label: 'Tank Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Tank.' },
   { cvar: 'l4d2_elite_si_core_tank_movement_subtype_chance', type: 'number', label: 'Tank Strange Movement Weight', desc: 'Trọng số roll subtype Strange Movement của Tank.' },
 
