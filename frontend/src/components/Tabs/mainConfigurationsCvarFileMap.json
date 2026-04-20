@@ -295,5 +295,10 @@
   "l4d_incapped_weapons_pistol": "cfg/sourcemod/l4d_incapped_weapons.cfg",
   "l4d_incapped_weapons_restrict": "cfg/sourcemod/l4d_incapped_weapons.cfg",
   "l4d_incapped_weapons_revive": "cfg/sourcemod/l4d_incapped_weapons.cfg",
-  "l4d_incapped_weapons_throw": "cfg/sourcemod/l4d_incapped_weapons.cfg"
+  "l4d_incapped_weapons_throw": "cfg/sourcemod/l4d_incapped_weapons.cfg",
+  "l4d2_elite_si_core_hunter_heroic_subtype_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
+  "l4d2_elite_si_hunter_heroic_enable": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
+  "l4d2_elite_si_hunter_heroic_explode_time": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
+  "l4d2_elite_si_hunter_heroic_damage": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
+  "l4d2_elite_si_hunter_heroic_radius": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg"
 }
