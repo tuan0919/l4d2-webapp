@@ -300,5 +300,11 @@
   "l4d2_elite_si_hunter_heroic_enable": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
   "l4d2_elite_si_hunter_heroic_explode_time": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
   "l4d2_elite_si_hunter_heroic_damage": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
-  "l4d2_elite_si_hunter_heroic_radius": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg"
+  "l4d2_elite_si_hunter_heroic_radius": "cfg/sourcemod/l4d2_elite_si_hunter_heroic.cfg",
+  "l4d2_elite_si_core_charger_unstoppable_subtype_chance": "cfg/sourcemod/l4d2_elite_si_core.cfg",
+  "l4d2_elite_si_charger_unstoppable_enable": "cfg/sourcemod/l4d2_elite_si_charger_unstoppable.cfg",
+  "l4d2_elite_si_charger_unstoppable_carry_duration": "cfg/sourcemod/l4d2_elite_si_charger_unstoppable.cfg",
+  "l4d2_elite_si_charger_unstoppable_charge_cooldown": "cfg/sourcemod/l4d2_elite_si_charger_unstoppable.cfg",
+  "l4d2_elite_si_charger_unstoppable_knockback_force": "cfg/sourcemod/l4d2_elite_si_charger_unstoppable.cfg",
+  "l4d2_elite_si_charger_unstoppable_knockback_up_force": "cfg/sourcemod/l4d2_elite_si_charger_unstoppable.cfg"
 }

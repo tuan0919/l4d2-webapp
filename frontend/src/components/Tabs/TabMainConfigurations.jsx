@@ -243,13 +243,20 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_spitter_ability_subtype_chance: '1',
   l4d2_elite_si_core_spitter_acid_pool_subtype_chance: '1',
   l4d2_elite_si_core_spitter_sneaky_subtype_chance: '1',
-  l4d2_elite_si_core_jockey_abnormal_subtype_chance: '1',
   l4d2_elite_si_core_charger_abnormal_subtype_chance: '1',
+  l4d2_elite_si_core_charger_action_subtype_chance: '1',
+  l4d2_elite_si_core_charger_steering_subtype_chance: '1',
+  l4d2_elite_si_core_charger_unstoppable_subtype_chance: '1',
   l4d2_elite_si_core_tank_movement_subtype_chance: '1',
   l4d2_elite_si_core_tank_abnormal_subtype_chance: '1',
   l4d2_elite_si_core_boomer_flashbang_subtype_chance: '1',
   l4d2_elite_si_core_smoker_force_subtype: '0',
   l4d2_elite_si_core_boomer_force_subtype: '0',
+  l4d2_elite_si_charger_unstoppable_enable: '1',
+  l4d2_elite_si_charger_unstoppable_carry_duration: '1.2',
+  l4d2_elite_si_charger_unstoppable_charge_cooldown: '2.0',
+  l4d2_elite_si_charger_unstoppable_knockback_force: '300.0',
+  l4d2_elite_si_charger_unstoppable_knockback_up_force: '350.0',
   l4d2_elite_si_hardsi_director_enable: '1',
   l4d2_elite_si_hardsi_director_assault_interval: '2.0',
   l4d2_elite_si_hardsi_smoker_enable: '1',
@@ -547,6 +554,12 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_hardsi_charger_charge_distance', type: 'number', label: 'Charger HardSI Charge Distance', desc: 'Khoảng cách ưu tiên chuẩn bị charge.' },
   { cvar: 'l4d2_elite_si_hardsi_charger_health_threshold', type: 'number', label: 'Charger HardSI Health Threshold', desc: 'Ngưỡng HP ép charge.' },
   { cvar: 'l4d2_elite_si_hardsi_charger_aim_offset_sensitivity', type: 'number', label: 'Charger HardSI Aim Offset', desc: 'Độ nhạy retarget khi mục tiêu đang nhìn charger.' },
+
+  { cvar: 'l4d2_elite_si_charger_unstoppable_enable', type: 'toggle', label: 'Charger Unstoppable Enable', desc: 'Bật/tắt chủng Unstoppable cho Charger elite bot.' },
+  { cvar: 'l4d2_elite_si_charger_unstoppable_carry_duration', type: 'number', label: 'Charger Unstoppable Carry Duration', desc: 'Thời gian thả giữa chừng khi carry.' },
+  { cvar: 'l4d2_elite_si_charger_unstoppable_charge_cooldown', type: 'number', label: 'Charger Unstoppable Charge Cooldown', desc: 'Cooldown ngắn tái tạo charge.' },
+  { cvar: 'l4d2_elite_si_charger_unstoppable_knockback_force', type: 'number', label: 'Charger Unstoppable Knockback Force', desc: 'Lực hất ngang.' },
+  { cvar: 'l4d2_elite_si_charger_unstoppable_knockback_up_force', type: 'number', label: 'Charger Unstoppable Knockback Up Force', desc: 'Lực tung lên trời.' },
 
   { cvar: 'l4d2_elite_si_hardsi_tank_enable', type: 'toggle', label: 'Tank HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Tank elite.' },
   { cvar: 'l4d2_elite_si_hardsi_tank_bhop', type: 'toggle', label: 'Tank HardSI Bhop', desc: 'Bật/tắt bhop pressure cho Tank HardSI.' },
@@ -902,6 +915,18 @@ const EliteSITypeSections = {
       cvars: [
         'l4d2_elite_si_core_charger_steering_subtype_chance',
         'l4d2_elite_si_core_charger_action_subtype_chance'
+      ]
+    },
+    {
+      id: 'charger-unstoppable',
+      title: 'Charger - Unstoppable',
+      cvars: [
+        'l4d2_elite_si_core_charger_unstoppable_subtype_chance',
+        'l4d2_elite_si_charger_unstoppable_enable',
+        'l4d2_elite_si_charger_unstoppable_carry_duration',
+        'l4d2_elite_si_charger_unstoppable_charge_cooldown',
+        'l4d2_elite_si_charger_unstoppable_knockback_force',
+        'l4d2_elite_si_charger_unstoppable_knockback_up_force'
       ]
     }
   ],
