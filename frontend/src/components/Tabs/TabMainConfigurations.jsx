@@ -243,6 +243,9 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_spitter_ability_subtype_chance: '1',
   l4d2_elite_si_core_spitter_acid_pool_subtype_chance: '1',
   l4d2_elite_si_core_spitter_sneaky_subtype_chance: '1',
+  l4d2_elite_si_core_jockey_abnormal_subtype_chance: '1',
+  l4d2_elite_si_core_jockey_jumper_subtype_chance: '1',
+  l4d2_elite_si_core_jockey_heroic_subtype_chance: '1',
   l4d2_elite_si_core_charger_abnormal_subtype_chance: '1',
   l4d2_elite_si_core_charger_action_subtype_chance: '1',
   l4d2_elite_si_core_charger_steering_subtype_chance: '1',
@@ -281,6 +284,15 @@ const CvarDefaultValues = {
   l4d2_elite_si_hardsi_spitter_bhop: '1',
   l4d2_elite_si_hardsi_jockey_enable: '1',
   l4d2_elite_si_hardsi_jockey_hop_distance: '500',
+  l4d2_elite_si_jockey_jumper_enable: '1',
+  l4d2_elite_si_jockey_jumper_force: '450.0',
+  l4d2_elite_si_jockey_jumper_time_min: '0.15',
+  l4d2_elite_si_jockey_jumper_time_max: '0.45',
+  l4d2_elite_si_jockey_heroic_enable: '1',
+  l4d2_elite_si_jockey_heroic_explode_time: '6.0',
+  l4d2_elite_si_jockey_heroic_damage: '800.0',
+  l4d2_elite_si_jockey_heroic_radius: '400.0',
+  l4d2_elite_si_jockey_heroic_survivor_damage: '800.0',
   l4d2_elite_si_hardsi_charger_enable: '1',
   l4d2_elite_si_hardsi_charger_bhop: '1',
   l4d2_elite_si_hardsi_charger_charge_distance: '300',
@@ -512,6 +524,8 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_core_spitter_acid_pool_subtype_chance', type: 'number', label: 'Spitter Acid Pool Weight', desc: 'Trọng số roll subtype Acid Pool của Spitter.' },
   { cvar: 'l4d2_elite_si_core_spitter_sneaky_subtype_chance', type: 'number', label: 'Spitter Sneaky Weight', desc: 'Trọng số roll subtype Sneaky của Spitter.' },
   { cvar: 'l4d2_elite_si_core_jockey_abnormal_subtype_chance', type: 'number', label: 'Jockey Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Jockey.' },
+  { cvar: 'l4d2_elite_si_core_jockey_jumper_subtype_chance', type: 'number', label: 'Jockey Jumper Weight', desc: 'Trọng số roll subtype Jumper của Jockey.' },
+  { cvar: 'l4d2_elite_si_core_jockey_heroic_subtype_chance', type: 'number', label: 'Jockey Heroic Weight', desc: 'Trọng số roll subtype Heroic của Jockey.' },
   { cvar: 'l4d2_elite_si_core_charger_abnormal_subtype_chance', type: 'number', label: 'Charger Abnormal Weight', desc: 'Trọng số roll subtype Abnormal Behavior của Charger.' },
   { cvar: 'l4d2_elite_si_core_charger_steering_subtype_chance', type: 'number', label: 'Charger Steering Weight', desc: 'Trọng số roll subtype ChargerSteering của Charger.' },
   { cvar: 'l4d2_elite_si_core_charger_action_subtype_chance', type: 'number', label: 'Charger Action Weight', desc: 'Trọng số roll subtype ChargerAction của Charger.' },
@@ -549,6 +563,17 @@ const EliteSIRewardConfig = [
 
   { cvar: 'l4d2_elite_si_hardsi_jockey_enable', type: 'toggle', label: 'Jockey HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Jockey elite.' },
   { cvar: 'l4d2_elite_si_hardsi_jockey_hop_distance', type: 'number', label: 'Jockey HardSI Hop Distance', desc: 'Khoảng cách kích hoạt hop pressure.' },
+
+  { cvar: 'l4d2_elite_si_jockey_jumper_enable', type: 'toggle', label: 'Jockey Jumper Enable', desc: 'Bật/tắt chủng Jumper cho Jockey elite bot.' },
+  { cvar: 'l4d2_elite_si_jockey_jumper_force', type: 'number', label: 'Jockey Jumper Force', desc: 'Lực đẩy thẳng đứng áp lên survivor khi Jockey Jumper đang ride.' },
+  { cvar: 'l4d2_elite_si_jockey_jumper_time_min', type: 'number', label: 'Jockey Jumper Min Delay', desc: 'Thời gian tối thiểu trước lần nhảy tiếp theo.' },
+  { cvar: 'l4d2_elite_si_jockey_jumper_time_max', type: 'number', label: 'Jockey Jumper Max Delay', desc: 'Thời gian tối đa trước lần nhảy tiếp theo.' },
+
+  { cvar: 'l4d2_elite_si_jockey_heroic_enable', type: 'toggle', label: 'Jockey Heroic Enable', desc: 'Bật/tắt chủng Heroic cho Jockey elite bot.' },
+  { cvar: 'l4d2_elite_si_jockey_heroic_explode_time', type: 'number', label: 'Jockey Heroic Explode Time', desc: 'Thời gian đếm ngược pipebomb từ lúc Jockey Heroic bắt survivor.' },
+  { cvar: 'l4d2_elite_si_jockey_heroic_damage', type: 'number', label: 'Jockey Heroic Damage', desc: 'Sát thương engine đặt lên pipebomb của Jockey Heroic.' },
+  { cvar: 'l4d2_elite_si_jockey_heroic_radius', type: 'number', label: 'Jockey Heroic Radius', desc: 'Bán kính gây sát thương của pipebomb Jockey Heroic.' },
+  { cvar: 'l4d2_elite_si_jockey_heroic_survivor_damage', type: 'number', label: 'Jockey Heroic Survivor Damage', desc: 'Sát thương trực tiếp lên survivor trong bán kính khi pipebomb nổ.' },
 
   { cvar: 'l4d2_elite_si_hardsi_charger_enable', type: 'toggle', label: 'Charger HardSI Enable', desc: 'Bật/tắt Abnormal Behavior cho Charger elite.' },
   { cvar: 'l4d2_elite_si_hardsi_charger_bhop', type: 'toggle', label: 'Charger HardSI Bhop', desc: 'Bật/tắt bhop pressure cho Charger HardSI.' },
@@ -894,6 +919,29 @@ const EliteSITypeSections = {
         'l4d2_elite_si_core_jockey_abnormal_subtype_chance',
         'l4d2_elite_si_hardsi_jockey_enable',
         'l4d2_elite_si_hardsi_jockey_hop_distance'
+      ]
+    },
+    {
+      id: 'jockey-jumper',
+      title: 'Jockey - Jumper',
+      cvars: [
+        'l4d2_elite_si_core_jockey_jumper_subtype_chance',
+        'l4d2_elite_si_jockey_jumper_enable',
+        'l4d2_elite_si_jockey_jumper_force',
+        'l4d2_elite_si_jockey_jumper_time_min',
+        'l4d2_elite_si_jockey_jumper_time_max'
+      ]
+    },
+    {
+      id: 'jockey-heroic',
+      title: 'Jockey - Heroic',
+      cvars: [
+        'l4d2_elite_si_core_jockey_heroic_subtype_chance',
+        'l4d2_elite_si_jockey_heroic_enable',
+        'l4d2_elite_si_jockey_heroic_explode_time',
+        'l4d2_elite_si_jockey_heroic_damage',
+        'l4d2_elite_si_jockey_heroic_radius',
+        'l4d2_elite_si_jockey_heroic_survivor_damage'
       ]
     }
   ],
