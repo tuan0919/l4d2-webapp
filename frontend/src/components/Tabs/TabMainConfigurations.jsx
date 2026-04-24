@@ -571,7 +571,7 @@ const EliteSIRewardConfig = [
 
   { cvar: 'l4d2_elite_si_jockey_heroic_enable', type: 'toggle', label: 'Jockey Heroic Enable', desc: 'Bật/tắt chủng Heroic cho Jockey elite bot.' },
   { cvar: 'l4d2_elite_si_jockey_heroic_explode_time', type: 'number', label: 'Jockey Heroic Explode Time', desc: 'Thời gian đếm ngược pipebomb từ lúc Jockey Heroic bắt survivor.' },
-  { cvar: 'l4d2_elite_si_jockey_heroic_damage', type: 'number', label: 'Jockey Heroic Damage', desc: 'Sát thương engine đặt lên pipebomb của Jockey Heroic.' },
+  { cvar: 'l4d2_elite_si_jockey_heroic_damage', type: 'number', label: 'Jockey Heroic Damage', desc: 'Sát thương fallback của pipebomb Jockey Heroic nếu Survivor Damage bị tắt.' },
   { cvar: 'l4d2_elite_si_jockey_heroic_radius', type: 'number', label: 'Jockey Heroic Radius', desc: 'Bán kính gây sát thương của pipebomb Jockey Heroic.' },
   { cvar: 'l4d2_elite_si_jockey_heroic_survivor_damage', type: 'number', label: 'Jockey Heroic Survivor Damage', desc: 'Sát thương trực tiếp lên survivor trong bán kính khi pipebomb nổ.' },
 
