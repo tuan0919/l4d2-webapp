@@ -252,6 +252,19 @@ const CvarDefaultValues = {
   l4d2_elite_si_core_charger_unstoppable_subtype_chance: '1',
   l4d2_elite_si_core_tank_movement_subtype_chance: '1',
   l4d2_elite_si_core_tank_abnormal_subtype_chance: '1',
+  l4d2_elite_si_core_tank_ignitor_subtype_chance: '1',
+  l4d2_elite_si_tank_ignitor_enable: '1',
+  l4d2_elite_si_tank_ignitor_fire_duration: '10.0',
+  l4d2_elite_si_tank_ignitor_rock_damage_bonus: '15.0',
+  l4d2_elite_si_core_tank_explosive_subtype_chance: '1',
+  l4d2_elite_si_tank_explosive_enable: '1',
+  l4d2_elite_si_tank_explosive_damage: '30.0',
+  l4d2_elite_si_tank_explosive_radius: '350.0',
+  l4d2_elite_si_tank_explosive_shake_amplitude: '16.0',
+  l4d2_elite_si_tank_explosive_shake_frequency: '1.5',
+  l4d2_elite_si_tank_explosive_shake_duration: '1.0',
+  l4d2_elite_si_tank_explosive_shake_radius: '600.0',
+  l4d2_elite_si_tank_explosive_direct_hit_bonus: '15.0',
   l4d2_elite_si_core_boomer_flashbang_subtype_chance: '1',
   l4d2_elite_si_core_smoker_force_subtype: '0',
   l4d2_elite_si_core_boomer_force_subtype: '0',
@@ -643,6 +656,21 @@ const EliteSIRewardConfig = [
   { cvar: 'l4d2_elite_si_infected_movement_tank_delay', type: 'number', label: 'Tank Movement Delay', desc: 'Độ trễ trước khi mở movement cho Tank.' },
   { cvar: 'l4d2_elite_si_infected_movement_tank_speed', type: 'number', label: 'Tank Movement Speed', desc: 'Tốc độ Tank trong cửa sổ Strange Movement.' },
 
+  { cvar: 'l4d2_elite_si_core_tank_ignitor_subtype_chance', type: 'number', label: 'Tank Ignitor Weight', desc: 'Trọng số roll subtype Ignitor của Tank sau khi đã spawn thành Elite.' },
+  { cvar: 'l4d2_elite_si_tank_ignitor_enable', type: 'toggle', label: 'Tank Ignitor Enable', desc: 'Bật/tắt chủng Ignitor cho Tank elite bot. Tank luôn bốc cháy, miễn nhiễm lửa, ném burning rock tạo bãi lửa khi va chạm.' },
+  { cvar: 'l4d2_elite_si_tank_ignitor_fire_duration', type: 'number', label: 'Tank Ignitor Fire Duration', desc: 'Thời gian tồn tại của bãi lửa (inferno) tạo ra khi burning rock va chạm.' },
+  { cvar: 'l4d2_elite_si_tank_ignitor_rock_damage_bonus', type: 'number', label: 'Tank Ignitor Rock Damage Bonus (%)', desc: 'Phần trăm damage bonus thêm khi burning rock trúng survivor.' },
+
+  { cvar: 'l4d2_elite_si_core_tank_explosive_subtype_chance', type: 'number', label: 'Tank Explosive Weight', desc: 'Trọng số roll subtype Explosive của Tank sau khi đã spawn thành Elite.' },
+  { cvar: 'l4d2_elite_si_tank_explosive_enable', type: 'toggle', label: 'Tank Explosive Enable', desc: 'Bật/tắt chủng Explosive cho Tank elite bot. Rock ném ra sẽ nổ khi va chạm, gây AOE damage và rung màn hình.' },
+  { cvar: 'l4d2_elite_si_tank_explosive_damage', type: 'number', label: 'Tank Explosive AOE Damage', desc: 'Damage AOE của vụ nổ khi rock va chạm (scale theo khoảng cách).' },
+  { cvar: 'l4d2_elite_si_tank_explosive_radius', type: 'number', label: 'Tank Explosive Radius', desc: 'Bán kính vụ nổ gây damage.' },
+  { cvar: 'l4d2_elite_si_tank_explosive_shake_amplitude', type: 'number', label: 'Tank Explosive Shake Amplitude', desc: 'Cường độ rung màn hình khi nổ.' },
+  { cvar: 'l4d2_elite_si_tank_explosive_shake_frequency', type: 'number', label: 'Tank Explosive Shake Frequency', desc: 'Tần số rung màn hình.' },
+  { cvar: 'l4d2_elite_si_tank_explosive_shake_duration', type: 'number', label: 'Tank Explosive Shake Duration', desc: 'Thời gian rung màn hình (giây).' },
+  { cvar: 'l4d2_elite_si_tank_explosive_shake_radius', type: 'number', label: 'Tank Explosive Shake Radius', desc: 'Bán kính ảnh hưởng của hiệu ứng rung màn hình.' },
+  { cvar: 'l4d2_elite_si_tank_explosive_direct_hit_bonus', type: 'number', label: 'Tank Explosive Direct Hit Bonus', desc: 'Damage bonus thêm khi rock trúng trực tiếp survivor (nổ ngay dưới chân).' },
+
   { cvar: 'l4d2_elite_si_core_spawn_announce', type: 'toggle', label: 'Chat Spawn Announce', desc: 'Bật/tắt thông báo Elite spawn trong chat (không đẩy HUD script).' },
   { cvar: 'l4d2_redannounce_announce_elite_si_kill', type: 'toggle', label: 'Elite Type In Kill Message', desc: 'Hiện tên loại elite cụ thể trong kill/incap message thay vì chỉ "Elite SI".' },
   { cvar: 'l4d2_elite_si_core_smoker_force_subtype', type: 'number', label: 'Force Smoker Subtype (test)', desc: '0=random, 1 ép Abnormal Behavior, 2 ép Strange Movement, 28 ép Pull Weapon Drop, 29 ép Toxic Gas, 30 ép Ignitor để test.' },
@@ -1010,6 +1038,31 @@ const EliteSITypeSections = {
         'l4d2_elite_si_infected_movement_tank_enable',
         'l4d2_elite_si_infected_movement_tank_delay',
         'l4d2_elite_si_infected_movement_tank_speed'
+      ]
+    },
+    {
+      id: 'tank-ignitor',
+      title: 'Tank - Ignitor',
+      cvars: [
+        'l4d2_elite_si_core_tank_ignitor_subtype_chance',
+        'l4d2_elite_si_tank_ignitor_enable',
+        'l4d2_elite_si_tank_ignitor_fire_duration',
+        'l4d2_elite_si_tank_ignitor_rock_damage_bonus'
+      ]
+    },
+    {
+      id: 'tank-explosive',
+      title: 'Tank - Explosive',
+      cvars: [
+        'l4d2_elite_si_core_tank_explosive_subtype_chance',
+        'l4d2_elite_si_tank_explosive_enable',
+        'l4d2_elite_si_tank_explosive_damage',
+        'l4d2_elite_si_tank_explosive_radius',
+        'l4d2_elite_si_tank_explosive_shake_amplitude',
+        'l4d2_elite_si_tank_explosive_shake_frequency',
+        'l4d2_elite_si_tank_explosive_shake_duration',
+        'l4d2_elite_si_tank_explosive_shake_radius',
+        'l4d2_elite_si_tank_explosive_direct_hit_bonus'
       ]
     }
   ]
