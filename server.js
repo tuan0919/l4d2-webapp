@@ -885,7 +885,7 @@ async function fetchCollectionDetails(ids) {
 // Recursively resolve workshop IDs: handles collections, dependencies up to 3 levels deep
 async function resolveAllWorkshopIds(rootIds, onStatus) {
   const visited = new Set();
-  const result = []; // [{ id, title }]
+  const result = []; // [{ id, title, fileSize }]
 
   async function resolve(ids, depth) {
     if (depth > 3) return;
@@ -901,7 +901,7 @@ async function resolveAllWorkshopIds(rootIds, onStatus) {
     } catch(e) {
       if (onStatus) onStatus(`[Warning] Steam API unavailable (${e.message}). Proceeding with original IDs.`);
       toFetch.forEach(id => {
-        if (!result.find(r => r.id === id)) result.push({ id, title: `Workshop Item ${id}` });
+        if (!result.find(r => r.id === id)) result.push({ id, title: `Workshop Item ${id}`, fileSize: null });
       });
       return;
     }
@@ -910,6 +910,7 @@ async function resolveAllWorkshopIds(rootIds, onStatus) {
     for (const detail of details) {
       const id = String(detail.publishedfileid);
       const title = detail.title || `Workshop Item ${id}`;
+      const fileSize = Number(detail.file_size || 0) || null;
       const isCollection = detail.file_type === 2;
 
       if (isCollection) {
@@ -925,7 +926,7 @@ async function resolveAllWorkshopIds(rootIds, onStatus) {
           if (onStatus) onStatus(`[Warning] Could not expand collection "${title}": ${e.message}`);
         }
       } else {
-        if (!result.find(r => r.id === id)) result.push({ id, title });
+        if (!result.find(r => r.id === id)) result.push({ id, title, fileSize });
         const children = (detail.children || []).map(c => String(c.publishedfileid));
         if (children.length > 0) {
           if (onStatus) onStatus(`"${title}" has ${children.length} required item(s) (dependencies).`);
@@ -988,6 +989,22 @@ function buildAddonDisplayName(filename, meta, workshopId) {
   if (title) return title;
   if (workshopId) return `Workshop Item ${workshopId}`;
   return filename;
+}
+
+function getDirectorySize(dir) {
+  let total = 0;
+  try {
+    if (!fs.existsSync(dir)) return 0;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      try {
+        if (entry.isDirectory()) total += getDirectorySize(fullPath);
+        else if (entry.isFile()) total += fs.statSync(fullPath).size;
+      } catch(e) {}
+    }
+  } catch(e) {}
+  return total;
 }
 
 const DATA_ROOT_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data');
@@ -2234,9 +2251,44 @@ app.post('/api/workshop', async (req, res) => {
     }
 
     const item = items[index];
-    sendEvent('item', { index, total: items.length, id: item.id, title: item.title });
+    const searchPath = `/root/Steam/steamapps/workshop/content/550/${item.id}`;
+    const downloadPaths = [
+      searchPath,
+      `/root/Steam/steamapps/workshop/downloads/550/${item.id}`,
+      `/root/.steam/steam/steamapps/workshop/downloads/550/${item.id}`,
+      `/root/.steam/steam/steamapps/workshop/content/550/${item.id}`
+    ];
+    const itemFileSize = Number(item.fileSize || 0) || 0;
+    let lastDownloadPercent = -1;
+    let hasReportedDownload = false;
+    let steamCmdFailedToStart = false;
+    const getWorkshopDownloadBytes = () => Math.max(...downloadPaths.map(getDirectorySize));
+
+    sendEvent('item', { index, total: items.length, id: item.id, title: item.title, fileSize: itemFileSize || null });
     sendEvent('status', { message: `[${index + 1}/${items.length}] Downloading "${item.title}" (${item.id})...` });
     sendEvent('progress', { percent: 0, itemIndex: index, total: items.length });
+
+    const downloadProgressTimer = setInterval(() => {
+      if (itemFileSize <= 0) return;
+      const downloadedBytes = getWorkshopDownloadBytes();
+      if (downloadedBytes <= 0) return;
+      const reportedBytes = Math.min(downloadedBytes, itemFileSize);
+      const percent = Math.min(99, (reportedBytes / itemFileSize) * 100);
+      const roundedPercent = Math.floor(percent * 10) / 10;
+      if (roundedPercent <= lastDownloadPercent) return;
+
+      lastDownloadPercent = roundedPercent;
+      hasReportedDownload = true;
+      sendEvent('progress', {
+        percent: roundedPercent,
+        itemIndex: index,
+        total: items.length,
+        phase: 'download',
+        downloadedBytes: reportedBytes,
+        totalBytes: itemFileSize,
+        message: `Downloading "${item.title}"`
+      });
+    }, 1000);
 
     const steamCmdProcess = spawn('/root/steamcmd.sh', [
       '+login', 'anonymous',
@@ -2246,28 +2298,46 @@ app.post('/api/workshop', async (req, res) => {
 
     steamCmdProcess.stdout.on('data', (data) => {
       const output = data.toString();
-      const progressMatch = output.match(/progress:\s*([0-9.]+)/);
-      if (progressMatch) {
-        sendEvent('progress', { percent: parseFloat(progressMatch[1]), itemIndex: index, total: items.length });
-      }
-      if (output.toLowerCase().includes('success') || output.toLowerCase().includes('download')) {
-        sendEvent('status', { log: output.trim() });
+      const lowerOutput = output.toLowerCase();
+      if (!hasReportedDownload && (lowerOutput.includes('update complete') || lowerOutput.includes('download complete'))) {
+        sendEvent('status', { message: `SteamCMD prepared "${item.title}". Waiting for workshop files...` });
       }
     });
 
     steamCmdProcess.stderr.on('data', (data) => {
       const out = data.toString().trim();
-      if (out) sendEvent('status', { log: `[stderr] ${out}` });
+      if (out && out.toLowerCase().includes('error')) {
+        sendEvent('status', { message: `SteamCMD reported a warning while downloading "${item.title}".` });
+      }
+    });
+
+    steamCmdProcess.on('error', (error) => {
+      steamCmdFailedToStart = true;
+      clearInterval(downloadProgressTimer);
+      sendEvent('status', { message: `[Warning] Could not start SteamCMD for "${item.title}": ${error.message}` });
+      downloadItem(index + 1);
     });
 
     steamCmdProcess.on('close', (code) => {
+      clearInterval(downloadProgressTimer);
+      if (steamCmdFailedToStart) return;
       if (code !== 0) {
         sendEvent('status', { message: `[Warning] "${item.title}" — SteamCMD exited with code ${code}, skipping...` });
         downloadItem(index + 1);
         return;
       }
 
-      const searchPath = `/root/Steam/steamapps/workshop/content/550/${item.id}`;
+      sendEvent('progress', {
+        percent: 100,
+        itemIndex: index,
+        total: items.length,
+        phase: 'download',
+        downloadedBytes: itemFileSize || getWorkshopDownloadBytes(),
+        totalBytes: itemFileSize || null,
+        message: `Download complete for "${item.title}"`
+      });
+      sendEvent('status', { message: `Installing files for "${item.title}"...` });
+
       exec(`find "${searchPath}" -type f 2>/dev/null`, (err, stdout) => {
         let files = stdout ? stdout.trim().split('\n').filter(Boolean) : [];
 
@@ -2306,6 +2376,7 @@ app.post('/api/workshop', async (req, res) => {
                   manifest[path.basename(destPath)] = {
                     workshopId: item.id,
                     title: item.title,
+                    fileSize: item.fileSize || null,
                     source: 'workshop',
                     installedAt: new Date().toISOString()
                   };

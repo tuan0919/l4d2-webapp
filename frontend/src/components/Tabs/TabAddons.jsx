@@ -6,6 +6,15 @@ const getAddonTitle = (addon) => addon?.displayName || addon?.title || addon?.na
 
 const formatAddonSize = (size) => `${(Number(size || 0) / (1024 * 1024)).toFixed(2)} MB`;
 
+const formatBytes = (bytes) => {
+  const value = Number(bytes || 0);
+  if (!Number.isFinite(value) || value <= 0) return '0 B';
+  if (value >= 1024 * 1024 * 1024) return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${Math.round(value)} B`;
+};
+
 const TabAddons = ({ addToast, onAddonsUpdated }) => {
   const [addons, setAddons] = useState([]);
   const [note, setNote] = useState('Workshop Addons (.vpk)');
@@ -15,6 +24,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
   const [installing, setInstalling] = useState(false);
   const [progressVisible, setProgressVisible] = useState(false);
   const [progressStatus, setProgressStatus] = useState('');
+  const [progressDetail, setProgressDetail] = useState(null);
   const [progressPercent, setProgressPercent] = useState(0);
   const [progressSuccess, setProgressSuccess] = useState(false);
   const [progressError, setProgressError] = useState(false);
@@ -105,6 +115,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     setProgressVisible(true);
     setProgressStatus('Connecting...');
     setProgressPercent(0);
+    setProgressDetail(null);
     setProgressSuccess(false);
     setProgressError(false);
     setResolvedItems([]);
@@ -147,11 +158,25 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
             const parsed = JSON.parse(data);
 
             if (event === 'status') {
-              setProgressStatus(parsed.log || parsed.message || 'Working...');
+              setProgressStatus(parsed.message || 'Working...');
             }
 
             if (event === 'progress') {
-              setProgressPercent(Number(parsed.percent || 0));
+              const nextPercent = Number(parsed.percent);
+              if (Number.isFinite(nextPercent)) setProgressPercent(nextPercent);
+              setProgressDetail({
+                phase: parsed.phase || 'download',
+                downloadedBytes: parsed.downloadedBytes,
+                totalBytes: parsed.totalBytes
+              });
+
+              if (parsed.message) {
+                const hasBytes = Number(parsed.downloadedBytes) > 0 && Number(parsed.totalBytes) > 0;
+                const byteText = hasBytes
+                  ? ` (${formatBytes(parsed.downloadedBytes)} / ${formatBytes(parsed.totalBytes)})`
+                  : '';
+                setProgressStatus(`${parsed.message}${byteText}`);
+              }
             }
 
             // New: list of resolved items (with titles)
@@ -165,8 +190,10 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
                 index: parsed.index,
                 total: parsed.total,
                 id: parsed.id,
-                title: parsed.title
+                title: parsed.title,
+                fileSize: parsed.fileSize
               });
+              setProgressDetail(parsed.fileSize ? { phase: 'download', downloadedBytes: 0, totalBytes: parsed.fileSize } : null);
               setProgressPercent(0);
             }
 
@@ -182,6 +209,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
               addToast(parsed.message || 'Workshop addon(s) installed', 'success');
               setProgressStatus(`✅ ${parsed.message || 'Done!'}`);
               setProgressPercent(100);
+              setProgressDetail(null);
               setProgressSuccess(true);
               setInstalling(false);
               setWorkshopInput('');
@@ -208,6 +236,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     } catch {
       addToast('Streaming connection lost', 'error');
       setProgressStatus('❌ Streaming connection lost');
+      setProgressDetail(null);
       setProgressError(true);
       setInstalling(false);
     }
@@ -221,6 +250,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     setProgressVisible(true);
     setProgressStatus(`Uploading ${file.name}...`);
     setProgressPercent(0);
+    setProgressDetail(null);
     setProgressSuccess(false);
     setProgressError(false);
     setResolvedItems([]);
@@ -244,6 +274,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
         addToast(`Uploaded ${file.name}`, 'success');
         setProgressStatus(`✅ Upload of ${file.name} complete!`);
         setProgressPercent(100);
+        setProgressDetail(null);
         setProgressSuccess(true);
         fetchAddons();
       } else {
@@ -251,6 +282,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
         try { errorMsg = JSON.parse(xhr.responseText)?.error || errorMsg; } catch (e) {}
         addToast(errorMsg, 'error');
         setProgressStatus(`❌ ${errorMsg}`);
+        setProgressDetail(null);
         setProgressError(true);
       }
       setInstalling(false);
@@ -265,6 +297,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
     xhr.onerror = () => {
       addToast('Upload network error', 'error');
       setProgressStatus('❌ Upload connection failed');
+      setProgressDetail(null);
       setProgressError(true);
       setInstalling(false);
     };
@@ -284,6 +317,10 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
   const overallPercent = currentItem && currentItem.total > 1
     ? ((currentItem.index / currentItem.total) * 100) + (progressPercent / currentItem.total)
     : progressPercent;
+
+  const progressDetailText = progressDetail && Number(progressDetail.downloadedBytes) > 0 && Number(progressDetail.totalBytes) > 0
+    ? `${formatBytes(progressDetail.downloadedBytes)} / ${formatBytes(progressDetail.totalBytes)}`
+    : '';
 
   return (
     <div className="plugins-panel">
@@ -361,7 +398,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
           }}>
 
             {/* Current item label */}
-            {currentItem && currentItem.total > 1 && (
+            {currentItem && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{
                   background: 'rgba(91,200,245,0.15)',
@@ -372,7 +409,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
                   fontWeight: 700,
                   letterSpacing: 0.5
                 }}>
-                  {currentItem.index + 1} / {currentItem.total}
+                  {currentItem.total > 1 ? `${currentItem.index + 1} / ${currentItem.total}` : 'ITEM'}
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {currentItem.title}
@@ -382,7 +419,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
 
             {/* Status + percent */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-color)', flex: 1, paddingRight: 8, opacity: 0.9 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-color)', flex: 1, paddingRight: 8, opacity: 0.9, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {progressStatus}
               </span>
               <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>
@@ -400,6 +437,13 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
                 transition: 'width 0.2s ease, background 0.3s'
               }} />
             </div>
+
+            {progressDetailText && (
+              <div style={{ fontSize: 11, color: 'var(--muted)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <span>Downloaded bytes</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{progressDetailText}</span>
+              </div>
+            )}
 
             {/* Overall progress bar (only when multiple items) */}
             {currentItem && currentItem.total > 1 && (
