@@ -503,6 +503,213 @@ select option { background: var(--surface2); }
 }
 .workshop-status { font-family: 'JetBrains Mono', monospace; }
 .workshop-pct { font-weight: bold; }
+.workshop-addons-toolbar {
+  align-items: flex-start;
+}
+.workshop-addons-summary {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.workshop-addons-note {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+.workshop-addons-subnote {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.workshop-addons-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.addon-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.addon-filter-btn span {
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.addon-filter-btn:hover,
+.addon-filter-btn.active {
+  color: var(--accent);
+  border-color: rgba(232,83,42,0.45);
+  background: rgba(232,83,42,0.1);
+}
+.addon-refresh-btn {
+  width: auto;
+  margin: 0;
+  padding: 6px 13px;
+  font-size: 12px;
+}
+.workshop-addons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+.workshop-addon-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.08));
+  overflow: hidden;
+  transition: border-color 0.2s, background 0.2s;
+}
+.workshop-addon-card:hover {
+  border-color: rgba(255,255,255,0.16);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.08));
+}
+.workshop-addon-card.is-map {
+  box-shadow: inset 3px 0 0 rgba(91,200,245,0.7);
+}
+.workshop-addon-card.is-mod {
+  box-shadow: inset 3px 0 0 rgba(176,158,245,0.7);
+}
+.workshop-addon-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.workshop-addon-kind {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: rgba(91,200,245,0.12);
+  color: var(--blue);
+  border: 1px solid rgba(91,200,245,0.25);
+}
+.workshop-addon-card.is-mod .workshop-addon-kind {
+  background: rgba(176,158,245,0.12);
+  color: var(--purple);
+  border-color: rgba(176,158,245,0.25);
+}
+.workshop-addon-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.workshop-addon-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.workshop-addon-title-row h3 {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.workshop-addon-badge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+}
+.workshop-addon-badge.map {
+  color: var(--blue);
+  background: rgba(91,200,245,0.1);
+  border-color: rgba(91,200,245,0.28);
+}
+.workshop-addon-badge.mod {
+  color: var(--purple);
+  background: rgba(176,158,245,0.1);
+  border-color: rgba(176,158,245,0.28);
+}
+.workshop-addon-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.workshop-addon-meta span {
+  display: inline-flex;
+  align-items: center;
+}
+.workshop-addon-file {
+  color: var(--muted);
+  font-size: 11px;
+  word-break: break-word;
+}
+.workshop-addon-file code {
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.workshop-addon-delete {
+  width: auto;
+  padding: 6px 14px;
+  flex-shrink: 0;
+}
+.workshop-addon-maps,
+.workshop-addon-no-maps {
+  border-top: 1px solid var(--border);
+  padding: 11px 16px 13px 70px;
+}
+.workshop-addon-section-label {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.workshop-addon-map-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.workshop-addon-map-btn {
+  width: auto;
+  margin: 0;
+  padding: 5px 11px;
+  font-size: 11px;
+  border-color: rgba(91,200,245,0.3);
+}
+.workshop-addon-no-maps {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  background: rgba(176,158,245,0.04);
+}
 
 /* ══════════════════════════════════════
    Developer Tab
@@ -873,4 +1080,21 @@ select option { background: var(--surface2); }
 
 @media (max-width: 960px) {
   .main-grid { grid-template-columns: 1fr; }
+  .workshop-addons-toolbar,
+  .workshop-addons-actions {
+    align-items: stretch;
+  }
+  .workshop-addons-actions {
+    justify-content: flex-start;
+  }
+  .workshop-addon-main {
+    flex-wrap: wrap;
+  }
+  .workshop-addon-delete {
+    margin-left: 54px;
+  }
+  .workshop-addon-maps,
+  .workshop-addon-no-maps {
+    padding-left: 16px;
+  }
 }

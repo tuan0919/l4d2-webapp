@@ -69,6 +69,8 @@ const WEBAPP_DIR = __dirname;
 const CONSOLE_LOG = path.join(L4D2_DIR, 'left4dead2', 'console.log');
 const SOURCEMOD_LOG_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'logs');
 const CFG_DIR = path.join(L4D2_DIR, 'left4dead2', 'cfg');
+const ADDONS_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons');
+const WORKSHOP_ADDONS_MANIFEST = path.join(ADDONS_DIR, 'workshop_addons.json');
 const SERVER_CFG_PATH = path.join(CFG_DIR, 'server.cfg');
 const WEBAPP_CFG_DIR = path.join(CFG_DIR, 'webapp');
 const WEBAPP_OVERRIDE_LOADER_NAME = 'overrides_loader.cfg';
@@ -104,7 +106,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // --- Upload Configuration ---
 const uploadStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dest = path.join(L4D2_DIR, 'left4dead2', 'addons');
+    const dest = ADDONS_DIR;
     if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
     cb(null, dest);
   },
@@ -859,6 +861,20 @@ async function fetchWorkshopDetails(ids) {
   return data?.response?.publishedfiledetails || [];
 }
 
+async function fetchWorkshopTitleMap(ids) {
+  const titleMap = {};
+  const uniqueIds = [...new Set(ids.map(id => String(id)).filter(Boolean))];
+  for (let i = 0; i < uniqueIds.length; i += 100) {
+    const batch = uniqueIds.slice(i, i + 100);
+    const details = await fetchWorkshopDetails(batch);
+    details.forEach((detail) => {
+      const id = String(detail.publishedfileid || '');
+      if (id && detail.title) titleMap[id] = detail.title;
+    });
+  }
+  return titleMap;
+}
+
 async function fetchCollectionDetails(ids) {
   const params = { collectioncount: ids.length };
   ids.forEach((id, i) => { params[`publishedfileids[${i}]`] = id; });
@@ -932,6 +948,46 @@ function extractWorkshopIds(rawInputs) {
       return m ? m[1] : null;
     })
     .filter(Boolean);
+}
+
+function parseWorkshopIdFromAddonFilename(filename) {
+  const match = String(filename || '').match(/^workshop_(\d+)(?:_part\d+)?\.vpk$/i);
+  return match ? match[1] : null;
+}
+
+function loadWorkshopAddonManifest() {
+  try {
+    if (!fs.existsSync(WORKSHOP_ADDONS_MANIFEST)) return {};
+    const parsed = JSON.parse(fs.readFileSync(WORKSHOP_ADDONS_MANIFEST, 'utf8'));
+    const items = parsed && typeof parsed === 'object' && parsed.items && typeof parsed.items === 'object'
+      ? parsed.items
+      : parsed;
+    if (!items || typeof items !== 'object' || Array.isArray(items)) return {};
+    return Object.fromEntries(Object.entries(items).filter(([, value]) => value && typeof value === 'object'));
+  } catch(e) {
+    console.warn(`[Workshop Addons] Could not read manifest: ${e.message}`);
+    return {};
+  }
+}
+
+function saveWorkshopAddonManifest(items) {
+  try {
+    fs.mkdirSync(ADDONS_DIR, { recursive: true });
+    fs.writeFileSync(WORKSHOP_ADDONS_MANIFEST, JSON.stringify({
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      items
+    }, null, 2));
+  } catch(e) {
+    console.warn(`[Workshop Addons] Could not save manifest: ${e.message}`);
+  }
+}
+
+function buildAddonDisplayName(filename, meta, workshopId) {
+  const title = String(meta?.title || '').trim();
+  if (title) return title;
+  if (workshopId) return `Workshop Item ${workshopId}`;
+  return filename;
 }
 
 const DATA_ROOT_DIR = path.join(L4D2_DIR, 'left4dead2', 'addons', 'sourcemod', 'data');
@@ -1989,17 +2045,66 @@ app.post('/api/servercfg', (req, res) => {
 });
 
 app.get('/api/addons', async (req, res) => {
-  const addonsDir = path.join(L4D2_DIR, 'left4dead2', 'addons');
+  const addonsDir = ADDONS_DIR;
   if (!fs.existsSync(addonsDir)) return res.json({ addons: [] });
   try {
     const files = fs.readdirSync(addonsDir).filter(f => f.toLowerCase().endsWith('.vpk'));
+    const manifest = loadWorkshopAddonManifest();
+    let manifestChanged = false;
+
+    Object.keys(manifest).forEach((file) => {
+      if (!files.includes(file)) {
+        delete manifest[file];
+        manifestChanged = true;
+      }
+    });
+
+    const missingTitleIds = files
+      .filter(f => !manifest[f]?.title && parseWorkshopIdFromAddonFilename(f))
+      .map(parseWorkshopIdFromAddonFilename);
+
+    if (missingTitleIds.length > 0) {
+      try {
+        const titleMap = await fetchWorkshopTitleMap(missingTitleIds);
+        files.forEach((f) => {
+          const workshopId = parseWorkshopIdFromAddonFilename(f);
+          if (workshopId && titleMap[workshopId]) {
+            manifest[f] = {
+              ...(manifest[f] || {}),
+              workshopId,
+              title: titleMap[workshopId],
+              source: 'workshop',
+              updatedAt: new Date().toISOString()
+            };
+            manifestChanged = true;
+          }
+        });
+      } catch(e) {
+        console.warn(`[Workshop Addons] Could not refresh Workshop titles: ${e.message}`);
+      }
+    }
+
     const addons = files.map(f => {
       const fullPath = path.join(addonsDir, f);
       const stats = fs.statSync(fullPath);
       const maps = getVpkMaps(fullPath);
+      const meta = manifest[f] || {};
+      const workshopId = meta.workshopId || parseWorkshopIdFromAddonFilename(f);
+      const type = maps.length > 0 ? 'map' : 'addon';
       if (maps.length > 0) console.log(`[VPK] Found ${maps.length} maps in ${f}: ${maps.join(', ')}`);
-      return { name: f, size: stats.size, modified: stats.mtime, maps };
+      return {
+        name: f,
+        displayName: buildAddonDisplayName(f, meta, workshopId),
+        workshopId,
+        type,
+        size: stats.size,
+        modified: stats.mtime,
+        maps
+      };
     });
+
+    if (manifestChanged) saveWorkshopAddonManifest(manifest);
+
     // Auto re-index addon VPKs so pre-existing maps are recognized by the engine
     if (addons.some(a => a.maps && a.maps.length > 0)) {
       sendToGame('update_addon_paths', () => {});
@@ -2019,6 +2124,11 @@ app.delete('/api/addons/:filename', (req, res) => {
   if (fs.existsSync(filePath)) {
     try {
       fs.unlinkSync(filePath);
+      const manifest = loadWorkshopAddonManifest();
+      if (manifest[file]) {
+        delete manifest[file];
+        saveWorkshopAddonManifest(manifest);
+      }
       return res.json({ success: true });
     } catch(e) {
       return res.status(500).json({ error: e.message });
@@ -2071,7 +2181,9 @@ app.post('/api/workshop', async (req, res) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  const addonsDir = path.join(L4D2_DIR, 'left4dead2', 'addons');
+  const addonsDir = ADDONS_DIR;
+  const manifest = loadWorkshopAddonManifest();
+  let manifestChanged = false;
 
   // Step 1: Resolve all IDs (collections + dependencies)
   sendEvent('status', { message: `Resolving workshop items and dependencies...` });
@@ -2099,6 +2211,8 @@ app.post('/api/workshop', async (req, res) => {
 
   const downloadItem = (index) => {
     if (index >= items.length) {
+      if (manifestChanged) saveWorkshopAddonManifest(manifest);
+
       // Scan all installed VPK files for BSP map names
       const discoveredMaps = [];
       for (const vpkPath of installedFilePaths) {
@@ -2186,9 +2300,16 @@ app.post('/api/workshop', async (req, res) => {
               copiedCount++;
               if (!errCopy) {
                 totalInstalled++;
-                if (ext === '.vpk' || ext !== '.bsp') {
+                if (destPath.toLowerCase().endsWith('.vpk')) {
                   // Track VPK paths for post-scan
                   installedFilePaths.push(destPath);
+                  manifest[path.basename(destPath)] = {
+                    workshopId: item.id,
+                    title: item.title,
+                    source: 'workshop',
+                    installedAt: new Date().toISOString()
+                  };
+                  manifestChanged = true;
                 }
               }
               if (copiedCount === sourcePaths.length) {

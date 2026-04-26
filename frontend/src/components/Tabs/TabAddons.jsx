@@ -1,8 +1,15 @@
 import React, { useMemo, useState, useRef } from 'react';
 
+const isMapAddon = (addon) => addon?.type === 'map' || (Array.isArray(addon?.maps) && addon.maps.length > 0);
+
+const getAddonTitle = (addon) => addon?.displayName || addon?.title || addon?.name || 'Unknown addon';
+
+const formatAddonSize = (size) => `${(Number(size || 0) / (1024 * 1024)).toFixed(2)} MB`;
+
 const TabAddons = ({ addToast, onAddonsUpdated }) => {
   const [addons, setAddons] = useState([]);
-  const [note, setNote] = useState('Installed Addons (.vpk)');
+  const [note, setNote] = useState('Workshop Addons (.vpk)');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [workshopInput, setWorkshopInput] = useState('');
   const fileInputRef = useRef(null);
   const [installing, setInstalling] = useState(false);
@@ -16,7 +23,28 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
   const [currentItem, setCurrentItem] = useState(null);   // { index, total, id, title }
   const [discoveredMaps, setDiscoveredMaps] = useState([]); // BSP names found after install
 
-  const sortedAddons = useMemo(() => addons.slice(), [addons]);
+  const sortedAddons = useMemo(() => addons.slice().sort((a, b) => {
+    const typeDiff = Number(isMapAddon(b)) - Number(isMapAddon(a));
+    if (typeDiff !== 0) return typeDiff;
+    return getAddonTitle(a).localeCompare(getAddonTitle(b));
+  }), [addons]);
+
+  const addonStats = useMemo(() => {
+    const maps = addons.filter(isMapAddon).length;
+    return { total: addons.length, maps, mods: addons.length - maps };
+  }, [addons]);
+
+  const visibleAddons = useMemo(() => sortedAddons.filter((addon) => {
+    if (activeFilter === 'maps') return isMapAddon(addon);
+    if (activeFilter === 'mods') return !isMapAddon(addon);
+    return true;
+  }), [activeFilter, sortedAddons]);
+
+  const filterOptions = [
+    { id: 'all', label: 'All', count: addonStats.total },
+    { id: 'maps', label: 'Maps', count: addonStats.maps },
+    { id: 'mods', label: 'Mods', count: addonStats.mods }
+  ];
 
   const fetchAddons = async () => {
     setNote('Loading...');
@@ -25,7 +53,8 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
       const data = await response.json();
       const list = data.addons || [];
       setAddons(list);
-      setNote(`${list.length} Addon VPK(s) Installed`);
+      const mapCount = list.filter(isMapAddon).length;
+      setNote(`${list.length} Workshop Addon(s) Installed • ${mapCount} map(s) • ${list.length - mapCount} mod(s)`);
       if (typeof onAddonsUpdated === 'function') onAddonsUpdated(list);
     } catch {
       setAddons([]);
@@ -262,7 +291,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
 
         {/* Option 1: Workshop */}
         <div>
-          <h2 style={{ marginBottom: '4px' }}>Option 1: Install from Workshop</h2>
+          <h2 style={{ marginBottom: '4px' }}>Install Workshop Addons</h2>
           <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: '8px', lineHeight: 1.5 }}>
             Paste one or more Workshop URLs / IDs (one per line). Supports maps, gameplay addons/mods, multi-part items, and collections.
             Dependencies are resolved automatically.
@@ -301,7 +330,7 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
 
         {/* Option 2: Direct upload */}
         <div>
-          <h2 style={{ marginBottom: '8px' }}>Option 2: Direct .vpk Upload</h2>
+          <h2 style={{ marginBottom: '8px' }}>Manual .vpk Upload</h2>
           <div className="input-row">
             <input
               type="file"
@@ -482,76 +511,98 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
       </div>
 
       {/* Toolbar */}
-      <div className="plugins-toolbar">
-        <div style={{ fontSize: 13, color: 'var(--muted)' }}>{note}</div>
-        <button className="btn btn-ghost" style={{ width: 'auto', margin: 0, padding: '6px 13px', fontSize: 12 }} onClick={fetchAddons}>
-          ↻ Refresh
-        </button>
+      <div className="plugins-toolbar workshop-addons-toolbar">
+        <div className="workshop-addons-summary">
+          <div className="workshop-addons-note">{note}</div>
+          <div className="workshop-addons-subnote">Maps expose changelevel shortcuts. Mods are tracked separately from campaign maps.</div>
+        </div>
+        <div className="workshop-addons-actions">
+          {filterOptions.map((option) => (
+            <button
+              key={option.id}
+              className={`addon-filter-btn ${activeFilter === option.id ? 'active' : ''}`}
+              onClick={() => setActiveFilter(option.id)}
+              type="button"
+            >
+              {option.label} <span>{option.count}</span>
+            </button>
+          ))}
+          <button className="btn btn-ghost addon-refresh-btn" onClick={fetchAddons}>
+            ↻ Refresh
+          </button>
+        </div>
       </div>
 
       {/* Addons list */}
-      <div className="plugins-list" style={{ padding: 0 }}>
+      <div className="plugins-list workshop-addons-list">
         {sortedAddons.length === 0 ? (
           <div className="empty-state">
             <div className="big">📦</div>
-            <p>Click Refresh to load addon VPKs</p>
+            <p>Click Refresh to load Workshop addons</p>
+          </div>
+        ) : visibleAddons.length === 0 ? (
+          <div className="empty-state">
+            <div className="big">--</div>
+            <p>No addons match this filter</p>
           </div>
         ) : (
-          sortedAddons.map((addon) => (
-            <div key={addon.name} className="plugin-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4, padding: '12px 16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div
-                  className="plugin-index"
-                  style={{
-                    fontSize: 16,
-                    background: 'rgba(91,200,245,0.12)',
-                    color: 'var(--blue)',
-                    borderRadius: 6,
-                    width: 36,
-                    height: 36
-                  }}
-                >
-                  📦
-                </div>
-                <div className="plugin-info" style={{ marginLeft: 4, flex: 1 }}>
-                  <div className="plugin-name" style={{ fontWeight: 600 }}>{addon.name}</div>
-                  <div className="plugin-meta">
-                    {(Number(addon.size || 0) / (1024 * 1024)).toFixed(2)} MB • Modified{' '}
-                    {addon.modified ? new Date(addon.modified).toLocaleDateString() : '—'}
+          visibleAddons.map((addon) => {
+            const mapAddon = isMapAddon(addon);
+            const maps = Array.isArray(addon.maps) ? addon.maps.slice().sort() : [];
+            const title = getAddonTitle(addon);
+            return (
+              <div key={addon.name} className={`workshop-addon-card ${mapAddon ? 'is-map' : 'is-mod'}`}>
+                <div className="workshop-addon-main">
+                  <div className="workshop-addon-kind" aria-hidden="true">
+                    {mapAddon ? 'MAP' : 'MOD'}
                   </div>
+                  <div className="workshop-addon-info">
+                    <div className="workshop-addon-title-row">
+                      <h3>{title}</h3>
+                      <span className={`workshop-addon-badge ${mapAddon ? 'map' : 'mod'}`}>
+                        {mapAddon ? 'Custom Map' : 'Addon Mod'}
+                      </span>
+                    </div>
+                    <div className="workshop-addon-meta">
+                      <span>{formatAddonSize(addon.size)}</span>
+                      <span>Modified {addon.modified ? new Date(addon.modified).toLocaleDateString() : '—'}</span>
+                      {addon.workshopId && <span>Workshop ID {addon.workshopId}</span>}
+                    </div>
+                    <div className="workshop-addon-file">
+                      File: <code>{addon.name}</code>
+                    </div>
+                  </div>
+                  <button
+                    className="btn-kick workshop-addon-delete"
+                    onClick={() => deleteAddon(addon.name)}
+                  >
+                    Delete
+                  </button>
                 </div>
-                <button
-                  className="btn-kick"
-                  style={{ padding: '6px 14px', width: 'auto' }}
-                  onClick={() => deleteAddon(addon.name)}
-                >
-                  Delete
-                </button>
-              </div>
 
-              {Array.isArray(addon.maps) && addon.maps.length > 0 ? (
-                <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {addon.maps
-                    .slice()
-                    .sort()
-                    .map((map) => (
-                      <button
-                        key={`${addon.name}-${map}`}
-                        className="btn btn-ghost"
-                        style={{ width: 'auto', margin: 0, padding: '4px 10px', fontSize: 11, borderColor: 'rgba(91,200,245,0.3)' }}
-                        onClick={() => changeMap(map)}
-                      >
-                        ▶ {map}
-                      </button>
-                    ))}
-                </div>
-              ) : (
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, opacity: 0.7 }}>
-                  No .bsp files detected inside this VPK
-                </div>
-              )}
-            </div>
-          ))
+                {mapAddon ? (
+                  <div className="workshop-addon-maps">
+                    <div className="workshop-addon-section-label">Maps inside this addon</div>
+                    <div className="workshop-addon-map-list">
+                      {maps.map((map) => (
+                        <button
+                          key={`${addon.name}-${map}`}
+                          className="btn btn-ghost workshop-addon-map-btn"
+                          onClick={() => changeMap(map)}
+                        >
+                          ▶ {map}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="workshop-addon-no-maps">
+                    Gameplay/content addon. No map files detected, so it is not shown in the campaign map selector.
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
     </div>

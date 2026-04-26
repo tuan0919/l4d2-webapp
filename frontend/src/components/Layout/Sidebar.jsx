@@ -25,12 +25,10 @@ const Sidebar = ({ addToast }) => {
     const options = [];
     addons.forEach((addon) => {
       if (Array.isArray(addon.maps) && addon.maps.length > 0) {
+        const addonLabel = addon.displayName || addon.name;
         addon.maps.slice().sort().forEach((map) => {
-          options.push({ value: map, label: `${map} (${addon.name})` });
+          options.push({ value: map, label: `${map} (${addonLabel})` });
         });
-      } else if (addon.name) {
-        const fallback = addon.name.replace(/\.[^/.]+$/, '');
-        options.push({ value: fallback, label: addon.name });
       }
     });
     return options;

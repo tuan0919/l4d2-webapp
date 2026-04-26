@@ -67,7 +67,7 @@ const App = () => {
               badge={pluginCount === null ? '—' : pluginCount}
             />
             <TabBtn id="cvars" label="Cvars" icon="⚙️" active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="addons" label="Custom Maps" icon="📦" active={activeTab} onClick={setActiveTab} />
+            <TabBtn id="addons" label="Workshop Addons" icon="📦" active={activeTab} onClick={setActiveTab} />
             <TabBtn id="main-configurations" label="Main Configurations" icon="📖" active={activeTab} onClick={setActiveTab} />
             <TabBtn id="developer" label="Developer" icon="🛠️" active={activeTab} onClick={setActiveTab} />
           </div>
