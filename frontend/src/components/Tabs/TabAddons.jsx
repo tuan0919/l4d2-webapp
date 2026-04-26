@@ -330,13 +330,13 @@ const TabAddons = ({ addToast, onAddonsUpdated }) => {
         <div>
           <h2 style={{ marginBottom: '4px' }}>Install Workshop Addons</h2>
           <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: '8px', lineHeight: 1.5 }}>
-            Paste one or more Workshop URLs / IDs (one per line). Supports maps, gameplay addons/mods, multi-part items, and collections.
-            Dependencies are resolved automatically.
+            Paste one or more Workshop item URLs / IDs (one per line). Required items are not detected automatically;
+            paste each required item as a separate line when needed.
           </p>
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <textarea
               rows={3}
-              placeholder={`https://steamcommunity.com/sharedfiles/filedetails/?id=123456789\n2345678901\nhttps://steamcommunity.com/workshop/filedetails/?id=3456789012`}
+              placeholder={`https://steamcommunity.com/sharedfiles/filedetails/?id=123456789\n2345678901\nhttps://steamcommunity.com/sharedfiles/filedetails/?id=3456789012`}
               value={workshopInput}
               onChange={(e) => setWorkshopInput(e.target.value)}
               disabled={installing}

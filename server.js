@@ -875,70 +875,29 @@ async function fetchWorkshopTitleMap(ids) {
   return titleMap;
 }
 
-async function fetchCollectionDetails(ids) {
-  const params = { collectioncount: ids.length };
-  ids.forEach((id, i) => { params[`publishedfileids[${i}]`] = id; });
-  const data = await steamApiPost('/ISteamRemoteStorage/GetCollectionDetails/v1/', params);
-  return data?.response?.collectiondetails || [];
-}
-
-// Recursively resolve workshop IDs: handles collections, dependencies up to 3 levels deep
+// Resolve only the exact Workshop IDs provided by the user. Required items must be pasted explicitly.
 async function resolveAllWorkshopIds(rootIds, onStatus) {
-  const visited = new Set();
-  const result = []; // [{ id, title, fileSize }]
+  const ids = [...new Set(rootIds.map(id => String(id)).filter(Boolean))];
+  if (ids.length === 0) return [];
 
-  async function resolve(ids, depth) {
-    if (depth > 3) return;
-    const toFetch = ids.filter(id => !visited.has(id));
-    if (toFetch.length === 0) return;
-    toFetch.forEach(id => visited.add(id));
+  if (onStatus) onStatus(`Fetching metadata for ${ids.length} pasted Workshop item(s) from Steam...`);
 
-    if (onStatus) onStatus(`Fetching metadata for ${toFetch.length} item(s) from Steam...`);
-
-    let details;
-    try {
-      details = await fetchWorkshopDetails(toFetch);
-    } catch(e) {
-      if (onStatus) onStatus(`[Warning] Steam API unavailable (${e.message}). Proceeding with original IDs.`);
-      toFetch.forEach(id => {
-        if (!result.find(r => r.id === id)) result.push({ id, title: `Workshop Item ${id}`, fileSize: null });
-      });
-      return;
-    }
-
-    const childIds = [];
-    for (const detail of details) {
-      const id = String(detail.publishedfileid);
-      const title = detail.title || `Workshop Item ${id}`;
-      const fileSize = Number(detail.file_size || 0) || null;
-      const isCollection = detail.file_type === 2;
-
-      if (isCollection) {
-        if (onStatus) onStatus(`"${title}" is a Workshop Collection — fetching items...`);
-        try {
-          const cols = await fetchCollectionDetails([id]);
-          const colItems = (cols[0]?.children || []).map(c => String(c.publishedfileid));
-          if (colItems.length > 0) {
-            if (onStatus) onStatus(`Collection "${title}" has ${colItems.length} item(s).`);
-            await resolve(colItems, depth + 1);
-          }
-        } catch(e) {
-          if (onStatus) onStatus(`[Warning] Could not expand collection "${title}": ${e.message}`);
-        }
-      } else {
-        if (!result.find(r => r.id === id)) result.push({ id, title, fileSize });
-        const children = (detail.children || []).map(c => String(c.publishedfileid));
-        if (children.length > 0) {
-          if (onStatus) onStatus(`"${title}" has ${children.length} required item(s) (dependencies).`);
-          childIds.push(...children);
-        }
-      }
-    }
-    if (childIds.length > 0) await resolve(childIds, depth + 1);
+  let details = [];
+  try {
+    details = await fetchWorkshopDetails(ids);
+  } catch(e) {
+    if (onStatus) onStatus(`[Warning] Steam API unavailable (${e.message}). Proceeding with pasted IDs.`);
   }
 
-  await resolve(rootIds, 0);
-  return result;
+  const detailsById = new Map(details.map(detail => [String(detail.publishedfileid), detail]));
+  return ids.map((id) => {
+    const detail = detailsById.get(id) || {};
+    return {
+      id,
+      title: detail.title || `Workshop Item ${id}`,
+      fileSize: Number(detail.file_size || 0) || null
+    };
+  });
 }
 
 function extractWorkshopIds(rawInputs) {
@@ -2163,7 +2122,7 @@ app.post('/api/addons/upload', addonUpload.single('addonFile'), (req, res) => {
   });
 });
 
-// Resolve workshop dependencies without downloading
+// Resolve pasted Workshop item metadata without downloading
 app.post('/api/workshop/resolve', async (req, res) => {
   const { url, urls } = req.body;
   const rawInputs = Array.isArray(urls) ? urls : (url ? [url] : []);
@@ -2180,7 +2139,7 @@ app.post('/api/workshop/resolve', async (req, res) => {
   }
 });
 
-// Download workshop items — supports multiple URLs, collections, and auto-resolves dependencies
+// Download pasted Workshop items. Required items must be provided as separate URLs/IDs.
 app.post('/api/workshop', async (req, res) => {
   const { url, urls } = req.body;
   const rawInputs = Array.isArray(urls) ? urls : (url ? [url] : []);
@@ -2202,8 +2161,8 @@ app.post('/api/workshop', async (req, res) => {
   const manifest = loadWorkshopAddonManifest();
   let manifestChanged = false;
 
-  // Step 1: Resolve all IDs (collections + dependencies)
-  sendEvent('status', { message: `Resolving workshop items and dependencies...` });
+  // Step 1: Resolve metadata for the exact pasted IDs
+  sendEvent('status', { message: `Resolving pasted workshop items...` });
   let items;
   try {
     items = await resolveAllWorkshopIds(extractedIds, (msg) => sendEvent('status', { message: msg }));
