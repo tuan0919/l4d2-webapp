@@ -409,6 +409,7 @@ const NotifierEventConfig = [
   { cvar: 'tuan_notify_member_evt_notify_go_bnw', type: 'toggle', label: 'Go B&W', desc: 'Thông báo khi một người rơi vào B&W.' },
   { cvar: 'tuan_notify_member_evt_notify_revived_other', type: 'toggle', label: 'Revive Other', desc: 'Thông báo khi gọi người khác dậy.' },
   { cvar: 'tuan_notify_member_evt_notify_self_revived', type: 'toggle', label: 'Self Revive', desc: 'Thông báo khi tự đứng dậy.' },
+  { cvar: 'tuan_notify_member_evt_notify_remote_item_save', type: 'toggle', label: 'Remote Item Save', desc: 'Thông báo khi dùng pills/adrenaline cứu đồng đội từ xa.' },
   { cvar: 'tuan_notify_member_evt_notify_throw_molotov', type: 'toggle', label: 'Throw Molotov', desc: 'Thông báo khi ném Molotov.' },
   { cvar: 'tuan_notify_member_evt_notify_throw_pipebomb', type: 'toggle', label: 'Throw Pipebomb', desc: 'Thông báo khi ném Pipebomb.' },
   { cvar: 'tuan_notify_member_evt_notify_throw_vomitjar', type: 'toggle', label: 'Throw Vomitjar', desc: 'Thông báo khi ném Bile.' },

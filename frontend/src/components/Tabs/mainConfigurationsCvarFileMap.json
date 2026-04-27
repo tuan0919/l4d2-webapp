@@ -297,6 +297,7 @@
   "tuan_notify_member_evt_notify_go_bnw": "cfg/sourcemod/tuan_notify_member_events.cfg",
   "tuan_notify_member_evt_notify_revived_other": "cfg/sourcemod/tuan_notify_member_events.cfg",
   "tuan_notify_member_evt_notify_self_revived": "cfg/sourcemod/tuan_notify_member_events.cfg",
+  "tuan_notify_member_evt_notify_remote_item_save": "cfg/sourcemod/tuan_notify_member_events.cfg",
   "tuan_notify_member_evt_notify_throw_molotov": "cfg/sourcemod/tuan_notify_member_events.cfg",
   "tuan_notify_member_evt_notify_throw_pipebomb": "cfg/sourcemod/tuan_notify_member_events.cfg",
   "tuan_notify_member_evt_notify_throw_vomitjar": "cfg/sourcemod/tuan_notify_member_events.cfg",
